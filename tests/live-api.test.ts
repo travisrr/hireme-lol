@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { signStripePayload } from "../src/lib/stripe-signature";
+import { signPaddlePayload } from "../src/lib/paddle-signature";
 import { createApp } from "../src/server/app";
 import { MemoryStore } from "../src/server/memory-store";
 
-function testApp(store = new MemoryStore(), stripeSecret?: string) {
+function testApp(store = new MemoryStore(), paddleSecret?: string) {
   const sent: { to: string; subject: string }[] = [];
   const app = createApp({
     store,
@@ -11,7 +11,8 @@ function testApp(store = new MemoryStore(), stripeSecret?: string) {
       origin: "http://localhost:5173",
       siteName: "workwithme.lol",
       adminEmails: ["admin@workwithme.lol"],
-      stripeWebhookSecret: stripeSecret,
+      paddleWebhookSecret: paddleSecret,
+      paddleEnvironment: "sandbox",
       emailFrom: "board@workwithme.lol",
     },
     sendEmail: async (input) => {
@@ -82,25 +83,23 @@ async function pay(
   });
   const bid = await json(bidRes);
   const payload = JSON.stringify({
-    id: eventId,
-    type: "checkout.session.completed",
+    event_id: eventId,
+    event_type: "transaction.completed",
     data: {
-      object: {
-        id: `cs_${eventId}`,
-        amount_total: amountCents,
-        metadata: { bid_id: bid.bidId },
-      },
+      id: `txn_${eventId}`,
+      custom_data: { bid_id: bid.bidId },
+      details: { totals: { grand_total: String(amountCents) } },
     },
   });
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   if (webhookSecret) {
-    headers["stripe-signature"] = await signStripePayload(
+    headers["paddle-signature"] = await signPaddlePayload(
       webhookSecret,
       payload,
       Math.floor(Date.now() / 1000),
     );
   }
-  const webhook = await app.request("/api/stripe/webhook", {
+  const webhook = await app.request("/api/paddle/webhook", {
     method: "POST",
     headers,
     body: payload,
@@ -113,6 +112,25 @@ describe("live API", () => {
     const { app } = testApp();
     const body = await json(await app.request("/api/board"));
     expect(body.listings).toEqual([]);
+  });
+
+  it("creating a checkout does not move the board", async () => {
+    const { app } = testApp();
+    const cookie = await magicLogin(app, "maya@example.com");
+    await createProfile(app, cookie, "maya");
+    const bidRes = await app.request("/api/bids", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Cookie: cookie,
+      },
+      body: JSON.stringify({ amountCents: 200 }),
+    });
+    const bid = await json(bidRes);
+    expect(bid.bidId).toEqual(expect.any(String));
+    expect(bid.devConfirm).toBe(true);
+    const board = await json(await app.request("/api/board"));
+    expect(board.listings).toEqual([]);
   });
 
   it("magic-link auth, profile, and webhook-authoritative bid", async () => {
@@ -133,8 +151,8 @@ describe("live API", () => {
     expect((profile.ranked as { rank: number }).rank).toBe(1);
   });
 
-  it("replays the same Stripe event once", async () => {
-    const secret = "whsec_test";
+  it("replays the same Paddle event once", async () => {
+    const secret = "pdl_ntfset_test";
     const { app } = testApp(new MemoryStore(), secret);
     const cookie = await magicLogin(app, "maya@example.com");
     await createProfile(app, cookie, "maya");
@@ -149,6 +167,7 @@ describe("live API", () => {
     const body = await json(await app.request("/api/config"));
     expect(body.minEntryCents).toBe(200);
     expect(body.minIncrementCents).toBe(200);
+    expect(body.paddleEnabled).toBe(false);
   });
 
   it("rejects a bid under the configured entry and keeps the board empty", async () => {
@@ -215,15 +234,70 @@ describe("live API", () => {
   });
 
   it("rejects a forged webhook when a secret is configured", async () => {
-    const { app } = testApp(new MemoryStore(), "whsec_real");
-    const webhook = await app.request("/api/stripe/webhook", {
+    const { app } = testApp(new MemoryStore(), "pdl_ntfset_real");
+    const webhook = await app.request("/api/paddle/webhook", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "stripe-signature": "t=1,v1=nope",
+        "paddle-signature": "ts=1;h1=nope",
       },
-      body: JSON.stringify({ id: "evt_x", type: "checkout.session.completed" }),
+      body: JSON.stringify({
+        event_id: "evt_x",
+        event_type: "transaction.completed",
+      }),
     });
     expect(webhook.status).toBe(400);
+  });
+
+  it("does not apply rank in production when the webhook secret is missing", async () => {
+    const store = new MemoryStore();
+    const app = createApp({
+      store,
+      config: {
+        origin: "https://workwithme.lol",
+        siteName: "workwithme.lol",
+        adminEmails: [],
+        paddleEnvironment: "sandbox",
+        emailFrom: "board@workwithme.lol",
+      },
+    });
+    const webhook = await app.request("/api/paddle/webhook", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        event_id: "evt_prod",
+        event_type: "transaction.completed",
+        data: { custom_data: { bid_id: "bid_missing" } },
+      }),
+    });
+    expect(webhook.status).toBe(500);
+    const board = await json(await app.request("/api/board"));
+    expect(board.listings).toEqual([]);
+  });
+
+  it("reverts rank on an approved Paddle refund adjustment", async () => {
+    const { app } = testApp();
+    const cookie = await magicLogin(app, "maya@example.com");
+    await createProfile(app, cookie, "maya");
+    const paid = await pay(app, cookie, 200, "evt_pay");
+    const refundPayload = JSON.stringify({
+      event_id: "evt_refund",
+      event_type: "adjustment.updated",
+      data: {
+        id: "adj_1",
+        action: "refund",
+        status: "approved",
+        transaction_id: `txn_evt_pay`,
+        custom_data: { bid_id: paid.bid.bidId },
+      },
+    });
+    const refund = await app.request("/api/paddle/webhook", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: refundPayload,
+    });
+    expect((await json(refund)).result).toMatchObject({ outcome: "reverted" });
+    const board = await json(await app.request("/api/board"));
+    expect(board.listings).toEqual([]);
   });
 });

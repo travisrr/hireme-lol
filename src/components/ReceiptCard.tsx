@@ -28,18 +28,18 @@ export function ReceiptCard({
   footerLabel,
 }: ReceiptCardProps) {
   return (
-    <section className="border border-line bg-panel p-2.5">
-      <p className="font-mono text-[10px] tracking-[0.14em] text-mute uppercase">
+    <section className="rounded-[12px] border border-line bg-card p-3">
+      <p className="text-[10px] font-bold tracking-[0.14em] text-mute uppercase">
         {title}
       </p>
       {items.length === 0 ? (
-        <p className="mt-1.5 font-mono text-[11px] text-mute">{empty}</p>
+        <p className="mt-1.5 text-[11px] text-mute">{empty}</p>
       ) : (
         <ul className="mt-1.5 grid gap-1">
           {items.map((item) => (
             <li key={item.id} className="flex items-center gap-1.5 text-xs">
               {item.rank != null ? (
-                <span className="w-3.5 shrink-0 font-mono text-[11px] text-ink tabular">
+                <span className="w-3.5 shrink-0 text-[11px] font-bold text-accent tabular">
                   {item.rank}
                 </span>
               ) : null}
@@ -49,7 +49,7 @@ export function ReceiptCard({
               {item.href ? (
                 <Link
                   to={item.href}
-                  className="min-w-0 flex-1 truncate text-ink no-underline hover:text-mute"
+                  className="min-w-0 flex-1 truncate text-ink no-underline hover:text-accent"
                 >
                   {item.line}
                 </Link>
@@ -57,11 +57,11 @@ export function ReceiptCard({
                 <span className="min-w-0 flex-1 truncate text-ink">{item.line}</span>
               )}
               {item.amount ? (
-                <span className="shrink-0 font-mono text-[11px] text-ink tabular">
+                <span className="shrink-0 text-[11px] font-bold text-accent tabular">
                   {item.amount}
                 </span>
               ) : null}
-              <span className="shrink-0 font-mono text-[10px] text-mute">
+              <span className="shrink-0 text-[10px] text-mute">
                 {formatRelativeTime(item.at)}
               </span>
             </li>
@@ -72,7 +72,7 @@ export function ReceiptCard({
         <p className="mt-1.5">
           <a
             href={footerHref}
-            className="font-mono text-[11px] text-ink no-underline hover:text-mute"
+            className="text-[11px] font-semibold text-accent no-underline hover:text-accent-hover"
           >
             {footerLabel}
           </a>

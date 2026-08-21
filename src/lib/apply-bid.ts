@@ -32,6 +32,7 @@ export type ApplyPaymentInput = {
 export type ApplyPaymentResult =
   | { outcome: "idempotent" }
   | { outcome: "confirmed"; listingId: string }
+  | { outcome: "reverted"; listingId: string }
   | { outcome: "refund"; reason: "below_entry" | "not_an_overtake" | "unknown_bid" };
 
 export function emptyBoard(): BoardSnapshot {

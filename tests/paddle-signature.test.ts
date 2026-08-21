@@ -1,17 +1,17 @@
 import { describe, expect, it } from "vitest";
 import {
-  signStripePayload,
-  verifyStripeSignature,
-} from "../src/lib/stripe-signature";
+  signPaddlePayload,
+  verifyPaddleSignature,
+} from "../src/lib/paddle-signature";
 
-describe("stripe signatures", () => {
+describe("paddle signatures", () => {
   it("accepts a matching payload and rejects a tampered one", async () => {
-    const secret = "whsec_abc";
-    const payload = `{"id":"evt_1"}`;
+    const secret = "pdl_ntfset_test";
+    const payload = `{"event_id":"evt_1"}`;
     const now = 1_700_000_000;
-    const header = await signStripePayload(secret, payload, now);
+    const header = await signPaddlePayload(secret, payload, now);
     expect(
-      await verifyStripeSignature({
+      await verifyPaddleSignature({
         payload,
         header,
         secret,
@@ -19,8 +19,8 @@ describe("stripe signatures", () => {
       }),
     ).toBe(true);
     expect(
-      await verifyStripeSignature({
-        payload: `{"id":"evt_2"}`,
+      await verifyPaddleSignature({
+        payload: `{"event_id":"evt_2"}`,
         header,
         secret,
         nowMs: now * 1000,

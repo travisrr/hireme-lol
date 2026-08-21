@@ -1,20 +1,22 @@
 @import "tailwindcss";
 
 @theme {
-  --font-display: "Instrument Serif", ui-serif, Georgia, serif;
-  --font-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
-  --color-paper: #f6f3ec;
-  --color-card: #efebe3;
-  --color-panel: #efebe3;
-  --color-line: #d9d3c7;
-  --color-ink: #1e2428;
-  --color-mute: #7a756a;
-  --color-accent: #1e2428;
-  --color-accent-hover: #3a4248;
-  --color-up: #2f6f5e;
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --color-paper: #f7f4ee;
+  --color-card: #ffffff;
+  --color-panel: #ffffff;
+  --color-line: #e4dfd6;
+  --color-ink: #1d2226;
+  --color-mute: #6b6560;
+  --color-accent: #0a66c2;
+  --color-accent-hover: #004182;
+  --color-up: #0a66c2;
   --color-down: #b42318;
-  --color-founding: #7a756a;
+  --color-founding: #6b6560;
+  --color-wash: #ebf3fa;
+  --radius-card: 12px;
 }
 
 html,
@@ -31,8 +33,8 @@ body {
 }
 
 ::selection {
-  background: var(--color-ink);
-  color: var(--color-paper);
+  background: var(--color-accent);
+  color: #ffffff;
 }
 
 .tabular {
@@ -40,13 +42,13 @@ body {
 }
 
 .btn-accent {
-  border-radius: 0;
-  background: var(--color-ink);
-  color: var(--color-paper);
-  font-family: var(--font-mono);
-  font-weight: 600;
-  padding: 0.35rem 0.7rem;
-  font-size: 0.6875rem;
+  border-radius: 0.75rem;
+  background: var(--color-accent);
+  color: #ffffff;
+  font-family: var(--font-sans);
+  font-weight: 700;
+  padding: 0.55rem 0.95rem;
+  font-size: 0.75rem;
   line-height: 1.2;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -54,12 +56,16 @@ body {
 
 .btn-accent:hover {
   background: var(--color-accent-hover);
-  color: var(--color-paper);
+  color: #ffffff;
+}
+
+.rank-wash {
+  background: #ebf3fa;
 }
 
 @keyframes bid-flash {
   0% {
-    background: color-mix(in srgb, var(--color-ink) 8%, var(--color-panel));
+    background: color-mix(in srgb, var(--color-accent) 14%, var(--color-card));
   }
   100% {
     background: transparent;
@@ -68,8 +74,4 @@ body {
 
 .bid-flash {
   animation: bid-flash 1.8s ease-out;
-}
-
-.rank-wash {
-  background: color-mix(in srgb, #1e2428 6%, #efebe3);
 }

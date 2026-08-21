@@ -31,7 +31,7 @@ function seeded(): BoardSnapshot {
 }
 
 describe("applyConfirmedPayment", () => {
-  it("is idempotent on the same Stripe event", () => {
+  it("is idempotent on the same payment event", () => {
     const start = seeded();
     const input = {
       eventId: "evt_1",

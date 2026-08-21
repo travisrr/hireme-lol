@@ -1,10 +1,10 @@
 import { applyConfirmedPayment, type BoardSnapshot } from "../lib/apply-bid";
 import { listingsThatFell } from "../lib/outbid";
-import { movementFor, rankListings } from "../lib/ranking";
+import { assertNever, movementFor, rankListings } from "../lib/ranking";
 import { DEFAULT_ECONOMICS, type BidEconomics } from "../lib/types";
 import type {
   ActivityRow,
-  ApplyStripeInput,
+  ApplyPaymentInput,
   BidRow,
   CreatePendingBidInput,
   ListingRow,
@@ -340,9 +340,17 @@ export class MemoryStore implements Store {
     this.bidsByCheckout.set(checkoutSessionId, bidId);
   }
 
-  async applyStripePayment(input: ApplyStripeInput) {
+  async applyPayment(input: ApplyPaymentInput) {
     if (this.processedEvents.has(input.eventId)) {
       return { outcome: "idempotent" as const };
+    }
+    switch (input.action) {
+      case "refund":
+        return this.revertPayment(input);
+      case "complete":
+        break;
+      default:
+        return assertNever(input.action);
     }
     const bid = this.resolveBid(input);
     if (!bid) {
@@ -509,7 +517,46 @@ export class MemoryStore implements Store {
     };
   }
 
-  private resolveBid(input: ApplyStripeInput): BidRow | undefined {
+  private revertPayment(input: ApplyPaymentInput) {
+    const bid = this.resolveBid(input);
+    this.processedEvents.add(input.eventId);
+    if (!bid) {
+      return { outcome: "refund" as const, reason: "unknown_bid" as const };
+    }
+    bid.status = "refunded";
+    this.bids.set(bid.id, bid);
+    const listing = this.listings.get(bid.listingId);
+    if (listing && listing.currentBidId === bid.id) {
+      const previous = [...this.bids.values()]
+        .filter(
+          (row) =>
+            row.listingId === bid.listingId &&
+            row.status === "confirmed" &&
+            row.id !== bid.id,
+        )
+        .sort((a, b) => b.amountCents - a.amountCents)[0];
+      if (previous) {
+        listing.currentBidCents = previous.amountCents;
+        listing.currentBidId = previous.id;
+      } else {
+        listing.currentBidCents = 0;
+        listing.currentBidId = null;
+      }
+      this.listings.set(listing.id, listing);
+    }
+    this.events.push({
+      id: this.id("evt"),
+      type: "refunded",
+      actorProfileId: bid.profileId,
+      targetProfileId: bid.profileId,
+      amountCents: bid.amountCents,
+      rankAfter: null,
+      createdAt: input.paidAt,
+    });
+    return { outcome: "reverted" as const, listingId: bid.listingId };
+  }
+
+  private resolveBid(input: ApplyPaymentInput): BidRow | undefined {
     if (input.bidId) return this.bids.get(input.bidId);
     if (input.checkoutSessionId) {
       const id = this.bidsByCheckout.get(input.checkoutSessionId);

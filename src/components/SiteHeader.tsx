@@ -16,16 +16,13 @@ export function SiteHeader({
 }: SiteHeaderProps) {
   return (
     <header className="sticky top-0 z-40 border-b border-line bg-paper">
-      <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-1.5">
+      <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-2">
         <Link
           to="/"
           aria-label={SITE.name}
-          className="flex shrink-0 items-baseline no-underline hover:text-ink"
+          className="shrink-0 text-[17px] font-bold tracking-tight text-accent no-underline hover:text-accent-hover"
         >
-          <span className="font-display text-lg tracking-tight text-ink">
-            workwithme
-          </span>
-          <span className="font-mono text-[11px] text-ink">.lol</span>
+          {SITE.wordmark}
         </Link>
         <div className="flex min-w-0 flex-1 items-center gap-2">
           {showSearch ? (
@@ -34,8 +31,8 @@ export function SiteHeader({
               <input
                 value={query}
                 onChange={(event) => onQueryChange(event.target.value)}
-                placeholder="Search people, skills, or keywords."
-                className="w-full border border-line bg-paper px-2.5 py-1.5 font-mono text-xs text-ink outline-none placeholder:text-mute focus:border-ink"
+                placeholder="Search people, skills, or keywords"
+                className="w-full rounded-xl border border-line bg-card px-3 py-2 text-sm text-ink outline-none placeholder:text-mute focus:border-accent"
               />
             </label>
           ) : (

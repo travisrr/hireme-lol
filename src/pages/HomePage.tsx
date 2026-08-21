@@ -115,11 +115,11 @@ export function HomePage() {
             />
           </div>
         </section>
-        <section id="board" className="mt-3 border border-line bg-paper">
+        <section id="board" className="mt-3 overflow-hidden rounded-[12px] border border-line bg-card">
           {error ? (
-            <p className="p-3 font-mono text-sm text-down">{error}</p>
+            <p className="p-3 text-sm text-down">{error}</p>
           ) : rows.length === 0 ? (
-            <p className="px-3 py-4 font-mono text-xs text-mute">
+            <p className="px-3 py-4 text-sm text-mute">
               The board is empty. First confirmed bid is #1. Nobody is invented
               to keep you company.
             </p>
@@ -135,9 +135,9 @@ export function HomePage() {
                 />
               ))}
               {rest.length > 0 ? (
-                <div className="flex items-center gap-3 bg-paper px-3 py-1">
+                <div className="flex items-center gap-3 bg-paper px-3 py-1.5">
                   <span className="h-px flex-1 bg-line" />
-                  <p className="font-mono text-[10px] tracking-[0.16em] text-mute uppercase">
+                  <p className="text-[10px] font-bold tracking-[0.16em] text-mute uppercase">
                     Top 10
                   </p>
                   <span className="h-px flex-1 bg-line" />

@@ -20,7 +20,7 @@ Loop: **Join → Bid → Rank → Share → Get Outbid → Bid Again.**
 CTA: **GET ON THE BOARD**  
 Microcopy: Higher bid = higher rank. That's basically it.
 
-Launch economics live in config: **$2 to enter**, **+$2 to overtake**. Stripe one-time bids. Webhook is authoritative. Outbid drops you down the board; it does not delete you.
+Launch economics live in config: **$2 to enter**, **+$2 to overtake**. Paddle one-time bids. Webhook is authoritative. Outbid drops you down the board; it does not delete you.
 
 Read [PRODUCT.md](./PRODUCT.md) and [ARCHITECTURE.md](./ARCHITECTURE.md).
 
@@ -52,7 +52,7 @@ Local loop:
 
 1. GET ON THE BOARD → email a magic link → open the preview URL
 2. Create your profile (you type name/photo/headline/links — we do not scrape LinkedIn)
-3. Bid. Without Stripe keys, local mode confirms the webhook on localhost only
+3. Bid. Without Paddle keys, local mode confirms the webhook on localhost only
 4. You appear on the live board. Nobody is invented.
 
 ```bash
@@ -62,7 +62,8 @@ npm run lint
 npm run build
 ```
 
-Copy `.env.example` to `.env` for Stripe/OAuth/Resend. **Never commit `.env` or `.dev.vars`.**
+Copy `.env.example` to `.env` for Paddle/OAuth/Resend. **Never commit `.env` or `.dev.vars`.**
+Paddle secret/setup is held until Travis is ready — placeholders only.
 
 ---
 
@@ -71,7 +72,7 @@ Copy `.env.example` to `.env` for Stripe/OAuth/Resend. **Never commit `.env` or 
 See [`.env.example`](./.env.example).
 
 - `PUBLIC_SITE_ORIGIN=https://workwithme.lol`
-- Stripe success/cancel and webhook on **workwithme.lol**
+- Paddle success/cancel and webhook on **workwithme.lol**
 - CORS: `https://workwithme.lol`, `https://www.workwithme.lol`, localhost
 - `ADMIN_EMAILS` — comma-separated
 - Optional: `GITHUB_CLIENT_ID` / `GOOGLE_CLIENT_ID` for OAuth
@@ -98,8 +99,7 @@ npx wrangler d1 create workwithme
 npx wrangler r2 bucket create workwithme-media
 npm run db:migrate:local
 npm run db:migrate:remote
-npx wrangler secret put STRIPE_SECRET_KEY
-npx wrangler secret put STRIPE_WEBHOOK_SECRET
+# Paddle secrets are held until Travis is ready. Do not invent or put them.
 npx wrangler secret put ADMIN_EMAILS
 npx wrangler secret put RESEND_API_KEY
 npx wrangler secret put TURNSTILE_SECRET_KEY
@@ -122,21 +122,19 @@ The Worker **is** the origin. Production D1 is the board of record. Production s
 
 ---
 
-## Stripe
+## Paddle
 
-One-time Checkout, not subscriptions. Webhook commits rank.
+One-time custom-amount transactions, not subscriptions. Webhook commits rank.
 
-Local (with Stripe CLI + test keys):
+**Secret/setup is held until Travis is ready.** Do not invent API keys, client tokens, price IDs, or webhook secrets. Do not `wrangler secret put` Paddle values from this repo.
 
-```bash
-stripe listen --forward-to localhost:5173/api/stripe/webhook
-```
+Local (no keys): creating a bid inserts `pending` only. The localhost webhook confirm path applies rank.
 
-Production webhook: `https://workwithme.lol/api/stripe/webhook`
+Production webhook (when Travis sets the destination): `https://workwithme.lol/api/paddle/webhook`
 
-Idempotency: `stripe_events.id` primary key. Concurrent applies: apply engine + D1 CAS on `listings.current_bid_cents`. Refund if the raise loses the race.
+Idempotency: payment event id primary key. Concurrent applies: apply engine + D1 CAS on `listings.current_bid_cents`. Refund/adjustment events revert. If apply loses the race, request a Paddle refund adjustment.
 
-Do not create a paid Stripe account in someone else’s name from this repo.
+Do not create a paid Paddle account in someone else’s name from this repo.
 
 ---
 

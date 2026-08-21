@@ -103,9 +103,12 @@ export type CreatePendingBidInput = {
   checkoutSessionId: string | null;
 };
 
-export type ApplyStripeInput = {
+export type ApplyPaymentAction = "complete" | "refund";
+
+export type ApplyPaymentInput = {
   eventId: string;
   eventType: string;
+  action: ApplyPaymentAction;
   bidId?: string;
   checkoutSessionId?: string;
   paymentIntentId?: string | null;
@@ -147,7 +150,7 @@ export interface Store {
   listFoundingProfiles(): Promise<ProfileRow[]>;
   createPendingBid(input: CreatePendingBidInput, now: number): Promise<BidRow>;
   attachCheckoutSession(bidId: string, checkoutSessionId: string): Promise<void>;
-  applyStripePayment(input: ApplyStripeInput): Promise<ApplyPaymentResult>;
+  applyPayment(input: ApplyPaymentInput): Promise<ApplyPaymentResult>;
   hideListing(listingId: string, hidden: boolean, now: number): Promise<void>;
   setFounding(profileId: string, value: boolean): Promise<void>;
   unsubscribe(email: string, token: string, now: number): Promise<void>;

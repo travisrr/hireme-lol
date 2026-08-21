@@ -8,6 +8,7 @@ import {
   saveProfile,
 } from "../api/client";
 import { formatUsdFromCents } from "../lib/money";
+import { openPaddleCheckout } from "../lib/paddle-js";
 import { SITE } from "../lib/site";
 import { DEFAULT_ECONOMICS, type BidEconomics } from "../lib/types";
 import type { SessionRow } from "../server/store";
@@ -18,10 +19,19 @@ type JoinDialogProps = {
   onChanged: () => void;
 };
 
+type PaddleClientConfig = {
+  clientToken: string | null;
+  environment: "sandbox" | "production";
+};
+
 export function JoinDialog({ open, onClose, onChanged }: JoinDialogProps) {
   const [session, setSession] = useState<SessionRow | null>(null);
   const [oauth, setOauth] = useState({ github: false, google: false });
   const [economics, setEconomics] = useState<BidEconomics>(DEFAULT_ECONOMICS);
+  const [paddle, setPaddle] = useState<PaddleClientConfig>({
+    clientToken: null,
+    environment: "sandbox",
+  });
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -41,6 +51,10 @@ export function JoinDialog({ open, onClose, onChanged }: JoinDialogProps) {
         setEconomics({
           minEntryCents: config.minEntryCents,
           minIncrementCents: config.minIncrementCents,
+        });
+        setPaddle({
+          clientToken: config.paddleClientToken,
+          environment: config.paddleEnvironment,
         });
       })
       .catch(() => {
@@ -104,6 +118,15 @@ export function JoinDialog({ open, onClose, onChanged }: JoinDialogProps) {
     setError(null);
     try {
       const result = await createBid(amountCents);
+      if (paddle.clientToken && result.transactionId) {
+        await openPaddleCheckout({
+          clientToken: paddle.clientToken,
+          transactionId: result.transactionId,
+          environment: paddle.environment,
+        });
+        setDone("Checkout opened. Rank updates after Paddle confirms payment.");
+        return;
+      }
       if (result.checkoutUrl) {
         window.location.href = result.checkoutUrl;
         return;
@@ -114,7 +137,7 @@ export function JoinDialog({ open, onClose, onChanged }: JoinDialogProps) {
         onChanged();
         return;
       }
-      setDone("Bid created. Waiting on Stripe.");
+      setDone("Bid created. Waiting on Paddle.");
     } catch (err) {
       setError(err instanceof Error ? err.message : "bid_failed");
     } finally {
@@ -130,13 +153,13 @@ export function JoinDialog({ open, onClose, onChanged }: JoinDialogProps) {
         className="absolute inset-0 cursor-default"
         onClick={onClose}
       />
-      <div className="relative w-full max-w-lg border border-line bg-panel p-5 shadow-2xl">
-        <p className="text-xs font-semibold text-mute uppercase">
+      <div className="relative w-full max-w-lg rounded-[12px] border border-line bg-card p-5 shadow-2xl">
+        <p className="text-xs font-semibold text-accent uppercase">
           Live board · one-time bid · {SITE.name}
         </p>
         <h2 className="mt-2 text-2xl font-bold">{SITE.cta}</h2>
         <p className="mt-2 text-sm text-mute">
-          Entry {entry}. {increment} to overtake. Stripe is authoritative. No
+          Entry {entry}. {increment} to overtake. Paddle is authoritative. No
           fake listings.
         </p>
         {error ? (
@@ -246,7 +269,7 @@ function Field({
       <input
         name={name}
         placeholder={placeholder}
-        className="border border-line bg-paper px-3 py-2 text-sm text-ink outline-none placeholder:text-mute focus:border-ink"
+        className="rounded-xl border border-line bg-paper px-3 py-2 text-sm text-ink outline-none placeholder:text-mute focus:border-accent"
       />
     </label>
   );

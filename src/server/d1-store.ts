@@ -5,7 +5,7 @@ import { assertNever, movementFor, rankListings } from "../lib/ranking";
 import { DEFAULT_ECONOMICS, type BidEconomics } from "../lib/types";
 import type {
   ActivityRow,
-  ApplyStripeInput,
+  ApplyPaymentInput,
   BidRow,
   CreatePendingBidInput,
   ListingRow,
@@ -67,6 +67,7 @@ type BidSql = {
   status: BidRow["status"];
   stripe_checkout_session_id: string | null;
   stripe_payment_intent_id: string | null;
+  confirmed_at: number | null;
 };
 
 type UserSql = { id: string; email: string; created_at: number };
@@ -503,7 +504,7 @@ export class D1Store implements Store {
       .run();
   }
 
-  async applyStripePayment(input: ApplyStripeInput) {
+  async applyPayment(input: ApplyPaymentInput) {
     const inserted = await this.db
       .prepare(
         `INSERT OR IGNORE INTO stripe_events (id, type, bid_id, processed_at)
@@ -513,6 +514,9 @@ export class D1Store implements Store {
       .run();
     if ((inserted.meta?.changes ?? 0) === 0) {
       return { outcome: "idempotent" as const };
+    }
+    if (input.action === "refund") {
+      return this.revertConfirmedBid(input);
     }
     const bidSql = await this.findBid(input);
     if (!bidSql) {
@@ -775,7 +779,70 @@ export class D1Store implements Store {
     };
   }
 
-  private async findBid(input: ApplyStripeInput): Promise<BidSql | null> {
+  private async revertConfirmedBid(input: ApplyPaymentInput) {
+    const bidSql = await this.findBid(input);
+    if (!bidSql) {
+      return { outcome: "refund" as const, reason: "unknown_bid" as const };
+    }
+    const bid = mapBid(bidSql);
+    await this.db
+      .prepare(
+        `UPDATE bids SET status = 'refunded', refunded_at = ?, rejected_reason = 'provider_refund' WHERE id = ?`,
+      )
+      .bind(input.paidAt, bid.id)
+      .run();
+    const listingSql = await this.db
+      .prepare(`SELECT * FROM listings WHERE id = ?`)
+      .bind(bid.listingId)
+      .first<ListingSql>();
+    if (listingSql?.current_bid_id === bid.id) {
+      const previous = await this.db
+        .prepare(
+          `SELECT * FROM bids
+           WHERE listing_id = ? AND status = 'confirmed' AND id != ?
+           ORDER BY confirmed_at DESC LIMIT 1`,
+        )
+        .bind(bid.listingId, bid.id)
+        .first<BidSql>();
+      if (previous) {
+        await this.db
+          .prepare(
+            `UPDATE listings SET current_bid_cents = ?, current_bid_at = ?, current_bid_id = ? WHERE id = ?`,
+          )
+          .bind(
+            previous.amount_cents,
+            previous.confirmed_at ?? input.paidAt,
+            previous.id,
+            bid.listingId,
+          )
+          .run();
+      } else {
+        await this.db
+          .prepare(
+            `UPDATE listings SET current_bid_cents = 0, current_bid_id = NULL WHERE id = ?`,
+          )
+          .bind(bid.listingId)
+          .run();
+      }
+    }
+    await this.db
+      .prepare(
+        `INSERT INTO events (id, type, board_id, actor_profile_id, target_profile_id, bid_id, amount_cents, rank_after, created_at)
+         VALUES (?, 'refunded', 'global', ?, ?, ?, ?, NULL, ?)`,
+      )
+      .bind(
+        newId("evt"),
+        bid.profileId,
+        bid.profileId,
+        bid.id,
+        bid.amountCents,
+        input.paidAt,
+      )
+      .run();
+    return { outcome: "reverted" as const, listingId: bid.listingId };
+  }
+
+  private async findBid(input: ApplyPaymentInput): Promise<BidSql | null> {
     if (input.bidId) {
       return this.db.prepare(`SELECT * FROM bids WHERE id = ?`).bind(input.bidId).first<BidSql>();
     }

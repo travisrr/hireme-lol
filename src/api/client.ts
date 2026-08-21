@@ -38,7 +38,9 @@ export function fetchMe() {
 export function fetchConfig() {
   return request<
     BidEconomics & {
-      stripeEnabled: boolean;
+      paddleEnabled: boolean;
+      paddleClientToken: string | null;
+      paddleEnvironment: "sandbox" | "production";
       oauth: { github: boolean; google: boolean };
     }
   >("/api/config");
@@ -75,6 +77,7 @@ export function createBid(amountCents: number) {
   return request<{
     bidId: string;
     checkoutUrl: string | null;
+    transactionId: string | null;
     devConfirm: boolean;
   }>("/api/bids", {
     method: "POST",
@@ -83,17 +86,15 @@ export function createBid(amountCents: number) {
 }
 
 export function confirmDevBid(bidId: string, amountCents: number) {
-  return request<{ ok: true }>("/api/stripe/webhook", {
+  return request<{ ok: true }>("/api/paddle/webhook", {
     method: "POST",
     body: JSON.stringify({
-      id: `evt_local_${bidId}`,
-      type: "checkout.session.completed",
+      event_id: `evt_local_${bidId}`,
+      event_type: "transaction.completed",
       data: {
-        object: {
-          id: `cs_local_${bidId}`,
-          amount_total: amountCents,
-          metadata: { bid_id: bidId },
-        },
+        id: `txn_local_${bidId}`,
+        custom_data: { bid_id: bidId },
+        details: { totals: { grand_total: String(amountCents) } },
       },
     }),
   });

@@ -1,3 +1,4 @@
+import { parsePaddleEnvironment } from "../src/lib/paddle";
 import {
   injectWebAnalyticsBeacon,
   resolveBeaconToken,
@@ -13,8 +14,10 @@ export type Bindings = {
   PUBLIC_SITE_NAME: string;
   BOARD_MODE: string;
   ADMIN_EMAILS?: string;
-  STRIPE_SECRET_KEY?: string;
-  STRIPE_WEBHOOK_SECRET?: string;
+  PADDLE_API_KEY?: string;
+  PADDLE_WEBHOOK_SECRET?: string;
+  PADDLE_CLIENT_TOKEN?: string;
+  PADDLE_ENVIRONMENT?: string;
   GITHUB_CLIENT_ID?: string;
   GITHUB_CLIENT_SECRET?: string;
   GOOGLE_CLIENT_ID?: string;
@@ -34,8 +37,10 @@ function configFromEnv(env: Bindings): AppConfig {
       .split(",")
       .map((item) => item.trim().toLowerCase())
       .filter(Boolean),
-    stripeSecretKey: env.STRIPE_SECRET_KEY,
-    stripeWebhookSecret: env.STRIPE_WEBHOOK_SECRET,
+    paddleApiKey: env.PADDLE_API_KEY,
+    paddleWebhookSecret: env.PADDLE_WEBHOOK_SECRET,
+    paddleClientToken: env.PADDLE_CLIENT_TOKEN,
+    paddleEnvironment: parsePaddleEnvironment(env.PADDLE_ENVIRONMENT),
     githubClientId: env.GITHUB_CLIENT_ID,
     githubClientSecret: env.GITHUB_CLIENT_SECRET,
     googleClientId: env.GOOGLE_CLIENT_ID,

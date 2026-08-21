@@ -1,5 +1,6 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import type { Plugin } from "vite";
+import { parsePaddleEnvironment } from "./src/lib/paddle";
 import { createApp, type AppConfig } from "./src/server/app";
 import { MemoryStore } from "./src/server/memory-store";
 
@@ -13,8 +14,10 @@ function config(): AppConfig {
       .split(",")
       .map((item) => item.trim().toLowerCase())
       .filter(Boolean),
-    stripeSecretKey: process.env.STRIPE_SECRET_KEY,
-    stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
+    paddleApiKey: process.env.PADDLE_API_KEY,
+    paddleWebhookSecret: process.env.PADDLE_WEBHOOK_SECRET,
+    paddleClientToken: process.env.PADDLE_CLIENT_TOKEN,
+    paddleEnvironment: parsePaddleEnvironment(process.env.PADDLE_ENVIRONMENT),
     githubClientId: process.env.GITHUB_CLIENT_ID,
     githubClientSecret: process.env.GITHUB_CLIENT_SECRET,
     googleClientId: process.env.GOOGLE_CLIENT_ID,
