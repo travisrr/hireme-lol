@@ -3,6 +3,8 @@ export const PAGE_COLUMN = "max-w-5xl" as const;
 
 /** Header/hero density lock. Rhythm is 8 / 12 / 16 only. */
 export const HEADER_H = 48;
+export const HEADER_CTA_H = 36;
+export const HEADER_LEGAL_GAP = 16;
 export const SEARCH_H = 40;
 export const SEARCH_GAP = 8;
 export const HERO_GAP_UNDER_SEARCH = 12;
