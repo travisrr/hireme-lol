@@ -14,9 +14,9 @@ describe("board rows", () => {
     expect(OUTBID_MIN_PX).toBe(32);
   });
 
-  it("locks one compact claim why paragraph", () => {
+  it("locks one tight claim why-line", () => {
     expect(SITE.claimWhy).toBe(
-      "The professional leaderboard. Bid for your name, get seen, get outbid, do it again. People looking for someone to work with start at #1. Your LinkedIn and site take the clicks. Higher bid = higher rank. That’s it.",
+      "Higher bid = higher rank. Get seen. Get outbid. That’s it.",
     );
   });
 

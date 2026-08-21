@@ -82,7 +82,7 @@ describe("hero pulse card", () => {
     expect(SEARCH_GAP).toBe(8);
     expect(HERO_GAP_UNDER_SEARCH).toBe(12);
     expect(HERO_GRID_GAP).toBe(16);
-    expect(HERO_CLAIM_GAP).toBe(8);
+    expect(HERO_CLAIM_GAP).toBe(12);
     expect(HERO_CTA_DESKTOP).toBe(40);
     expect(HERO_CTA_MOBILE).toBe(44);
     expect(PULSE_ROW_H).toBe(40);
