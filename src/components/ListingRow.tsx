@@ -4,6 +4,7 @@ import { claimPriceForRank } from "../lib/ranking";
 import { isRecentBid } from "../lib/time";
 import type { BidEconomics, RankedPublicListing } from "../lib/types";
 import { MovementMark } from "./MovementMark";
+import { PhotoTile } from "./PhotoTile";
 
 export const TOP_TEN_CUTOFF = 10;
 
@@ -37,11 +38,7 @@ export function ListingRow({
         </span>
         <MovementMark movement={listing.movement} />
       </div>
-      <img
-        src={listing.photoUrl}
-        alt=""
-        className="size-9 rounded-[12px] object-cover"
-      />
+      <PhotoTile src={listing.photoUrl} />
       <Link
         to={`/${listing.handle}`}
         className="truncate text-sm font-semibold text-ink no-underline hover:text-accent"

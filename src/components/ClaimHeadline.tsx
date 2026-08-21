@@ -19,17 +19,14 @@ export function ClaimHeadline({
   const increment = formatUsdFromCents(economics.minIncrementCents);
 
   return (
-    <section className="pt-6 pb-1">
-      <p className="text-base font-medium text-ink sm:text-lg">{SITE.tagline}</p>
-      <h1 className="mt-2 text-3xl leading-tight font-extrabold text-ink sm:text-5xl">
-        Claim #1 for{" "}
+    <section className="min-w-0">
+      <p className="text-base font-medium text-ink">{SITE.tagline}</p>
+      <h1 className="mt-2 text-3xl leading-tight font-extrabold text-ink sm:text-4xl">
+        Claim <span className="text-accent">#1</span> for{" "}
         <span className="text-accent tabular">{formatUsdFromCents(claim)}</span>
       </h1>
-      <div className="mt-4 flex flex-wrap items-center gap-2">
-        <button type="button" onClick={onAction} className="btn-accent">
-          {SITE.cta}
-        </button>
-        <button type="button" onClick={onAction} className="btn-accent">
+      <div className="mt-4">
+        <button type="button" onClick={onAction} className="btn-accent px-5 py-2.5">
           Outbid
         </button>
       </div>

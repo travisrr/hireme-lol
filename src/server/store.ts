@@ -18,6 +18,8 @@ export type ProfileRow = {
   photoUrl: string | null;
   linkedinUrl: string | null;
   websiteUrl: string | null;
+  linkedinClicks: number;
+  websiteClicks: number;
   isFoundingMember: boolean;
   createdAt: number;
 };
@@ -54,6 +56,8 @@ export type PublicBoardRow = {
   photoUrl: string | null;
   linkedinUrl: string | null;
   websiteUrl: string | null;
+  linkedinClicks: number;
+  websiteClicks: number;
   isFoundingMember: boolean;
   currentBidCents: number;
   currentBidAt: number;
@@ -134,6 +138,13 @@ export interface Store {
   deleteSession(id: string): Promise<void>;
   createProfile(userId: string, input: ProfileInput, now: number): Promise<ProfileRow>;
   updateProfile(userId: string, input: ProfileInput, now: number): Promise<ProfileRow>;
+  getProfileByLinkedinUrl(url: string): Promise<ProfileRow | null>;
+  setProfilePhoto(profileId: string, photoKey: string | null): Promise<void>;
+  incrementClick(
+    listingId: string,
+    target: "linkedin" | "site",
+  ): Promise<{ linkedinClicks: number; websiteClicks: number } | null>;
+  listFoundingProfiles(): Promise<ProfileRow[]>;
   createPendingBid(input: CreatePendingBidInput, now: number): Promise<BidRow>;
   attachCheckoutSession(bidId: string, checkoutSessionId: string): Promise<void>;
   applyStripePayment(input: ApplyStripeInput): Promise<ApplyPaymentResult>;

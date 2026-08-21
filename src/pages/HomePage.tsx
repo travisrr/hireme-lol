@@ -57,13 +57,21 @@ export function HomePage() {
     .map((row) => ({
       id: row.id,
       href: `/${row.handle}`,
-      line: `${row.displayName} at #${row.rank} · ${formatUsdFromCents(row.currentBidCents)}`,
+      line: `${row.displayName}`,
+      rank: row.rank,
+      amount: `${formatUsdFromCents(row.currentBidCents)}`,
+      photoUrl: row.photoUrl,
       at: row.currentBidAt,
     }));
 
   const receipts = activity.map((item) => ({
     id: item.id,
     href: item.handle ? `/${item.handle}` : undefined,
+    photoUrl: item.handle
+      ? rows.find((row) => row.handle === item.handle)?.photoUrl ?? null
+      : null,
+    amount:
+      item.amountCents != null ? formatUsdFromCents(item.amountCents) : undefined,
     line: receiptLine({
       id: item.id,
       type: item.type,
@@ -83,26 +91,30 @@ export function HomePage() {
         onQueryChange={setQuery}
         onCta={openJoin}
       />
-      <main className="mx-auto max-w-5xl px-4 pb-10">
-        <ClaimHeadline
-          board={rows}
-          economics={economics}
-          onAction={openJoin}
-        />
-        <div className="mt-5 grid gap-3 md:grid-cols-2">
-          <ReceiptCard
-            title="Trending"
-            items={trending}
-            empty="No movement yet."
-            footerHref="#board"
-            footerLabel="View full board →"
+      <main className="mx-auto max-w-6xl px-4 pb-10">
+        <section className="grid items-start gap-4 pt-6 lg:grid-cols-[minmax(15rem,0.9fr)_minmax(0,1.4fr)]">
+          <ClaimHeadline
+            board={rows}
+            economics={economics}
+            onAction={openJoin}
           />
-          <ReceiptCard
-            title="Latest activity"
-            items={receipts}
-            empty="No receipts yet."
-          />
-        </div>
+          <div className="grid min-w-0 gap-3 sm:grid-cols-2">
+            <ReceiptCard
+              title="Trending"
+              items={trending}
+              empty="No movement yet."
+              footerHref="#board"
+              footerLabel="View full board →"
+            />
+            <ReceiptCard
+              title="Latest activity"
+              items={receipts}
+              empty="No receipts yet."
+              footerHref="#board"
+              footerLabel="View all activity →"
+            />
+          </div>
+        </section>
         <section id="board" className="mt-5 overflow-hidden rounded-[12px] border border-line bg-card">
           {error ? (
             <p className="p-4 text-sm text-down">{error}</p>

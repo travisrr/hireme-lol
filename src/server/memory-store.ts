@@ -213,6 +213,8 @@ export class MemoryStore implements Store {
       photoUrl: input.photoUrl,
       linkedinUrl: input.linkedinUrl,
       websiteUrl: input.websiteUrl,
+      linkedinClicks: 0,
+      websiteClicks: 0,
       isFoundingMember: false,
       createdAt: now,
     };
@@ -243,6 +245,50 @@ export class MemoryStore implements Store {
     this.profiles.set(id, next);
     this.profilesByHandle.set(next.handle, id);
     return next;
+  }
+
+  async getProfileByLinkedinUrl(url: string): Promise<ProfileRow | null> {
+    for (const profile of this.profiles.values()) {
+      if (profile.linkedinUrl === url) return profile;
+    }
+    return null;
+  }
+
+  async setProfilePhoto(profileId: string, photoKey: string | null): Promise<void> {
+    const profile = this.profiles.get(profileId);
+    if (!profile) return;
+    this.profiles.set(profileId, { ...profile, photoUrl: photoKey });
+  }
+
+  async incrementClick(
+    listingId: string,
+    target: "linkedin" | "site",
+  ): Promise<{ linkedinClicks: number; websiteClicks: number } | null> {
+    const listing = this.listings.get(listingId);
+    if (!listing) return null;
+    const profile = this.profiles.get(listing.profileId);
+    if (!profile) return null;
+    switch (target) {
+      case "linkedin":
+        profile.linkedinClicks += 1;
+        break;
+      case "site":
+        profile.websiteClicks += 1;
+        break;
+      default: {
+        const _never: never = target;
+        return _never;
+      }
+    }
+    this.profiles.set(profile.id, profile);
+    return {
+      linkedinClicks: profile.linkedinClicks,
+      websiteClicks: profile.websiteClicks,
+    };
+  }
+
+  async listFoundingProfiles(): Promise<ProfileRow[]> {
+    return [...this.profiles.values()].filter((profile) => profile.isFoundingMember);
   }
 
   async createPendingBid(
@@ -516,6 +562,8 @@ export class MemoryStore implements Store {
         photoUrl: profile.photoUrl,
         linkedinUrl: profile.linkedinUrl,
         websiteUrl: profile.websiteUrl,
+        linkedinClicks: profile.linkedinClicks,
+        websiteClicks: profile.websiteClicks,
         isFoundingMember: profile.isFoundingMember,
         currentBidCents: listing.currentBidCents,
         currentBidAt: listing.currentBidAt,

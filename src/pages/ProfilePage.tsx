@@ -3,12 +3,13 @@ import { Link, useParams } from "react-router-dom";
 import { fetchBoard, fetchConfig, fetchProfile } from "../api/client";
 import { JoinDialog } from "../components/JoinDialog";
 import { MovementMark } from "../components/MovementMark";
+import { PhotoTile } from "../components/PhotoTile";
 import { SiteFooter } from "../components/SiteFooter";
 import { SiteHeader } from "../components/SiteHeader";
 import { toPublicListing } from "../lib/board-view";
 import { formatUsdFromCents } from "../lib/money";
+import { publicPhotoSrc } from "../lib/photo";
 import { claimPriceForRank } from "../lib/ranking";
-import { photoFallback } from "../lib/photo";
 import { shareLine } from "../lib/share";
 import { DEFAULT_ECONOMICS, type BidEconomics } from "../lib/types";
 import type { RankedBoardRow } from "../server/store";
@@ -71,10 +72,9 @@ export function ProfilePage() {
               Public profile · /{profile.handle}
             </p>
             <div className="mt-4 flex items-start gap-5">
-              <img
-                src={profile.photoUrl || photoFallback(profile.handle)}
-                alt=""
-                className="size-24 rounded-[12px] object-cover"
+              <PhotoTile
+                src={publicPhotoSrc(profile.photoUrl)}
+                className="size-24"
               />
               <div>
                 {listing ? (

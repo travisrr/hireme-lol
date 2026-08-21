@@ -29,9 +29,11 @@ export type PublicListing = ListingForRank & {
   headline: string;
   company: string | null;
   pitch: string;
-  photoUrl: string;
+  photoUrl: string | null;
   linkedinUrl: string | null;
-  websiteUrl: string;
+  websiteUrl: string | null;
+  linkedinClicks: number;
+  websiteClicks: number;
   isFoundingMember: boolean;
   previousRank: number | null;
   boardId: BoardId;

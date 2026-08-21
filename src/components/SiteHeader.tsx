@@ -16,7 +16,7 @@ export function SiteHeader({
 }: SiteHeaderProps) {
   return (
     <header className="sticky top-0 z-40 border-b border-line bg-paper/95 backdrop-blur-sm">
-      <div className="mx-auto flex max-w-5xl items-center gap-3 px-4 py-2.5">
+      <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-2.5">
         <Link
           to="/"
           aria-label={SITE.name}
