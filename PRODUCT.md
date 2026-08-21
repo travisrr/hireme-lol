@@ -52,7 +52,7 @@ One public name. The wordmark matches the domain people type.
 - **Global only.** One leaderboard. One number. One button.
 - Schema may reserve `boards` / nullable `category_id` / `city_id` for later. **Do not launch categories or cities.** No 15 category boards. No city boards.
 - Founding 100 / founding-member badge is allowed.
-- **No fake users. No fake bids.** The current homepage is a **founding preview** that uses clearly labeled mock data so the interaction can be designed before Stripe is live. Production must start empty.
+- **No fake users. No fake bids.** The homepage reads the live board. Empty is correct until someone pays.
 - Users type their own name, photo, headline, company, pitch, LinkedIn, and website. **Do not scrape LinkedIn.**
 - Stripe **one-time bids**, not subscriptions.
 - Outbid moves you down. It does not remove the listing.

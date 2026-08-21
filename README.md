@@ -20,7 +20,7 @@ Loop: **Join → Bid → Rank → Share → Get Outbid → Bid Again.**
 CTA: **GET ON THE BOARD**  
 Microcopy: Higher bid = higher rank. That's basically it.
 
-Launch economics: **$5 to enter**, **+$1 to overtake**. Stripe one-time bids. Outbid drops you down the board; it does not delete you.
+Launch economics: **$5 to enter**, **+$1 to overtake**. Stripe one-time bids. Webhook is authoritative. Outbid drops you down the board; it does not delete you.
 
 Read [PRODUCT.md](./PRODUCT.md) and [ARCHITECTURE.md](./ARCHITECTURE.md).
 
@@ -30,22 +30,10 @@ Read [PRODUCT.md](./PRODUCT.md) and [ARCHITECTURE.md](./ARCHITECTURE.md).
 
 | Host | Status | Action |
 | --- | --- | --- |
-| **workwithme.lol** | Purchased. Cloudflare NS (`deb.ns` / `odin.ns`). No public A record until the Worker is attached. | **Deploy target. Custom domain.** |
-| **hireme.lol** | Taken / parked. A `54.215.31.113` → `lively-fog-cef0.louddrums.workers.dev?domain=hireme.lol` → merch. | **Not ours. Do not buy. Do not deploy here.** |
+| **workwithme.lol** | Purchased. Cloudflare NS. | **Deploy target. Custom domain.** |
+| **hireme.lol** | Taken / parked. | **Not ours. Do not buy. Do not attach.** |
 
-Do not register domains from this work. `.lol` is dashboard-only on Cloudflare.
-
----
-
-## This PR (founding preview)
-
-- High-fidelity homepage on **clearly labeled mock data**
-- Shared ranking / min-bid / tie-break library + tests
-- D1 schema (`migrations/0001_init.sql`) reserved for later boards, **v1 global only**
-- Hono Worker stub (`/api/health`, `/api/config`)
-- Wrangler aimed at `workwithme.lol`
-
-The mock board is **not live**. Production starts empty. No fake users. No fake bids.
+Do not register domains from this work.
 
 ---
 
@@ -58,7 +46,14 @@ npm install
 npm run dev
 ```
 
-Open [http://localhost:5173](http://localhost:5173).
+Open [http://localhost:5173](http://localhost:5173). Vite serves the SPA and a local `/api` (same Hono app as the Worker) against an in-memory store. The board starts **empty**. Magic-link emails are not sent; the API returns a preview URL.
+
+Local loop:
+
+1. GET ON THE BOARD → email a magic link → open the preview URL
+2. Create your profile (you type name/photo/headline/links — we do not scrape LinkedIn)
+3. Bid. Without Stripe keys, local mode confirms the webhook on localhost only
+4. You appear on the live board. Nobody is invented.
 
 ```bash
 npm test
@@ -67,7 +62,7 @@ npm run lint
 npm run build
 ```
 
-Copy `.env.example` to `.env` if you add secrets later. **Never commit `.env` or `.dev.vars`.**
+Copy `.env.example` to `.env` for Stripe/OAuth/Resend. **Never commit `.env` or `.dev.vars`.**
 
 ---
 
@@ -75,30 +70,41 @@ Copy `.env.example` to `.env` if you add secrets later. **Never commit `.env` or
 
 See [`.env.example`](./.env.example).
 
-Important public values:
-
 - `PUBLIC_SITE_ORIGIN=https://workwithme.lol`
-- Stripe success/cancel URLs on **workwithme.lol**
-- CORS allowlist: `https://workwithme.lol`, `https://www.workwithme.lol`, localhost
+- Stripe success/cancel and webhook on **workwithme.lol**
+- CORS: `https://workwithme.lol`, `https://www.workwithme.lol`, localhost
+- `ADMIN_EMAILS` — comma-separated
+- Optional: `GITHUB_CLIENT_ID` / `GOOGLE_CLIENT_ID` for OAuth
+- Optional: `RESEND_API_KEY` for magic-link + outbid mail
+- Optional: Turnstile keys
 
 `hireme.lol` must not appear as an origin, webhook URL, or custom domain.
 
 ---
 
-## Cloudflare
+## Cloudflare deploy (workwithme.lol)
 
 Deploy target: **https://workwithme.lol** only. Do not buy or attach hireme.lol.
 
-Stack: Workers + Assets + D1 + R2 + Turnstile + Wrangler. No AWS / Firebase / Supabase / Vercel.
-
-After Cloudflare login (do this on Travis’s machine, not from a bot buying infra):
+On Travis’s machine (needs Cloudflare login; this repo does not purchase anything):
 
 ```bash
 npx wrangler login
 npx wrangler d1 create workwithme
 # paste database_id into wrangler.jsonc
-npx wrangler d1 migrations apply workwithme --local
 npx wrangler r2 bucket create workwithme-media
+npm run db:migrate:local
+npm run db:migrate:remote
+npx wrangler secret put STRIPE_SECRET_KEY
+npx wrangler secret put STRIPE_WEBHOOK_SECRET
+npx wrangler secret put ADMIN_EMAILS
+npx wrangler secret put RESEND_API_KEY
+npx wrangler secret put TURNSTILE_SECRET_KEY
+# optional OAuth:
+# npx wrangler secret put GITHUB_CLIENT_ID
+# npx wrangler secret put GITHUB_CLIENT_SECRET
+# npx wrangler secret put GOOGLE_CLIENT_ID
+# npx wrangler secret put GOOGLE_CLIENT_SECRET
 npm run build
 npx wrangler deploy
 ```
@@ -108,27 +114,25 @@ npx wrangler deploy
 - `workwithme.lol`
 - `www.workwithme.lol`
 
-The zone must be in the same Cloudflare account. The Worker **is** the origin.
-
-Do not attach `hireme.lol`.
+The Worker **is** the origin. Production D1 is the board of record. Production starts empty.
 
 ---
 
 ## Stripe
 
-One-time Checkout, not subscriptions. Webhook is authoritative.
+One-time Checkout, not subscriptions. Webhook commits rank.
 
-Local later:
+Local (with Stripe CLI + test keys):
 
 ```bash
-stripe listen --forward-to localhost:8787/api/stripe/webhook
+stripe listen --forward-to localhost:5173/api/stripe/webhook
 ```
 
-Production webhook URL: `https://workwithme.lol/api/stripe/webhook`
+Production webhook: `https://workwithme.lol/api/stripe/webhook`
 
-Idempotency: `stripe_events.id` primary key. Concurrent applies: D1 `batch` + compare-and-swap on `listings.current_bid_cents`. Tests for ranking, ties, min bid, and webhook replay live in `tests/`.
+Idempotency: `stripe_events.id` primary key. Concurrent applies: apply engine + D1 CAS on `listings.current_bid_cents`. Refund if the raise loses the race.
 
-Do not create a paid Stripe account in someone else’s name from this repo. Test mode keys in `.env` only.
+Do not create a paid Stripe account in someone else’s name from this repo.
 
 ---
 

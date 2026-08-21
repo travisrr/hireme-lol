@@ -176,10 +176,10 @@ Shared ranking code lives in `src/lib` so the preview board and future D1 reads 
 
 ## 8. Phase plan
 
-1. **This PR:** docs, D1 schema, ranking tests, high-fi **founding-preview** homepage on mock data, local Vite.
-2. Auth + real D1 leaderboard + profile pages.
-3. Stripe checkout + webhook + CAS + refunds + concurrency tests.
-4. Events, email, unsubscribe.
-5. Share cards, search, admin, Turnstile, deploy docs on `workwithme.lol`.
+1. Docs, D1 schema, ranking tests, homepage shell.
+2. **This slice:** magic-link (+ optional GitHub/Google), live board API, public `/{handle}`, Stripe checkout + webhook-authoritative apply, outbid events + email, search, `/admin`, Wrangler deploy to `workwithme.lol`.
+3. Share/OG cards, R2 photo upload, Turnstile widgets in UI, production empty-board launch.
+
+Local `npm run dev` runs the same Hono app as the Worker against `MemoryStore`. Production Worker uses `D1Store`. No fake listings in either path.
 
 Do not attach paid infra beyond free Cloudflare / GitHub from this work. Do not register domains.
