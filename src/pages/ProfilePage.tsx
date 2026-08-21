@@ -67,27 +67,27 @@ export function ProfilePage() {
       <main className="mx-auto max-w-3xl px-4 py-12">
         {profile ? (
           <article>
-            <p className="font-mono text-[11px] text-ink uppercase">
+            <p className="text-xs font-semibold text-mute uppercase">
               Public profile · /{profile.handle}
             </p>
             <div className="mt-4 flex items-start gap-5">
               <img
                 src={profile.photoUrl || photoFallback(profile.handle)}
                 alt=""
-                className="size-24 object-cover"
+                className="size-24 rounded-[12px] object-cover"
               />
               <div>
                 {listing ? (
                   <div className="flex items-center gap-3">
-                    <span className="font-mono text-3xl text-ink tabular">
-                      #{listing.rank}
+                    <span className="text-3xl font-extrabold text-accent tabular">
+                      {listing.rank}
                     </span>
                     <MovementMark movement={listing.movement} />
                   </div>
                 ) : (
-                  <p className="font-mono text-xs text-mute">Not on the board yet</p>
+                  <p className="text-sm text-mute">Not on the board yet</p>
                 )}
-                <h1 className="mt-1 font-display text-5xl">
+                <h1 className="mt-1 text-4xl font-extrabold">
                   {profile.displayName}
                 </h1>
                 <p className="mt-2 text-mute">
@@ -99,10 +99,10 @@ export function ProfilePage() {
             <p className="mt-8 text-2xl text-ink">{profile.pitch}</p>
             {listing ? (
               <>
-                <p className="mt-6 font-mono text-3xl text-ink tabular">
+                <p className="mt-6 text-3xl font-extrabold text-accent tabular">
                   {formatUsdFromCents(listing.currentBidCents)}
                 </p>
-                <p className="mt-2 font-mono text-xs text-mute">
+                <p className="mt-2 text-sm text-mute">
                   Current bid. Claim this rank for{" "}
                   {formatUsdFromCents(
                     claimPriceForRank(
@@ -120,7 +120,7 @@ export function ProfilePage() {
                 </p>
                 <button
                   type="button"
-                  className="mt-4 font-mono text-[11px] text-ink uppercase"
+                  className="mt-4 text-sm font-semibold text-accent"
                   onClick={() => {
                     void navigator.clipboard.writeText(shareLine(listing.rank));
                     setCopied(true);
@@ -130,29 +130,25 @@ export function ProfilePage() {
                 </button>
               </>
             ) : null}
-            <div className="mt-6 flex gap-4 font-mono text-sm">
+            <div className="mt-6 flex gap-4 text-sm">
               {profile.linkedinUrl ? (
-                <a href={profile.linkedinUrl} className="text-ink underline">
-                  LinkedIn
-                </a>
+                <a href={profile.linkedinUrl}>LinkedIn</a>
               ) : null}
               {profile.websiteUrl ? (
-                <a href={profile.websiteUrl} className="text-ink underline">
-                  Website
-                </a>
+                <a href={profile.websiteUrl}>Website</a>
               ) : null}
             </div>
             <button
               type="button"
               onClick={() => setJoinOpen(true)}
-              className="mt-8 bg-ink px-4 py-2 font-mono text-xs font-semibold text-paper uppercase"
+              className="btn-accent mt-8"
             >
               Outbid
             </button>
           </article>
         ) : (
           <div>
-            <h1 className="font-display text-4xl">
+            <h1 className="text-4xl font-extrabold">
               {missing ? "No profile here" : "Loading…"}
             </h1>
             {missing ? (
@@ -163,7 +159,7 @@ export function ProfilePage() {
           </div>
         )}
         <p className="mt-10">
-          <Link to="/" className="font-mono text-xs text-ink underline">
+          <Link to="/" className="text-sm">
             ← Back to the board
           </Link>
         </p>

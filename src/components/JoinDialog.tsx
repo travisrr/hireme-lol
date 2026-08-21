@@ -130,48 +130,41 @@ export function JoinDialog({ open, onClose, onChanged }: JoinDialogProps) {
         className="absolute inset-0 cursor-default"
         onClick={onClose}
       />
-      <div className="relative w-full max-w-lg border border-line bg-panel p-5 shadow-2xl">
-        <p className="font-mono text-[11px] text-ink uppercase">
+      <div className="relative w-full max-w-lg rounded-[12px] border border-line bg-card p-5 shadow-2xl">
+        <p className="text-xs font-semibold text-mute uppercase">
           Live board · one-time bid · {SITE.name}
         </p>
-        <h2 className="mt-2 font-display text-3xl">{SITE.cta}</h2>
+        <h2 className="mt-2 text-2xl font-bold">{SITE.cta}</h2>
         <p className="mt-2 text-sm text-mute">
           Entry {entry}. {increment} to overtake. Stripe is authoritative. No
           fake listings.
         </p>
         {error ? (
-          <p className="mt-3 font-mono text-xs text-down">{error}</p>
+          <p className="mt-3 text-sm text-down">{error}</p>
         ) : null}
         {done ? (
-          <p className="mt-4 font-mono text-sm text-ink">{done}</p>
+          <p className="mt-4 text-sm text-ink">{done}</p>
         ) : !session?.user ? (
           <div className="mt-5 grid gap-3">
             <form className="grid gap-3" onSubmit={handleMagic}>
               <Field label="Email" name="email" placeholder="you@company.com" />
-              <button
-                type="submit"
-                disabled={busy}
-                className="bg-ink px-4 py-2 font-mono text-xs font-semibold text-paper uppercase"
-              >
+              <button type="submit" disabled={busy} className="btn-accent">
                 Email a magic link
               </button>
             </form>
             {previewUrl ? (
-              <a
-                href={previewUrl}
-                className="break-all font-mono text-xs text-ink underline"
-              >
+              <a href={previewUrl} className="break-all text-sm text-accent">
                 Local preview link (email not configured)
               </a>
             ) : null}
-            <div className="flex gap-3 font-mono text-xs">
+            <div className="flex gap-3 text-sm">
               {oauth.github ? (
-                <a href="/api/auth/github" className="text-ink underline">
+                <a href="/api/auth/github" className="text-accent">
                   GitHub
                 </a>
               ) : null}
               {oauth.google ? (
-                <a href="/api/auth/google" className="text-ink underline">
+                <a href="/api/auth/google" className="text-accent">
                   Google
                 </a>
               ) : null}
@@ -207,17 +200,13 @@ export function JoinDialog({ open, onClose, onChanged }: JoinDialogProps) {
               name="photoUrl"
               placeholder="https://… (you supply it)"
             />
-            <button
-              type="submit"
-              disabled={busy}
-              className="bg-ink px-4 py-2 font-mono text-xs font-semibold text-paper uppercase"
-            >
+            <button type="submit" disabled={busy} className="btn-accent">
               Save profile
             </button>
           </form>
         ) : (
           <form className="mt-5 grid gap-3" onSubmit={handleBid}>
-            <p className="font-mono text-xs text-mute">
+            <p className="text-sm text-mute">
               Signed in as {session.user.email} · /{session.profile.handle}
             </p>
             <Field
@@ -225,11 +214,7 @@ export function JoinDialog({ open, onClose, onChanged }: JoinDialogProps) {
               name="bid"
               placeholder="2"
             />
-            <button
-              type="submit"
-              disabled={busy}
-              className="bg-ink px-4 py-2 font-mono text-xs font-semibold text-paper uppercase"
-            >
+            <button type="submit" disabled={busy} className="btn-accent">
               Bid
             </button>
           </form>
@@ -237,7 +222,7 @@ export function JoinDialog({ open, onClose, onChanged }: JoinDialogProps) {
         <button
           type="button"
           onClick={onClose}
-          className="mt-4 font-mono text-xs text-mute underline"
+          className="mt-4 text-sm text-mute underline"
         >
           Close
         </button>
@@ -257,11 +242,11 @@ function Field({
 }) {
   return (
     <label className="grid gap-1">
-      <span className="font-mono text-[11px] text-mute uppercase">{label}</span>
+      <span className="text-[11px] font-semibold text-mute uppercase">{label}</span>
       <input
         name={name}
         placeholder={placeholder}
-        className="border border-line bg-paper px-3 py-2 text-sm text-ink outline-none placeholder:text-mute focus:border-ink"
+        className="rounded-xl border border-line bg-paper px-3 py-2 text-sm text-ink outline-none placeholder:text-mute focus:border-accent"
       />
     </label>
   );

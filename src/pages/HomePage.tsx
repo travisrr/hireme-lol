@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { fetchBoard, fetchConfig } from "../api/client";
 import { ClaimHeadline } from "../components/ClaimHeadline";
 import { JoinDialog } from "../components/JoinDialog";
-import { ListingRow } from "../components/ListingRow";
+import { ListingRow, TOP_TEN_CUTOFF } from "../components/ListingRow";
 import { ReceiptCard } from "../components/ReceiptCard";
 import { SiteFooter } from "../components/SiteFooter";
 import { SiteHeader } from "../components/SiteHeader";
@@ -46,8 +46,8 @@ export function HomePage() {
   }, [query, reload]);
 
   const rows = listings.map(toPublicListing);
-  const topThree = rows.slice(0, 3);
-  const rest = rows.slice(3);
+  const topTen = rows.slice(0, TOP_TEN_CUTOFF);
+  const rest = rows.slice(TOP_TEN_CUTOFF);
   const openJoin = () => setJoinOpen(true);
 
   const trending = rows
@@ -83,17 +83,19 @@ export function HomePage() {
         onQueryChange={setQuery}
         onCta={openJoin}
       />
-      <main className="mx-auto max-w-5xl px-4 pb-12">
+      <main className="mx-auto max-w-5xl px-4 pb-10">
         <ClaimHeadline
           board={rows}
           economics={economics}
           onAction={openJoin}
         />
-        <div className="mt-8 grid gap-3 md:grid-cols-2">
+        <div className="mt-5 grid gap-3 md:grid-cols-2">
           <ReceiptCard
             title="Trending"
             items={trending}
             empty="No movement yet."
+            footerHref="#board"
+            footerLabel="View full board →"
           />
           <ReceiptCard
             title="Latest activity"
@@ -101,35 +103,30 @@ export function HomePage() {
             empty="No receipts yet."
           />
         </div>
-        <section className="mt-8">
+        <section id="board" className="mt-5 overflow-hidden rounded-[12px] border border-line bg-card">
           {error ? (
-            <p className="border border-down/40 p-4 font-mono text-sm text-down">
-              {error}
-            </p>
+            <p className="p-4 text-sm text-down">{error}</p>
           ) : rows.length === 0 ? (
-            <p className="border border-line px-4 py-6 font-mono text-xs text-mute">
+            <p className="px-4 py-6 text-sm text-mute">
               The board is empty. First confirmed bid is #1. Nobody is invented
               to keep you company.
             </p>
           ) : (
             <>
-              <div className="grid gap-2">
-                {topThree.map((listing) => (
-                  <ListingRow
-                    key={listing.id}
-                    listing={listing}
-                    board={rows}
-                    economics={economics}
-                    featured
-                    onOutbid={openJoin}
-                  />
-                ))}
-              </div>
+              {topTen.map((listing) => (
+                <ListingRow
+                  key={listing.id}
+                  listing={listing}
+                  board={rows}
+                  economics={economics}
+                  onOutbid={openJoin}
+                />
+              ))}
               {rest.length > 0 ? (
-                <div className="my-6 flex items-center gap-3">
+                <div className="flex items-center gap-3 bg-card px-4 py-2">
                   <span className="h-px flex-1 bg-line" />
-                  <p className="font-mono text-[10px] tracking-[0.2em] text-mute uppercase">
-                    Top 3
+                  <p className="text-[10px] font-semibold tracking-[0.16em] text-mute uppercase">
+                    Top 10
                   </p>
                   <span className="h-px flex-1 bg-line" />
                 </div>

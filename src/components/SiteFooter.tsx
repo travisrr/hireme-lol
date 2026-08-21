@@ -2,9 +2,9 @@ import { SITE } from "../lib/site";
 
 export function SiteFooter() {
   return (
-    <footer className="border-t border-line">
-      <p className="mx-auto max-w-5xl px-4 py-8 text-center font-display text-sm tracking-wide text-mute uppercase">
-        {SITE.footer}
+    <footer>
+      <p className="mx-auto max-w-5xl px-4 py-7 text-center text-sm text-mute">
+        ♡ {SITE.footer}
       </p>
     </footer>
   );

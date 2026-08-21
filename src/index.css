@@ -1,17 +1,20 @@
 @import "tailwindcss";
 
 @theme {
-  --font-display: "Instrument Serif", ui-serif, Georgia, serif;
-  --font-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
-  --color-paper: #f6f3ec;
-  --color-panel: #efebe3;
-  --color-line: #d9d3c7;
-  --color-ink: #1e2428;
-  --color-mute: #7a756a;
-  --color-up: #3dffc5;
-  --color-down: #ff5a4f;
-  --color-founding: #c4a574;
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --color-paper: #f7f4ee;
+  --color-card: #ffffff;
+  --color-panel: #ffffff;
+  --color-line: #e4dfd6;
+  --color-ink: #1d2226;
+  --color-mute: #6b6560;
+  --color-accent: #0a66c2;
+  --color-accent-hover: #004182;
+  --color-up: #0a66c2;
+  --color-down: #c0392b;
+  --color-founding: #0a66c2;
 }
 
 html,
@@ -25,21 +28,35 @@ body {
   background: var(--color-paper);
   color: var(--color-ink);
   font-family: var(--font-sans);
-  font-feature-settings: "ss01" on;
 }
 
 ::selection {
-  background: var(--color-ink);
-  color: var(--color-paper);
+  background: var(--color-accent);
+  color: #fff;
 }
 
 .tabular {
   font-variant-numeric: tabular-nums;
 }
 
+.btn-accent {
+  border-radius: 0.75rem;
+  background: var(--color-accent);
+  color: #fff;
+  font-weight: 600;
+  padding: 0.5rem 0.9rem;
+  font-size: 0.8125rem;
+  line-height: 1.2;
+}
+
+.btn-accent:hover {
+  background: var(--color-accent-hover);
+  color: #fff;
+}
+
 @keyframes bid-flash {
   0% {
-    background: var(--color-panel);
+    background: color-mix(in srgb, var(--color-accent) 10%, var(--color-card));
   }
   100% {
     background: transparent;
@@ -48,4 +65,8 @@ body {
 
 .bid-flash {
   animation: bid-flash 1.8s ease-out;
+}
+
+.rank-wash {
+  background: color-mix(in srgb, #0a66c2 8%, #ffffff);
 }
