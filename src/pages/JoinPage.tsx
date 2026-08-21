@@ -9,6 +9,7 @@ import {
   previewLinkedin,
   requestMagicLink,
   saveProfile,
+  uploadPhoto,
 } from "../api/client";
 import { LinkedInMark } from "../components/LinkedInMark";
 import { PhotoTile } from "../components/PhotoTile";
@@ -55,6 +56,7 @@ export function JoinPage() {
   const [done, setDone] = useState<string | null>(null);
   const [rank, setRank] = useState<number | null>(null);
   const [copied, setCopied] = useState(false);
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
 
   useEffect(() => {
     const stored = readJoinDraft();
@@ -172,13 +174,19 @@ export function JoinPage() {
     setBusy(true);
     setError(null);
     try {
+      let photoUrl = next.photoUrl;
+      if (photoFile) {
+        const uploaded = await uploadPhoto(photoFile);
+        photoUrl = uploaded.photoUrl;
+        persist({ ...next, photoUrl });
+      }
       await saveProfile({
         handle: slug ? handleFromLinkedinSlug(slug) : handleFromName(next.displayName),
         displayName: next.displayName,
         headline: next.headline,
         company: "",
         pitch: next.headline,
-        photoUrl: next.photoUrl,
+        photoUrl,
         linkedinUrl: next.linkedinUrl,
         websiteUrl: "",
         industry: next.categories[0] ?? null,
@@ -258,6 +266,8 @@ export function JoinPage() {
         handleIdentity,
         handleMagic,
         handleBid,
+        photoFile,
+        onPhotoFile: setPhotoFile,
         previewUrl,
         error,
         busy,
@@ -285,6 +295,8 @@ type SheetProps = {
   handleIdentity: (event: FormEvent<HTMLFormElement>) => void;
   handleMagic: (event: FormEvent<HTMLFormElement>) => void;
   handleBid: (event: FormEvent<HTMLFormElement>) => void;
+  photoFile: File | null;
+  onPhotoFile: (file: File | null) => void;
   previewUrl: string | null;
   error: string | null;
   busy: boolean;
@@ -356,10 +368,23 @@ function UrlSheet({ handlePull, busy, error }: SheetProps) {
 function IdentitySheet({
   draft,
   handleIdentity,
+  photoFile,
+  onPhotoFile,
   busy,
   error,
 }: SheetProps) {
   const [picked, setPicked] = useState<IndustryId[]>(draft.categories);
+  const [filePreview, setFilePreview] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!photoFile) {
+      setFilePreview(null);
+      return;
+    }
+    const url = URL.createObjectURL(photoFile);
+    setFilePreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [photoFile]);
 
   function toggleCategory(id: IndustryId, on: boolean) {
     setPicked((current) => {
@@ -379,7 +404,7 @@ function IdentitySheet({
         <h1 className="type-claim text-ink">{SITE.tagline}</h1>
         <p className="type-body mt-3 text-mute">{SITE.joinEdit}</p>
         <div className="mt-5">
-          <PhotoTile src={draft.photoUrl || null} className="size-16" />
+          <PhotoTile src={filePreview || draft.photoUrl || null} className="size-16" />
         </div>
         {error ? <p className="type-body mt-4 text-down">{error}</p> : null}
         <form id="join-identity" className="mt-5 grid gap-3" onSubmit={handleIdentity}>
@@ -401,6 +426,17 @@ function IdentitySheet({
             defaultValue={draft.photoUrl}
             placeholder="https://"
           />
+          <label className="grid gap-1">
+            <span className="type-meta font-semibold text-mute uppercase">
+              Or upload a photo
+            </span>
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif"
+              className="search-field min-h-12 py-2"
+              onChange={(event) => onPhotoFile(event.target.files?.[0] ?? null)}
+            />
+          </label>
           <fieldset className="grid gap-2">
             <legend className="type-meta font-semibold text-mute uppercase">
               Categories (up to {MAX_CATEGORIES})

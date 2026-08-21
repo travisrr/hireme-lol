@@ -83,6 +83,31 @@ export function logout() {
   return request<{ ok: true }>("/api/auth/logout", { method: "POST" });
 }
 
+export async function uploadPhoto(file: File) {
+  const body = new FormData();
+  body.append("photo", file);
+  const response = await fetch("/api/me/photo", {
+    method: "POST",
+    credentials: "include",
+    body,
+  });
+  let data: { photoUrl?: string; photoKey?: string; error?: string } | null =
+    null;
+  try {
+    data = (await response.json()) as {
+      photoUrl?: string;
+      photoKey?: string;
+      error?: string;
+    };
+  } catch {
+    data = null;
+  }
+  if (!response.ok || !data?.photoUrl) {
+    throw new Error(publicErrorMessage(data?.error ?? "invalid_photo"));
+  }
+  return { photoUrl: data.photoUrl, photoKey: data.photoKey ?? "" };
+}
+
 export function saveProfile(input: {
   handle: string;
   displayName: string;

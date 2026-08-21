@@ -1,3 +1,4 @@
+import { randomToken } from "./crypto";
 import { isAllowedImageType } from "./photo";
 
 /** Wikimedia Commons portraits stored on R2. Not LinkedIn. Not generated. */
@@ -52,6 +53,33 @@ export class MemoryMedia implements MediaBucket {
 }
 
 const MAX_BYTES = 5 * 1024 * 1024;
+
+const PHOTO_EXT: Record<string, string> = {
+  "image/jpeg": "jpg",
+  "image/jpg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+  "image/gif": "gif",
+};
+
+export function photoKeyForUser(userId: string, contentType: string): string {
+  const ext = PHOTO_EXT[contentType] ?? "jpg";
+  const id = userId.toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 16) || "u";
+  return `photos/${id}-${randomToken(6)}.${ext}`;
+}
+
+export async function storeHeadshotBytes(
+  media: MediaBucket,
+  key: string,
+  bytes: Uint8Array,
+  contentType: string,
+): Promise<string | null> {
+  if (!isAllowedImageType(contentType)) return null;
+  if (!isSafePhotoKey(key)) return null;
+  if (bytes.byteLength === 0 || bytes.byteLength > MAX_BYTES) return null;
+  await media.put(key, bytes, { httpMetadata: { contentType } });
+  return key;
+}
 
 export async function storeHeadshotFromUrl(
   media: MediaBucket,

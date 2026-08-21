@@ -25,7 +25,13 @@ import {
   type StripeLikeEvent,
 } from "../lib/stripe";
 import { verifyStripeSignature } from "../lib/stripe-signature";
-import { isSafePhotoKey, type MediaBucket } from "../lib/media";
+import {
+  isSafePhotoKey,
+  photoKeyForUser,
+  storeHeadshotBytes,
+  type MediaBucket,
+} from "../lib/media";
+import { isAllowedImageType } from "../lib/photo";
 import { minBidToEnter } from "../lib/ranking";
 import { BOARD_TABS, parseCategories, parseIndustry } from "../lib/industries";
 import { SITE } from "../lib/site";
@@ -131,7 +137,7 @@ export function createApp(deps: AppDeps) {
       minIncrementCents: economics.minIncrementCents,
       publicOrigin: deps.config.origin,
       boardId: GLOBAL_BOARD_ID,
-      stripeEnabled: Boolean(deps.config.stripeSecretKey),
+      stripeEnabled: paymentsReady(deps.config),
       stripePublishableKey: deps.config.stripePublishableKey || null,
       industries: BOARD_TABS,
       oauth: {
@@ -197,6 +203,11 @@ export function createApp(deps: AppDeps) {
     ) {
       return c.json({ error: "turnstile" }, 400);
     }
+    const local = isLocalOrigin(deps.config.origin);
+    const canSend = Boolean(deps.sendEmail || deps.config.resendApiKey);
+    if (!local && !canSend) {
+      return c.json({ error: "email_not_configured" }, 503);
+    }
     const token = randomToken();
     const tokenHash = await sha256Hex(token);
     const now = clock(deps);
@@ -207,18 +218,17 @@ export function createApp(deps: AppDeps) {
       now,
     );
     const verifyUrl = `${deps.config.origin}/api/auth/callback?token=${token}`;
-    await send(
-      deps,
-      email,
-      `Sign in to ${SITE.name}`,
-      `Open this link to get on the board:\n${verifyUrl}\n\nIt expires in 15 minutes.`,
-    );
+    if (canSend) {
+      await send(
+        deps,
+        email,
+        `Sign in to ${SITE.name}`,
+        `Open this link to get on the board:\n${verifyUrl}\n\nIt expires in 15 minutes.`,
+      );
+    }
     return c.json({
       ok: true,
-      previewUrl:
-        isLocalOrigin(deps.config.origin) && !deps.config.resendApiKey
-          ? verifyUrl
-          : undefined,
+      previewUrl: local && !deps.config.resendApiKey ? verifyUrl : undefined,
     });
   });
 
@@ -305,6 +315,33 @@ export function createApp(deps: AppDeps) {
     }
   });
 
+  app.post("/api/me/photo", async (c) => {
+    const session = await readSession(c, deps);
+    if (!session) return c.json({ error: "unauthorized" }, 401);
+    if (!deps.media) return c.json({ error: "media_unbound" }, 503);
+    let file: File | null = null;
+    try {
+      const form = await c.req.parseBody();
+      file = form.photo instanceof File ? form.photo : null;
+    } catch {
+      file = null;
+    }
+    if (!file) return c.json({ error: "invalid_photo" }, 400);
+    const type = file.type.toLowerCase();
+    if (!isAllowedImageType(type)) return c.json({ error: "invalid_photo" }, 400);
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    const key = photoKeyForUser(session.user.id, type);
+    const stored = await storeHeadshotBytes(deps.media, key, bytes, type);
+    if (!stored) return c.json({ error: "invalid_photo" }, 400);
+    if (session.profile) {
+      await deps.store.setProfilePhoto(session.profile.id, stored);
+    }
+    return c.json({
+      photoKey: stored,
+      photoUrl: `/api/media/${stored}`,
+    });
+  });
+
   app.post("/api/bids", async (c) => {
     const session = await readSession(c, deps);
     if (!session?.profile) return c.json({ error: "profile_required" }, 401);
@@ -315,9 +352,7 @@ export function createApp(deps: AppDeps) {
       return c.json({ error: "below_entry" }, 400);
     }
     const local = isLocalOrigin(deps.config.origin);
-    const stripeReady = Boolean(
-      deps.config.stripeSecretKey && deps.config.stripeWebhookSecret,
-    );
+    const stripeReady = paymentsReady(deps.config);
     if (!local && !stripeReady) {
       return c.json({ error: "payments_not_ready" }, 503);
     }
@@ -362,7 +397,7 @@ export function createApp(deps: AppDeps) {
       });
       if (!ok) return c.json({ error: "bad_signature" }, 400);
     } else if (!isLocalOrigin(deps.config.origin)) {
-      return c.json({ error: "webhook_secret_required" }, 500);
+      return c.json({ error: "payments_not_ready" }, 503);
     }
     let event: StripeLikeEvent;
     try {
@@ -451,6 +486,10 @@ function isLocalOrigin(origin: string): boolean {
     origin.startsWith("http://localhost") ||
     origin.startsWith("http://127.0.0.1")
   );
+}
+
+function paymentsReady(config: AppConfig): boolean {
+  return Boolean(config.stripeSecretKey && config.stripeWebhookSecret);
 }
 
 async function readJson(c: {

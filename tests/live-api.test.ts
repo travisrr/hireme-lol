@@ -188,7 +188,43 @@ describe("live API", () => {
     );
   });
 
+  it("does not enable Stripe until both secrets are present", async () => {
+    const app = createApp({
+      store: new MemoryStore(),
+      config: {
+        origin: "https://workwithme.lol",
+        siteName: "workwithme.lol",
+        adminEmails: [],
+        emailFrom: "board@workwithme.lol",
+        stripeSecretKey: "sk_test_placeholder",
+      },
+    });
+    const body = await json(await app.request("/api/config"));
+    expect(body.stripeEnabled).toBe(false);
+  });
+
   it("hides magic-link preview URLs on the production origin", async () => {
+    const app = createApp({
+      store: new MemoryStore(),
+      config: {
+        origin: "https://workwithme.lol",
+        siteName: "workwithme.lol",
+        adminEmails: [],
+        emailFrom: "board@workwithme.lol",
+      },
+      sendEmail: async () => undefined,
+    });
+    const request = await app.request("/api/auth/magic", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: "maya@example.com" }),
+    });
+    const body = await json(request);
+    expect(body.ok).toBe(true);
+    expect(body.previewUrl).toBeUndefined();
+  });
+
+  it("fails closed in production when magic-link email is not configured", async () => {
     const app = createApp({
       store: new MemoryStore(),
       config: {
@@ -203,9 +239,8 @@ describe("live API", () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email: "maya@example.com" }),
     });
-    const body = await json(request);
-    expect(body.ok).toBe(true);
-    expect(body.previewUrl).toBeUndefined();
+    expect(request.status).toBe(503);
+    expect(await json(request)).toEqual({ error: "email_not_configured" });
   });
 
   it("does not create checkout in production without Stripe secrets", async () => {
@@ -401,7 +436,8 @@ describe("live API", () => {
         data: { object: { metadata: { bid_id: "bid_missing" } } },
       }),
     });
-    expect(webhook.status).toBe(500);
+    expect(webhook.status).toBe(503);
+    expect(await json(webhook)).toEqual({ error: "payments_not_ready" });
     const board = await json(await app.request("/api/board"));
     expect(board.listings).toEqual([]);
   });

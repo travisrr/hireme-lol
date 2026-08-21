@@ -2,11 +2,13 @@ import { readFile } from "node:fs/promises";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { join } from "node:path";
 import type { Plugin } from "vite";
+import { MemoryMedia } from "./src/lib/media";
 import { createApp, type AppConfig } from "./src/server/app";
 import { seedLockShotBoard } from "./src/server/lock-shot-seed";
 import { MemoryStore } from "./src/server/memory-store";
 
 const store = new MemoryStore();
+const media = new MemoryMedia();
 
 function config(): AppConfig {
   return {
@@ -46,7 +48,7 @@ export function localApi(): Plugin {
         process.env.LOCK_SHOTS === "1"
           ? seedLockShotBoard(store)
           : Promise.resolve();
-      const app = createApp({ store, config: config() });
+      const app = createApp({ store, config: config(), media });
       server.middlewares.use(async (req, res, next) => {
         const pathname = req.url?.split("?")[0] ?? "";
         if (
