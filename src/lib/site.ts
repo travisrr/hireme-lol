@@ -10,18 +10,20 @@ export const SITE = {
   micro: "Higher bid = higher rank. Get seen. Get outbid. That's it.",
   footer: "Money buys placement, not quality.",
   share: "I'm #37 on workwithme.lol. Think I deserve to be lower?",
-  claimWhy: [
-    "The professional leaderboard. Bid for your name, get seen, get outbid, do it again.",
-    "People looking for someone to work with start at #1. Your LinkedIn and site take the clicks. Higher bid = higher rank. That’s it.",
-  ] as const,
+  claimWhy: "Higher bid = higher rank. Get seen. Get outbid. That’s it.",
   joinLead: "Identify yourself and put a number on it.",
-  joinPaste:
-    "Paste your LinkedIn URL. We’ll fill in your name, photo, and headline.",
+  joinSignIn:
+    "Sign in with LinkedIn. We’ll use your name, photo, and headline.",
   joinLoop: "Higher bid = higher rank. Get seen. Get outbid. That’s it.",
-  joinEdit: "You can edit anything before you bid. Money buys placement, not quality.",
-  joinEntry:
-    "New spots start at the configured entry. Paying less than #1 still puts you on the board wherever that bid ranks.",
-  joinRepeat: "Already on the list? Same identity, higher bid.",
-  joinRule: "Higher bid = higher rank. Money buys placement, not quality.",
-  linkedinPlaceholder: "https://www.linkedin.com/in/you",
+  joinApprove:
+    "You can edit anything before you bid. We only use what you approve.",
+  joinEdit: "You can edit anything before you bid. We only use what you approve.",
+  linkedinCta: "Sign in with LinkedIn",
 } as const;
+
+export const HOW_IT_WORKS_STEPS = [
+  "Sign in with LinkedIn.",
+  "We fill name, photo, and headline.",
+  "You set a bid.",
+  "You share your rank.",
+] as const;

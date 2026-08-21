@@ -54,10 +54,12 @@ export async function createStripeCheckoutSession(opts: {
   bidId: string;
   amountCents: number;
   origin: string;
+  fetchImpl?: typeof fetch;
 }): Promise<StripeCheckoutSession> {
   const body = stripeCheckoutForm(opts);
+  const fetchFn = opts.fetchImpl ?? fetch;
 
-  const response = await fetch("https://api.stripe.com/v1/checkout/sessions", {
+  const response = await fetchFn("https://api.stripe.com/v1/checkout/sessions", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${opts.secretKey}`,

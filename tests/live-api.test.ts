@@ -121,6 +121,7 @@ describe("live API", () => {
     const { app } = testApp();
     const body = await json(await app.request("/api/board"));
     expect(body.listings).toEqual([]);
+    expect(body.activity).toHaveLength(5);
   });
 
   it("creating a checkout does not move the board", async () => {
@@ -637,5 +638,104 @@ describe("live API", () => {
     });
     const board = await json(await app.request("/api/board"));
     expect(board.listings).toEqual([]);
+  });
+
+  it("sends managed_payments disabled when opening Checkout", async () => {
+    const store = new MemoryStore();
+    let posted = "";
+    const app = createApp({
+      store,
+      config: {
+        origin: "https://workwithme.lol",
+        siteName: "workwithme.lol",
+        adminEmails: [],
+        emailFrom: "board@workwithme.lol",
+        stripeSecretKey: "sk_test_placeholder",
+        stripeWebhookSecret: "whsec_placeholder",
+      },
+      fetchImpl: async (_url, init) => {
+        posted = String(init?.body ?? "");
+        return new Response(
+          JSON.stringify({
+            id: "cs_test_managed",
+            url: "https://checkout.stripe.com/c/pay/cs_test_managed",
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        );
+      },
+    });
+    const local = createApp({
+      store,
+      config: {
+        origin: "http://localhost:5173",
+        siteName: "workwithme.lol",
+        adminEmails: [],
+        emailFrom: "board@workwithme.lol",
+      },
+    });
+    const cookie = await magicLogin(local, "maya@example.com");
+    await createProfile(app, cookie, "maya");
+    const bidRes = await app.request("/api/bids", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Cookie: cookie,
+      },
+      body: JSON.stringify({ amountCents: 200 }),
+    });
+    expect(bidRes.status).toBe(200);
+    const bid = await json(bidRes);
+    expect(bid.checkoutUrl).toBe(
+      "https://checkout.stripe.com/c/pay/cs_test_managed",
+    );
+    expect(posted).toContain("mode=payment");
+    expect(posted).toContain("managed_payments%5Benabled%5D=false");
+    expect(posted).not.toContain("tax_code");
+  });
+
+  it("returns payments_not_ready instead of 500 when Stripe rejects a session", async () => {
+    const store = new MemoryStore();
+    const app = createApp({
+      store,
+      config: {
+        origin: "https://workwithme.lol",
+        siteName: "workwithme.lol",
+        adminEmails: [],
+        emailFrom: "board@workwithme.lol",
+        stripeSecretKey: "sk_test_placeholder",
+        stripeWebhookSecret: "whsec_placeholder",
+      },
+      fetchImpl: async () =>
+        new Response(
+          JSON.stringify({
+            error: {
+              message:
+                "Invalid line_items[0]: the product tax code is missing.",
+            },
+          }),
+          { status: 400, headers: { "Content-Type": "application/json" } },
+        ),
+    });
+    const local = createApp({
+      store,
+      config: {
+        origin: "http://localhost:5173",
+        siteName: "workwithme.lol",
+        adminEmails: [],
+        emailFrom: "board@workwithme.lol",
+      },
+    });
+    const cookie = await magicLogin(local, "maya@example.com");
+    await createProfile(app, cookie, "maya");
+    const bidRes = await app.request("/api/bids", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Cookie: cookie,
+      },
+      body: JSON.stringify({ amountCents: 200 }),
+    });
+    expect(bidRes.status).toBe(503);
+    expect(await json(bidRes)).toEqual({ error: "payments_not_ready" });
   });
 });

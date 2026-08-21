@@ -21,6 +21,8 @@ export type Bindings = {
   GITHUB_CLIENT_SECRET?: string;
   GOOGLE_CLIENT_ID?: string;
   GOOGLE_CLIENT_SECRET?: string;
+  LINKEDIN_CLIENT_ID?: string;
+  LINKEDIN_CLIENT_SECRET?: string;
   EMAIL_FROM?: string;
   RESEND_API_KEY?: string;
   TURNSTILE_SECRET_KEY?: string;
@@ -43,6 +45,8 @@ function configFromEnv(env: Bindings): AppConfig {
     githubClientSecret: env.GITHUB_CLIENT_SECRET,
     googleClientId: env.GOOGLE_CLIENT_ID,
     googleClientSecret: env.GOOGLE_CLIENT_SECRET,
+    linkedinClientId: env.LINKEDIN_CLIENT_ID,
+    linkedinClientSecret: env.LINKEDIN_CLIENT_SECRET,
     emailFrom: env.EMAIL_FROM || "board@workwithme.lol",
     resendApiKey: env.RESEND_API_KEY,
     turnstileSecret: env.TURNSTILE_SECRET_KEY,

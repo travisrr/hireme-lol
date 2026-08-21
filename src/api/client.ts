@@ -55,7 +55,7 @@ export function fetchConfig() {
       stripeEnabled: boolean;
       stripePublishableKey: string | null;
       industries: BoardTab[];
-      oauth: { github: boolean; google: boolean };
+      oauth: { github: boolean; google: boolean; linkedin: boolean };
     }
   >("/api/config");
 }

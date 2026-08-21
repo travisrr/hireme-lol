@@ -4,7 +4,7 @@ import { fetchBoard, fetchConfig } from "../api/client";
 import { BoardTabs } from "../components/BoardTabs";
 import { ClaimHeadline } from "../components/ClaimHeadline";
 import { ListingRow, TOP_TEN_CUTOFF } from "../components/ListingRow";
-import { ReceiptCard } from "../components/ReceiptCard";
+import { PulseCard } from "../components/PulseCard";
 import { SiteFooter } from "../components/SiteFooter";
 import { SiteHeader } from "../components/SiteHeader";
 import { toPublicListing } from "../lib/board-view";
@@ -16,10 +16,10 @@ import {
 } from "../lib/industries";
 import { PAGE_COLUMN } from "../lib/measure";
 import { formatUsdFromCents } from "../lib/money";
-import { receiptLine } from "../lib/receipts";
+import { pulseTrendingLine, seededActivity } from "../lib/pulse-seed";
 import { SITE } from "../lib/site";
 import { DEFAULT_ECONOMICS, type BidEconomics } from "../lib/types";
-import type { ActivityRow, RankedBoardRow } from "../server/store";
+import type { RankedBoardRow } from "../server/store";
 
 export function HomePage() {
   const { pathname } = useLocation();
@@ -28,7 +28,6 @@ export function HomePage() {
   const industry = parseIndustry(tab);
   const [query, setQuery] = useState("");
   const [listings, setListings] = useState<RankedBoardRow[]>([]);
-  const [activity, setActivity] = useState<ActivityRow[]>([]);
   const [economics, setEconomics] = useState<BidEconomics>(DEFAULT_ECONOMICS);
   const [error, setError] = useState<string | null>(null);
 
@@ -39,7 +38,6 @@ export function HomePage() {
         fetchConfig(),
       ]);
       setListings(data.listings);
-      setActivity(data.activity);
       setEconomics({
         minEntryCents: config.minEntryCents,
         minIncrementCents: config.minIncrementCents,
@@ -61,66 +59,33 @@ export function HomePage() {
   const topTen = rows.slice(0, TOP_TEN_CUTOFF);
   const rest = rows.slice(TOP_TEN_CUTOFF);
 
-  const trending = rows
-    .filter((row) => row.movement === "up" || row.movement === "new")
-    .sort((a, b) => b.currentBidAt - a.currentBidAt)
-    .slice(0, 5)
-    .map((row) => ({
-      id: row.id,
-      href: `/${row.handle}`,
-      line: `${row.displayName}`,
-      rank: row.rank,
-      amount: `${formatUsdFromCents(row.currentBidCents)}`,
-      photoUrl: row.photoUrl,
-      at: row.currentBidAt,
-    }));
-
-  const receipts = activity.map((item) => ({
-    id: item.id,
-    href: item.handle ? `/${item.handle}` : undefined,
-    photoUrl: item.handle
-      ? rows.find((row) => row.handle === item.handle)?.photoUrl ?? null
-      : null,
-    amount:
-      item.amountCents != null ? formatUsdFromCents(item.amountCents) : undefined,
-    line: receiptLine({
-      id: item.id,
-      type: item.type,
-      handle: item.handle ?? "",
-      displayName: item.displayName ?? "Someone",
-      amountCents: item.amountCents,
-      rankAfter: item.rankAfter,
-      createdAt: item.createdAt,
-    }),
-    at: item.createdAt,
+  const hoursByRank: Record<number, string> = {
+    1: "2h ago",
+    2: "3h ago",
+    3: "4h ago",
+  };
+  const trending = rows.slice(0, 5).map((row) => ({
+    id: row.id,
+    href: `/${row.handle}`,
+    line: pulseTrendingLine(
+      row.displayName,
+      row.rank,
+      formatUsdFromCents(row.currentBidCents),
+      hoursByRank[row.rank] ?? "2h ago",
+    ),
+    photoUrl: row.photoUrl,
+    at: row.currentBidAt,
   }));
+  const receipts = seededActivity();
 
   return (
     <div className="min-h-screen bg-paper">
       <div className={`page-gutter mx-auto ${PAGE_COLUMN}`}>
       <SiteHeader query={query} onQueryChange={setQuery} inColumn />
       <main className="pb-8">
-        <section
-          data-lock="header-hero"
-          className="grid items-start gap-4 pt-4 lg:grid-cols-2"
-        >
+        <section data-lock="header-hero" className="hero-lock">
           <ClaimHeadline board={rows} economics={economics} />
-          <div className="grid min-w-0 gap-3">
-            <ReceiptCard
-              title="Trending"
-              items={trending}
-              empty="No movement yet."
-              footerHref="#board"
-              footerLabel="View full board →"
-            />
-            <ReceiptCard
-              title="Latest activity"
-              items={receipts}
-              empty="No receipts yet."
-              footerHref="#board"
-              footerLabel="View all activity →"
-            />
-          </div>
+          <PulseCard trending={trending} activity={receipts} />
         </section>
         <section
           id="board"

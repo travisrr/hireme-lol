@@ -25,6 +25,8 @@ const HUMAN_BY_CODE: Record<string, string> = {
   profile_failed: "We couldn’t save that profile. Check the fields.",
   invalid_photo: "Use a JPEG, PNG, or WebP photo.",
   media_unbound: "Photo upload isn’t ready yet. Paste a photo URL instead.",
+  oauth_not_configured: "LinkedIn sign-in isn’t ready yet. Try again in a bit.",
+  oauth_failed: "LinkedIn sign-in failed. Try again.",
 };
 
 export function publicErrorMessage(code: string | undefined): string {

@@ -2,14 +2,7 @@ import { Link } from "react-router-dom";
 import { SiteFooter } from "../components/SiteFooter";
 import { SiteHeader } from "../components/SiteHeader";
 import { PAGE_COLUMN } from "../lib/measure";
-import { SITE } from "../lib/site";
-
-const STEPS = [
-  "Paste your LinkedIn URL.",
-  "We fill name, photo, headline.",
-  "You set a bid.",
-  "You share your rank.",
-] as const;
+import { HOW_IT_WORKS_STEPS, SITE } from "../lib/site";
 
 export function HowItWorksPage() {
   return (
@@ -21,7 +14,7 @@ export function HowItWorksPage() {
       >
         <h1 className="type-claim text-ink">How it works</h1>
         <ol className="mt-6 grid gap-4">
-          {STEPS.map((step, index) => (
+          {HOW_IT_WORKS_STEPS.map((step, index) => (
             <li key={step} className="flex gap-3">
               <span className="type-rank w-6 shrink-0 text-accent">{index + 1}</span>
               <p className="type-body text-ink">{step}</p>

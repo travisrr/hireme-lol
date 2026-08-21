@@ -30,16 +30,8 @@ export function SiteHeader({
           {SITE.cta}
         </Link>
       </div>
-      <div className={frame}>
-        <Link
-          to="/how-it-works"
-          className="inline-flex min-h-11 items-center type-body text-accent no-underline hover:text-accent-hover"
-        >
-          How it works
-        </Link>
-      </div>
       {showSearch ? (
-        <div className={`${frame} pb-2`.trim()}>
+        <div className={`${frame} site-header-search`.trim()}>
           <label>
             <span className="sr-only">Search people, skills, or keywords</span>
             <input

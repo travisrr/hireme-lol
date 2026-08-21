@@ -32,7 +32,13 @@ import {
   type MediaBucket,
 } from "../lib/media";
 import { isAllowedImageType } from "../lib/photo";
+import {
+  linkedinAuthorizeUrl,
+  parseLinkedinUserinfo,
+  requestHostOrigin,
+} from "../lib/linkedin-oidc";
 import { parseBidAmountCents } from "../lib/money";
+import { boardActivityOrSeed } from "../lib/activity-seed";
 import { minBidToEnter } from "../lib/ranking";
 import { BOARD_TABS, parseCategories, parseIndustry } from "../lib/industries";
 import { SITE } from "../lib/site";
@@ -52,6 +58,8 @@ export type AppConfig = {
   githubClientSecret?: string;
   googleClientId?: string;
   googleClientSecret?: string;
+  linkedinClientId?: string;
+  linkedinClientSecret?: string;
   emailFrom: string;
   resendApiKey?: string;
   turnstileSecret?: string;
@@ -144,6 +152,9 @@ export function createApp(deps: AppDeps) {
       oauth: {
         github: Boolean(deps.config.githubClientId),
         google: Boolean(deps.config.googleClientId),
+        linkedin: Boolean(
+          deps.config.linkedinClientId && deps.config.linkedinClientSecret,
+        ),
       },
     });
   });
@@ -152,7 +163,7 @@ export function createApp(deps: AppDeps) {
     const q = c.req.query("q") ?? "";
     const industry = parseIndustry(c.req.query("industry") ?? c.req.query("tab"));
     const listings = await deps.store.getBoard(q, industry);
-    const activity = await deps.store.getActivity(20);
+    const activity = boardActivityOrSeed(await deps.store.getActivity(20));
     return c.json({
       boardId: GLOBAL_BOARD_ID,
       listings,
@@ -286,6 +297,42 @@ export function createApp(deps: AppDeps) {
     return c.redirect(`${deps.config.origin}/join?signedin=1`);
   });
 
+  app.get("/api/auth/linkedin", (c) => {
+    if (!deps.config.linkedinClientId || !deps.config.linkedinClientSecret) {
+      return c.json({ error: "oauth_not_configured", provider: "linkedin" }, 501);
+    }
+    const origin = requestHostOrigin(c.req.url, deps.config.origin);
+    const state = randomToken(16);
+    setCookie(c, "wmw_oauth", `linkedin:${state}`, cookieOpts(origin));
+    return c.redirect(
+      linkedinAuthorizeUrl({
+        clientId: deps.config.linkedinClientId,
+        redirectUri: `${origin}/api/auth/linkedin/callback`,
+        state,
+      }),
+    );
+  });
+
+  app.get("/api/auth/linkedin/callback", async (c) => {
+    const origin = requestHostOrigin(c.req.url, deps.config.origin);
+    const profile = await linkedinProfile(c, deps, origin);
+    if (!profile?.email) {
+      return c.json({ error: "oauth_failed", provider: "linkedin" }, 400);
+    }
+    await establishSession(c, deps, profile.email, clock(deps));
+    setCookie(
+      c,
+      "wmw_li",
+      JSON.stringify({
+        displayName: profile.displayName,
+        photoUrl: profile.photoUrl,
+        headline: profile.headline,
+      }),
+      cookieOpts(origin),
+    );
+    return c.redirect(`${origin}/join?signedin=1`);
+  });
+
   app.post("/api/auth/logout", async (c) => {
     const sid = getCookie(c, SESSION_COOKIE);
     if (sid) await deps.store.deleteSession(sid);
@@ -295,8 +342,16 @@ export function createApp(deps: AppDeps) {
 
   app.get("/api/me", async (c) => {
     const session = await readSession(c, deps);
-    if (!session) return c.json({ user: null, profile: null, isAdmin: false });
-    return c.json(session);
+    const oauthProfile = readLinkedinDraft(c);
+    if (!session) {
+      return c.json({
+        user: null,
+        profile: null,
+        isAdmin: false,
+        oauthProfile,
+      });
+    }
+    return c.json({ ...session, oauthProfile });
   });
 
   app.post("/api/me/profile", async (c) => {
@@ -372,15 +427,20 @@ export function createApp(deps: AppDeps) {
     let checkoutUrl: string | null = null;
     let checkoutSessionId: string | null = null;
     if (stripeReady && deps.config.stripeSecretKey) {
-      const checkout = await createStripeCheckoutSession({
-        secretKey: deps.config.stripeSecretKey,
-        bidId: bid.id,
-        amountCents,
-        origin: deps.config.origin,
-      });
-      await deps.store.attachCheckoutSession(bid.id, checkout.id);
-      checkoutUrl = checkout.url;
-      checkoutSessionId = checkout.id;
+      try {
+        const checkout = await createStripeCheckoutSession({
+          secretKey: deps.config.stripeSecretKey,
+          bidId: bid.id,
+          amountCents,
+          origin: deps.config.origin,
+          fetchImpl: deps.fetchImpl,
+        });
+        await deps.store.attachCheckoutSession(bid.id, checkout.id);
+        checkoutUrl = checkout.url;
+        checkoutSessionId = checkout.id;
+      } catch {
+        return c.json({ error: "payments_not_ready" }, 503);
+      }
     }
     return c.json({
       bidId: bid.id,
@@ -516,7 +576,7 @@ async function readJson(c: {
 function profileFromBody(body: Record<string, unknown>) {
   const displayName = String(body.displayName ?? "").trim();
   const headline = String(body.headline ?? "").trim();
-  const pitch = String(body.pitch ?? headline).trim();
+  const pitch = String(body.pitch ?? (headline || displayName)).trim();
   const websiteUrl = String(body.websiteUrl ?? "").trim();
   const rawLinkedin = String(body.linkedinUrl ?? "").trim();
   const linkedinUrl =
@@ -528,7 +588,7 @@ function profileFromBody(body: Record<string, unknown>) {
       ? handleFromLinkedinSlug(slug)
       : handleFromName(displayName);
   }
-  if (!isValidHandle(handle) || !displayName || !headline || !pitch) {
+  if (!isValidHandle(handle) || !displayName) {
     return null;
   }
   return {
@@ -712,4 +772,60 @@ async function googleEmail(
   });
   const user = (await userRes.json()) as { email?: string };
   return user.email ? normalizeEmail(user.email) : null;
+}
+
+function readLinkedinDraft(c: Parameters<typeof getCookie>[0]) {
+  const raw = getCookie(c, "wmw_li");
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw) as {
+      displayName?: string;
+      photoUrl?: string;
+      headline?: string;
+    };
+    return {
+      displayName: String(parsed.displayName ?? ""),
+      photoUrl: String(parsed.photoUrl ?? ""),
+      headline: String(parsed.headline ?? ""),
+    };
+  } catch {
+    return null;
+  }
+}
+
+async function linkedinProfile(
+  c: Parameters<typeof getCookie>[0],
+  deps: AppDeps,
+  origin: string,
+) {
+  if (!deps.config.linkedinClientId || !deps.config.linkedinClientSecret) {
+    return null;
+  }
+  const expected = getCookie(c, "wmw_oauth");
+  const state = c.req.query("state") ?? "";
+  if (!expected || expected !== `linkedin:${state}`) return null;
+  const code = c.req.query("code") ?? "";
+  const fetchFn = deps.fetchImpl ?? fetch;
+  const tokenRes = await fetchFn("https://www.linkedin.com/oauth/v2/accessToken", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      grant_type: "authorization_code",
+      code,
+      client_id: deps.config.linkedinClientId,
+      client_secret: deps.config.linkedinClientSecret,
+      redirect_uri: `${origin}/api/auth/linkedin/callback`,
+    }),
+  });
+  const tokenJson = (await tokenRes.json()) as { access_token?: string };
+  if (!tokenJson.access_token) return null;
+  const userRes = await fetchFn("https://api.linkedin.com/v2/userinfo", {
+    headers: { Authorization: `Bearer ${tokenJson.access_token}` },
+  });
+  const parsed = parseLinkedinUserinfo(await userRes.json());
+  if (!parsed.email) return null;
+  return {
+    ...parsed,
+    email: normalizeEmail(parsed.email),
+  };
 }

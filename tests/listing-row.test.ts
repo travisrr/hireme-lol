@@ -14,11 +14,10 @@ describe("board rows", () => {
     expect(OUTBID_MIN_PX).toBe(32);
   });
 
-  it("locks the two claim why-lines", () => {
-    expect(SITE.claimWhy).toEqual([
-      "The professional leaderboard. Bid for your name, get seen, get outbid, do it again.",
-      "People looking for someone to work with start at #1. Your LinkedIn and site take the clicks. Higher bid = higher rank. That’s it.",
-    ]);
+  it("locks one tight claim why-line", () => {
+    expect(SITE.claimWhy).toBe(
+      "Higher bid = higher rank. Get seen. Get outbid. That’s it.",
+    );
   });
 
   it("highlights ranks 1–10 only", () => {
