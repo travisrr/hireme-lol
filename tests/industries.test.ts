@@ -57,6 +57,8 @@ describe("category tabs", () => {
     expect(isValidHandle("technology")).toBe(false);
     expect(isValidHandle("real-estate")).toBe(false);
     expect(isValidHandle("consulting")).toBe(false);
+    expect(isValidHandle("privacy")).toBe(false);
+    expect(isValidHandle("terms")).toBe(false);
     expect(isValidHandle("how-it-works")).toBe(false);
   });
 
