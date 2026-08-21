@@ -242,6 +242,9 @@ body {
   align-items: stretch;
   gap: 16px;
   padding-top: 12px;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
 }
 
 @media (min-width: 1024px) {
@@ -268,7 +271,7 @@ body {
 }
 
 .hero-claim-why {
-  max-width: 52ch;
+  max-width: 40ch;
   font-size: 15px;
   line-height: 1.3;
 }

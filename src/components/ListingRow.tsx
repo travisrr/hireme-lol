@@ -8,11 +8,12 @@ import { isRecentBid } from "../lib/time";
 import type { BidEconomics, RankedPublicListing } from "../lib/types";
 import { ClickStat } from "./ClickStat";
 import { MovementMark } from "./MovementMark";
-import { PhotoTile } from "./PhotoTile";
+import { PHOTO_RADIUS_PX, PhotoTile } from "./PhotoTile";
 
 export const TOP_TEN_CUTOFF = 10;
 export const ROW_MIN_PX = 72;
 export const PHOTO_PX = 44;
+export const PHOTO_RADIUS = PHOTO_RADIUS_PX;
 export const OUTBID_MIN_PX = 32;
 
 type ListingRowProps = {
@@ -49,7 +50,7 @@ export function ListingRow({ listing, board, economics }: ListingRowProps) {
         </span>
         <MovementMark movement={listing.movement} />
       </div>
-      <PhotoTile src={listing.photoUrl} />
+      <PhotoTile src={listing.photoUrl} radius={PHOTO_RADIUS} />
       <button
         type="button"
         onClick={() => {

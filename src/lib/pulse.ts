@@ -1,5 +1,10 @@
 import type { ReceiptItem } from "../components/ReceiptCard";
-import { fillPulseRows, seededActivity, seededTrending } from "./pulse-seed";
+import {
+  fillPulseRows,
+  fillUniquePeople,
+  seededActivity,
+  seededTrending,
+} from "./pulse-seed";
 
 export const PULSE_LIST_LIMIT = 5;
 export const PULSE_ROW_PX = 40;
@@ -13,7 +18,7 @@ export function itemsForTab(
 ): ReceiptItem[] {
   switch (tab) {
     case "trending":
-      return fillPulseRows(trending, seededTrending());
+      return fillUniquePeople(trending, seededTrending());
     case "activity":
       return fillPulseRows(activity, seededActivity());
     default: {

@@ -78,6 +78,14 @@ describe("hero pulse card", () => {
       publicPhotoSrc(FOUNDING_HEADSHOT_KEYS.elon),
     ]);
     expect(seededTrending()).toHaveLength(5);
+    expect(new Set(seededTrending().map((row) => row.href)).size).toBe(5);
+    expect(seededTrending().map((row) => row.line)).toEqual([
+      "Elon Musk · #1 · $6 · 2h ago",
+      "Palmer Luckey · #2 · $4 · 3h ago",
+      "Jensen Huang · #3 · $2 · 4h ago",
+      "Maya Chen · #4 · $2 · 5h ago",
+      "Noah Okonkwo · #5 · $2 · 6h ago",
+    ]);
     expect(seededBoardActivity()).toHaveLength(5);
     expect(boardActivityOrSeed([]).map((row) => row.displayName)).toEqual([
       "Elon Musk",

@@ -7,6 +7,8 @@ const PULSE_FILL = 5;
 const ELON_PHOTO = publicPhotoSrc(FOUNDING_HEADSHOT_KEYS.elon);
 const PALMER_PHOTO = publicPhotoSrc(FOUNDING_HEADSHOT_KEYS.palmer);
 const JENSEN_PHOTO = publicPhotoSrc(FOUNDING_HEADSHOT_KEYS.jensen);
+const MAYA_PHOTO = "/lock-shots/maya.jpg";
+const NOAH_PHOTO = "/lock-shots/noah.jpg";
 
 export type SeededPulseRow = ReceiptItem & { line: string };
 
@@ -96,20 +98,25 @@ export function seededTrending(): SeededPulseRow[] {
       at: 0,
     },
     {
-      id: "seed-trend-elon-repeat",
-      href: "/elon",
-      photoUrl: ELON_PHOTO,
-      line: pulseTrendingLine("Elon Musk", 1, "$6", "2h ago"),
+      id: "seed-trend-maya",
+      href: "/maya",
+      photoUrl: MAYA_PHOTO,
+      line: pulseTrendingLine("Maya Chen", 4, "$2", "5h ago"),
       at: 0,
     },
     {
-      id: "seed-trend-palmer-repeat",
-      href: "/palmer",
-      photoUrl: PALMER_PHOTO,
-      line: pulseTrendingLine("Palmer Luckey", 2, "$4", "3h ago"),
+      id: "seed-trend-noah",
+      href: "/noah",
+      photoUrl: NOAH_PHOTO,
+      line: pulseTrendingLine("Noah Okonkwo", 5, "$2", "6h ago"),
       at: 0,
     },
   ];
+}
+
+function pulsePersonKey(item: ReceiptItem): string {
+  if (item.href) return item.href;
+  return item.line.split("·")[0]?.trim().toLowerCase() || item.id;
 }
 
 export function fillPulseRows(
@@ -119,16 +126,24 @@ export function fillPulseRows(
   const rows: ReceiptItem[] = items.slice(0, PULSE_FILL);
   for (const extra of seed) {
     if (rows.length >= PULSE_FILL) break;
-    if (rows.some((row) => row.id === extra.id || row.line === extra.line)) {
-      continue;
-    }
+    if (rows.some((row) => row.id === extra.id)) continue;
     rows.push(extra);
   }
-  let index = 0;
-  while (rows.length < PULSE_FILL && seed.length > 0) {
-    const extra = seed[index % seed.length];
-    rows.push({ ...extra, id: `${extra.id}-pad-${rows.length}` });
-    index += 1;
+  return rows;
+}
+
+export function fillUniquePeople(
+  items: readonly ReceiptItem[],
+  seed: readonly ReceiptItem[],
+): ReceiptItem[] {
+  const rows: ReceiptItem[] = [];
+  const seen = new Set<string>();
+  for (const item of [...items, ...seed]) {
+    if (rows.length >= PULSE_FILL) break;
+    const key = pulsePersonKey(item);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    rows.push(item);
   }
   return rows;
 }

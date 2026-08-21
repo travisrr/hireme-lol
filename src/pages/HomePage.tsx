@@ -15,8 +15,7 @@ import {
   tabLabel,
 } from "../lib/industries";
 import { PAGE_COLUMN } from "../lib/measure";
-import { formatUsdFromCents } from "../lib/money";
-import { pulseTrendingLine, seededActivity } from "../lib/pulse-seed";
+import { seededActivity, seededTrending } from "../lib/pulse-seed";
 import { SITE } from "../lib/site";
 import { DEFAULT_ECONOMICS, type BidEconomics } from "../lib/types";
 import type { RankedBoardRow } from "../server/store";
@@ -59,23 +58,7 @@ export function HomePage() {
   const topTen = rows.slice(0, TOP_TEN_CUTOFF);
   const rest = rows.slice(TOP_TEN_CUTOFF);
 
-  const hoursByRank: Record<number, string> = {
-    1: "2h ago",
-    2: "3h ago",
-    3: "4h ago",
-  };
-  const trending = rows.slice(0, 5).map((row) => ({
-    id: row.id,
-    href: `/${row.handle}`,
-    line: pulseTrendingLine(
-      row.displayName,
-      row.rank,
-      formatUsdFromCents(row.currentBidCents),
-      hoursByRank[row.rank] ?? "2h ago",
-    ),
-    photoUrl: row.photoUrl,
-    at: row.currentBidAt,
-  }));
+  const trending = seededTrending();
   const receipts = seededActivity();
 
   return (
