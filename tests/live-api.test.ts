@@ -119,7 +119,7 @@ describe("live API", () => {
     const { app } = testApp();
     const cookie = await magicLogin(app, "maya@example.com");
     expect((await createProfile(app, cookie, "maya")).status).toBe(200);
-    const paid = await pay(app, cookie, 500, "evt_maya");
+    const paid = await pay(app, cookie, 200, "evt_maya");
     expect(paid.webhookBody.result).toEqual({
       outcome: "confirmed",
       listingId: expect.any(String),
@@ -144,7 +144,14 @@ describe("live API", () => {
     expect(second.webhookBody.result).toMatchObject({ outcome: "idempotent" });
   });
 
-  it("rejects a bid under $5 and keeps the board empty", async () => {
+  it("exposes live economics from config", async () => {
+    const { app } = testApp();
+    const body = await json(await app.request("/api/config"));
+    expect(body.minEntryCents).toBe(200);
+    expect(body.minIncrementCents).toBe(200);
+  });
+
+  it("rejects a bid under the configured entry and keeps the board empty", async () => {
     const { app } = testApp();
     const cookie = await magicLogin(app, "low@example.com");
     await createProfile(app, cookie, "lowball");
@@ -154,7 +161,7 @@ describe("live API", () => {
         "Content-Type": "application/json",
         Cookie: cookie,
       },
-      body: JSON.stringify({ amountCents: 499 }),
+      body: JSON.stringify({ amountCents: 199 }),
     });
     expect(bidRes.status).toBe(400);
     const board = await json(await app.request("/api/board"));
@@ -167,8 +174,8 @@ describe("live API", () => {
     const b = await magicLogin(app, "b@example.com");
     await createProfile(app, a, "alpha");
     await createProfile(app, b, "beta");
-    await pay(app, a, 500, "evt_a");
-    await pay(app, b, 600, "evt_b");
+    await pay(app, a, 200, "evt_a");
+    await pay(app, b, 400, "evt_b");
     const board = await json(await app.request("/api/board"));
     const listings = board.listings as Array<{ handle: string; rank: number }>;
     expect(listings.map((row) => row.handle)).toEqual(["beta", "alpha"]);
@@ -180,7 +187,7 @@ describe("live API", () => {
     const { app } = testApp();
     const a = await magicLogin(app, "a@example.com");
     await createProfile(app, a, "alpha");
-    await pay(app, a, 500, "evt_a");
+    await pay(app, a, 200, "evt_a");
     const hit = await json(await app.request("/api/board?q=alp"));
     const miss = await json(await app.request("/api/board?q=zzz"));
     expect(hit.listings as unknown[]).toHaveLength(1);
@@ -192,7 +199,7 @@ describe("live API", () => {
     const admin = await magicLogin(app, "admin@workwithme.lol");
     const user = await magicLogin(app, "maya@example.com");
     await createProfile(app, user, "maya");
-    const paid = await pay(app, user, 500, "evt_hide");
+    const paid = await pay(app, user, 200, "evt_hide");
     const listingId = (paid.webhookBody.result as { listingId: string }).listingId;
     const hide = await app.request(`/api/admin/listings/${listingId}/hidden`, {
       method: "POST",

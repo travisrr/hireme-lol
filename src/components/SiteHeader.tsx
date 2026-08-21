@@ -15,32 +15,36 @@ export function SiteHeader({
   showSearch = true,
 }: SiteHeaderProps) {
   return (
-    <header className="border-b border-line">
-      <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
-        <Link to="/" className="flex items-baseline gap-2 no-underline">
-          <span className="font-display text-2xl tracking-tight text-paper">
+    <header className="sticky top-0 z-40 border-b border-line bg-ink">
+      <div className="mx-auto flex max-w-5xl flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:gap-6">
+        <Link
+          to="/"
+          aria-label={SITE.name}
+          className="flex items-baseline no-underline"
+        >
+          <span className="font-display text-xl tracking-tight text-paper uppercase sm:text-2xl">
             {SITE.wordmark}
           </span>
-          <span className="font-mono text-sm font-semibold text-money">
+          <span className="font-mono text-xs font-medium text-paper sm:text-sm">
             {SITE.tld}
           </span>
         </Link>
-        <div className="flex flex-1 items-center gap-2 sm:max-w-xl sm:justify-end">
+        <div className="flex min-w-0 flex-1 items-center gap-3 sm:justify-end">
           {showSearch ? (
-            <label className="relative min-w-0 flex-1 sm:max-w-xs">
+            <label className="relative min-w-0 flex-1 sm:max-w-sm">
               <span className="sr-only">Search the board</span>
               <input
                 value={query}
                 onChange={(event) => onQueryChange(event.target.value)}
-                placeholder="Search name, company, pitch…"
-                className="w-full rounded-sm border border-line bg-panel px-3 py-2 font-mono text-xs text-paper outline-none placeholder:text-mute focus:border-money"
+                placeholder="Search the board"
+                className="w-full border border-line bg-ink px-3 py-2 font-mono text-xs text-paper outline-none placeholder:text-mute focus:border-paper"
               />
             </label>
           ) : null}
           <button
             type="button"
             onClick={onCta}
-            className="shrink-0 rounded-sm bg-money px-3 py-2 font-mono text-[11px] font-semibold tracking-wide text-ink uppercase hover:bg-paper"
+            className="shrink-0 bg-paper px-3 py-2 font-mono text-[11px] font-semibold tracking-wide text-ink uppercase hover:bg-mute"
           >
             {SITE.cta}
           </button>

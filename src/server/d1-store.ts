@@ -1,6 +1,8 @@
 import { applyConfirmedPayment } from "../lib/apply-bid";
+import { parseEconomics } from "../lib/economics";
 import { listingsThatFell } from "../lib/outbid";
 import { movementFor, rankListings } from "../lib/ranking";
+import { DEFAULT_ECONOMICS, type BidEconomics } from "../lib/types";
 import type {
   ActivityRow,
   ApplyStripeInput,
@@ -118,6 +120,24 @@ export class D1Store implements Store {
 
   constructor(db: D1Like) {
     this.db = db;
+  }
+
+  async getEconomics(): Promise<BidEconomics> {
+    try {
+      const result = await this.db
+        .prepare(
+          `SELECT key, value FROM site_config
+           WHERE key IN ('min_entry_cents', 'min_increment_cents')`,
+        )
+        .all<{ key: string; value: string }>();
+      const rows: Record<string, string> = {};
+      for (const row of result.results) {
+        rows[row.key] = row.value;
+      }
+      return parseEconomics(rows);
+    } catch {
+      return { ...DEFAULT_ECONOMICS };
+    }
   }
 
   async getBoard(query?: string): Promise<RankedBoardRow[]> {
@@ -472,6 +492,7 @@ export class D1Store implements Store {
         amountCents: input.amountCents ?? bid.amountCents,
         paidAt: input.paidAt,
       },
+      await this.getEconomics(),
     );
     if (applied.result.outcome === "refund") {
       await this.db

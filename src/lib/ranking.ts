@@ -1,11 +1,14 @@
-import { LAUNCH_ECONOMICS, type ListingForRank, type Movement, type Ranked } from "./types";
+import type { BidEconomics, ListingForRank, Movement, Ranked } from "./types";
 
-export function minBidToEnter(): number {
-  return LAUNCH_ECONOMICS.minEntryCents;
+export function minBidToEnter(economics: BidEconomics): number {
+  return economics.minEntryCents;
 }
 
-export function minBidToOvertake(currentBidCents: number): number {
-  return currentBidCents + LAUNCH_ECONOMICS.minIncrementCents;
+export function minBidToOvertake(
+  currentBidCents: number,
+  economics: BidEconomics,
+): number {
+  return currentBidCents + economics.minIncrementCents;
 }
 
 /**
@@ -15,14 +18,15 @@ export function minBidToOvertake(currentBidCents: number): number {
 export function claimPriceForRank(
   ranked: ReadonlyArray<ListingForRank>,
   rank: number,
+  economics: BidEconomics,
 ): number {
   if (rank < 1) {
     throw new Error("rank is 1-indexed");
   }
   if (ranked.length === 0 || rank > ranked.length) {
-    return minBidToEnter();
+    return minBidToEnter(economics);
   }
-  return minBidToOvertake(ranked[rank - 1].currentBidCents);
+  return minBidToOvertake(ranked[rank - 1].currentBidCents, economics);
 }
 
 export function compareListings(a: ListingForRank, b: ListingForRank): number {
@@ -57,6 +61,7 @@ export type BidApplyInput = {
   amountCents: number;
   /** Confirmed bid already on this listing, if any. */
   listingCurrentBidCents: number | null;
+  economics: BidEconomics;
 };
 
 export type BidApplyResult =
@@ -65,18 +70,22 @@ export type BidApplyResult =
 
 /**
  * Can this amount legally become the listing's new current bid?
- * Joining the board: >= $5.
- * Raising: at least +$1 over that listing's own current bid.
- * Position vs others is computed after apply — a $5 bid on a $2,000 board is valid and ranks last.
+ * Joining the board: >= configured entry.
+ * Raising: at least current bid + configured increment.
+ * Position vs others is computed after apply — an entry-floor bid on a
+ * high board is valid and ranks last.
  */
 export function evaluateBidApply(input: BidApplyInput): BidApplyResult {
-  if (input.amountCents < minBidToEnter()) {
+  if (input.amountCents < minBidToEnter(input.economics)) {
     return { ok: false, reason: "below_entry" };
   }
   if (input.listingCurrentBidCents === null) {
     return { ok: true, kind: "enter" };
   }
-  if (input.amountCents < minBidToOvertake(input.listingCurrentBidCents)) {
+  if (
+    input.amountCents <
+    minBidToOvertake(input.listingCurrentBidCents, input.economics)
+  ) {
     return { ok: false, reason: "not_an_overtake" };
   }
   return { ok: true, kind: "raise" };

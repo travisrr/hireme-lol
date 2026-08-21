@@ -45,6 +45,10 @@ One public name. The wordmark matches the domain people type.
 
 **Microcopy:** Higher bid = higher rank. That's basically it.
 
+**Share:** I'm #37 on workwithme.lol. Think I deserve to be lower?
+
+**Footer:** Money buys placement, not quality.
+
 ---
 
 ## v1 rules
@@ -56,7 +60,7 @@ One public name. The wordmark matches the domain people type.
 - Users type their own name, photo, headline, company, pitch, LinkedIn, and website. **Do not scrape LinkedIn.**
 - Stripe **one-time bids**, not subscriptions.
 - Outbid moves you down. It does not remove the listing.
-- Launch economics (do not change): **$5 to enter**, **+$1 to overtake**.
+- Launch economics live in `site_config` (`min_entry_cents`, `min_increment_cents`) and `/api/config`. Current values: **$2 to enter**, **+$2 to overtake**. Next rank price = current qualifying bid + increment.
 - Ties are deterministic: **highest bid**, then **earliest timestamp at that amount**, then **profile `created_at`**.
 - Stripe webhooks are authoritative. Checkout is a request; the webhook commits the rank.
 
@@ -83,7 +87,7 @@ What we deliberately do differently:
 - We will not show a fake “this made $X since launch” counter.
 - We say the quiet part: rank is purchased attention, not a competence score.
 
-outbid’s #1 claim price appeared to use a larger increment than lower ranks. **We do not copy that.** Launch economics stay $5 entry / +$1 to overtake.
+outbid’s #1 claim price appeared to use a larger increment than lower ranks. **We do not copy that.** One increment from config applies at every rank.
 
 ---
 

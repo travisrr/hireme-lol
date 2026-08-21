@@ -40,8 +40,19 @@ function configFromEnv(env: Bindings): AppConfig {
   };
 }
 
+function isWorkerFirst(pathname: string): boolean {
+  return pathname.startsWith("/api/") || pathname.startsWith("/og/");
+}
+
 export default {
   async fetch(request: Request, env: Bindings): Promise<Response> {
+    const url = new URL(request.url);
+    if (!isWorkerFirst(url.pathname) && env.ASSETS) {
+      return env.ASSETS.fetch(request);
+    }
+    if (!env.DB) {
+      return Response.json({ error: "db_unbound" }, { status: 500 });
+    }
     const app = createApp({
       store: new D1Store(env.DB),
       config: configFromEnv(env),

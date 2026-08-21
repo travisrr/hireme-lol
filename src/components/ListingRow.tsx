@@ -1,12 +1,14 @@
 import { Link } from "react-router-dom";
 import { formatUsdFromCents } from "../lib/money";
 import { claimPriceForRank } from "../lib/ranking";
-import type { RankedPublicListing } from "../lib/types";
+import { isRecentBid } from "../lib/time";
+import type { BidEconomics, RankedPublicListing } from "../lib/types";
 import { MovementMark } from "./MovementMark";
 
 type ListingRowProps = {
   listing: RankedPublicListing;
   board: RankedPublicListing[];
+  economics: BidEconomics;
   featured?: boolean;
   onOutbid: () => void;
 };
@@ -14,79 +16,58 @@ type ListingRowProps = {
 export function ListingRow({
   listing,
   board,
+  economics,
   featured = false,
   onOutbid,
 }: ListingRowProps) {
-  const claim = claimPriceForRank(board, listing.rank);
+  const claim = claimPriceForRank(board, listing.rank, economics);
+  const flash = isRecentBid(listing.currentBidAt);
 
   if (featured) {
     return (
-      <article className="border border-money/40 bg-panel p-5 sm:p-7">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <span className="font-mono text-4xl text-money tabular sm:text-5xl">
-              #{listing.rank}
-            </span>
+      <article
+        className={`flex flex-col gap-4 border border-line bg-panel px-4 py-5 sm:flex-row sm:items-center sm:gap-5 ${flash ? "bid-flash" : ""}`}
+      >
+        <span className="font-mono text-4xl leading-none text-paper tabular sm:w-16 sm:text-5xl">
+          #{listing.rank}
+        </span>
+        <img
+          src={listing.photoUrl}
+          alt=""
+          className="size-16 shrink-0 object-cover sm:size-20"
+        />
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-baseline gap-2">
+            <Link
+              to={`/${listing.handle}`}
+              className={`${listing.rank === 1 ? "font-display text-2xl sm:text-3xl" : "font-sans text-xl font-medium"} text-paper no-underline hover:text-paper`}
+            >
+              {listing.displayName}
+            </Link>
             <MovementMark movement={listing.movement} />
+            {listing.isFoundingMember ? (
+              <span className="font-mono text-[10px] text-founding uppercase">
+                F100
+              </span>
+            ) : null}
           </div>
-          <p className="font-mono text-4xl text-gold tabular sm:text-5xl">
-            {formatUsdFromCents(listing.currentBidCents)}
+          <p className="mt-1 truncate text-sm text-mute">
+            {listing.headline}
+            {listing.company ? ` · ${listing.company}` : ""}
           </p>
+          <p className="mt-1 font-mono text-xs text-mute">/{listing.handle}</p>
         </div>
-        <div className="mt-6 flex flex-col gap-5 sm:flex-row">
-          <img
-            src={listing.photoUrl}
-            alt=""
-            className="h-24 w-24 rounded-sm border border-line bg-ink"
-          />
-          <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <Link
-                to={`/${listing.handle}`}
-                className="font-display text-3xl text-paper no-underline hover:text-money"
-              >
-                {listing.displayName}
-              </Link>
-              {listing.isFoundingMember ? (
-                <span className="font-mono text-[10px] tracking-wide text-founding uppercase">
-                  Founding 100
-                </span>
-              ) : null}
-            </div>
-            <p className="mt-1 text-sm text-paper/80">
-              {listing.headline}
-              {listing.company ? ` · ${listing.company}` : ""}
-            </p>
-            <p className="mt-3 max-w-2xl text-lg text-paper">{listing.pitch}</p>
-            <div className="mt-4 flex flex-wrap gap-3 font-mono text-xs">
-              {listing.linkedinUrl ? (
-                <a
-                  href={listing.linkedinUrl}
-                  className="text-mute underline hover:text-paper"
-                >
-                  LinkedIn
-                </a>
-              ) : null}
-              <a
-                href={listing.websiteUrl}
-                className="text-mute underline hover:text-paper"
-              >
-                Website
-              </a>
-              <span className="text-mute">/{listing.handle}</span>
-            </div>
-          </div>
-        </div>
-        <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-line pt-4">
-          <p className="font-mono text-xs text-mute">
-            Claim this rank for {formatUsdFromCents(claim)} · mock price
+        <div className="sm:text-right">
+          <p className="font-mono text-3xl text-paper tabular sm:text-4xl">
+            {formatUsdFromCents(listing.currentBidCents)}
           </p>
           <button
             type="button"
             onClick={onOutbid}
-            className="rounded-sm bg-paper px-4 py-2 font-mono text-xs font-semibold tracking-wide text-ink uppercase hover:bg-money"
+            className="mt-2 font-mono text-[11px] text-paper uppercase hover:text-paper"
           >
-            Outbid
+            claim this rank for{" "}
+            <span className="text-paper tabular">{formatUsdFromCents(claim)}</span>
           </button>
         </div>
       </article>
@@ -94,53 +75,36 @@ export function ListingRow({
   }
 
   return (
-    <article className="grid grid-cols-[auto_1fr_auto] items-center gap-3 border-b border-line py-4 sm:grid-cols-[4.5rem_3.5rem_1fr_auto_auto] sm:gap-4">
-      <div className="flex items-center gap-2">
-        <span className="font-mono text-lg text-money tabular">
-          #{listing.rank}
-        </span>
+    <article
+      className={`grid grid-cols-[2.25rem_2.25rem_minmax(0,1fr)_auto] items-center gap-3 border-b border-line py-3 sm:grid-cols-[2.5rem_2.5rem_minmax(0,1fr)_auto_auto] ${flash ? "bid-flash" : ""}`}
+    >
+      <div className="flex items-center gap-1">
+        <span className="font-mono text-sm text-paper tabular">{listing.rank}</span>
         <MovementMark movement={listing.movement} />
       </div>
-      <img
-        src={listing.photoUrl}
-        alt=""
-        className="hidden h-14 w-14 rounded-sm border border-line bg-ink sm:block"
-      />
+      <img src={listing.photoUrl} alt="" className="size-9 object-cover" />
       <div className="min-w-0">
-        <div className="flex flex-wrap items-baseline gap-2">
-          <Link
-            to={`/${listing.handle}`}
-            className="truncate font-medium text-paper no-underline hover:text-money"
-          >
-            {listing.displayName}
-          </Link>
-          {listing.isFoundingMember ? (
-            <span className="font-mono text-[10px] text-founding uppercase">
-              F100
-            </span>
-          ) : null}
-        </div>
-        <p className="truncate text-sm text-mute">
-          {listing.headline}
-          {listing.company ? ` · ${listing.company}` : ""}
-        </p>
-        <p className="mt-1 truncate text-sm text-paper/80">{listing.pitch}</p>
-      </div>
-      <p className="hidden font-mono text-lg text-gold tabular sm:block">
-        {formatUsdFromCents(listing.currentBidCents)}
-      </p>
-      <div className="text-right">
-        <p className="font-mono text-lg text-gold tabular sm:hidden">
-          {formatUsdFromCents(listing.currentBidCents)}
-        </p>
-        <button
-          type="button"
-          onClick={onOutbid}
-          className="mt-1 rounded-sm border border-line px-2 py-1 font-mono text-[10px] tracking-wide text-paper uppercase hover:border-money hover:text-money"
+        <Link
+          to={`/${listing.handle}`}
+          className="truncate font-sans text-sm text-paper no-underline hover:text-paper"
         >
-          Outbid · {formatUsdFromCents(claim)}
-        </button>
+          {listing.displayName}
+        </Link>
+        <p className="truncate font-mono text-[11px] text-mute">
+          /{listing.handle}
+        </p>
       </div>
+      <span className="font-mono text-base text-paper tabular">
+        {formatUsdFromCents(listing.currentBidCents)}
+      </span>
+      <button
+        type="button"
+        onClick={onOutbid}
+        className="col-span-4 justify-self-start font-mono text-[11px] text-mute uppercase hover:text-paper sm:col-span-1 sm:justify-self-end"
+      >
+        claim this rank for{" "}
+        <span className="text-paper tabular">{formatUsdFromCents(claim)}</span>
+      </button>
     </article>
   );
 }

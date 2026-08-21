@@ -1,5 +1,5 @@
 import type { ApplyPaymentResult } from "../lib/apply-bid";
-import type { EventType, Movement } from "../lib/types";
+import type { BidEconomics, EventType, Movement } from "../lib/types";
 
 export type UserRow = {
   id: string;
@@ -118,6 +118,7 @@ export type NotificationRow = {
 };
 
 export interface Store {
+  getEconomics(): Promise<BidEconomics>;
   getBoard(query?: string): Promise<RankedBoardRow[]>;
   getActivity(limit: number): Promise<ActivityRow[]>;
   getProfileByHandle(handle: string): Promise<{

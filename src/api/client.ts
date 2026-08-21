@@ -1,3 +1,4 @@
+import type { BidEconomics } from "../lib/types";
 import type { ActivityRow, RankedBoardRow, SessionRow } from "../server/store";
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
@@ -35,11 +36,12 @@ export function fetchMe() {
 }
 
 export function fetchConfig() {
-  return request<{
-    minEntryCents: number;
-    stripeEnabled: boolean;
-    oauth: { github: boolean; google: boolean };
-  }>("/api/config");
+  return request<
+    BidEconomics & {
+      stripeEnabled: boolean;
+      oauth: { github: boolean; google: boolean };
+    }
+  >("/api/config");
 }
 
 export function requestMagicLink(email: string) {
@@ -119,4 +121,3 @@ export function setFounding(id: string, value: boolean) {
     body: JSON.stringify({ value }),
   });
 }
-

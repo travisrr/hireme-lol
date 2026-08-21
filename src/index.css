@@ -9,8 +9,6 @@
   --color-line: #2a291f;
   --color-paper: #f3eee2;
   --color-mute: #8b8676;
-  --color-money: #d6ff3d;
-  --color-gold: #f0c14b;
   --color-up: #3dffc5;
   --color-down: #ff5a4f;
   --color-founding: #c4a574;
@@ -31,10 +29,23 @@ body {
 }
 
 ::selection {
-  background: var(--color-money);
+  background: var(--color-paper);
   color: var(--color-ink);
 }
 
 .tabular {
   font-variant-numeric: tabular-nums;
+}
+
+@keyframes bid-flash {
+  0% {
+    background: color-mix(in srgb, var(--color-paper) 12%, var(--color-panel));
+  }
+  100% {
+    background: transparent;
+  }
+}
+
+.bid-flash {
+  animation: bid-flash 1.8s ease-out;
 }

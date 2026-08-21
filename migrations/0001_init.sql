@@ -179,7 +179,7 @@ CREATE TABLE site_config (
 
 -- Launch economics. Do not change without an explicit product decision.
 INSERT INTO site_config (key, value, updated_at) VALUES
-  ('min_entry_cents', '500', 0),
-  ('min_increment_cents', '100', 0),
+  ('min_entry_cents', '200', 0),
+  ('min_increment_cents', '200', 0),
   ('public_origin', 'https://workwithme.lol', 0),
   ('board_mode', 'global_only', 0);

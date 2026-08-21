@@ -8,8 +8,8 @@ import {
   saveProfile,
 } from "../api/client";
 import { formatUsdFromCents } from "../lib/money";
-import { minBidToEnter } from "../lib/ranking";
 import { SITE } from "../lib/site";
+import { DEFAULT_ECONOMICS, type BidEconomics } from "../lib/types";
 import type { SessionRow } from "../server/store";
 
 type JoinDialogProps = {
@@ -21,6 +21,7 @@ type JoinDialogProps = {
 export function JoinDialog({ open, onClose, onChanged }: JoinDialogProps) {
   const [session, setSession] = useState<SessionRow | null>(null);
   const [oauth, setOauth] = useState({ github: false, google: false });
+  const [economics, setEconomics] = useState<BidEconomics>(DEFAULT_ECONOMICS);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -37,6 +38,10 @@ export function JoinDialog({ open, onClose, onChanged }: JoinDialogProps) {
       .then(([me, config]) => {
         setSession(me);
         setOauth(config.oauth);
+        setEconomics({
+          minEntryCents: config.minEntryCents,
+          minIncrementCents: config.minIncrementCents,
+        });
       })
       .catch(() => {
         setSession(null);
@@ -44,6 +49,9 @@ export function JoinDialog({ open, onClose, onChanged }: JoinDialogProps) {
   }, [open]);
 
   if (!open) return null;
+
+  const entry = formatUsdFromCents(economics.minEntryCents);
+  const increment = formatUsdFromCents(economics.minIncrementCents);
 
   async function handleMagic(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -122,20 +130,20 @@ export function JoinDialog({ open, onClose, onChanged }: JoinDialogProps) {
         className="absolute inset-0 cursor-default"
         onClick={onClose}
       />
-      <div className="relative w-full max-w-lg rounded-sm border border-line bg-panel p-5 shadow-2xl">
-        <p className="font-mono text-[11px] text-money uppercase">
+      <div className="relative w-full max-w-lg border border-line bg-panel p-5 shadow-2xl">
+        <p className="font-mono text-[11px] text-paper uppercase">
           Live board · one-time bid · {SITE.name}
         </p>
         <h2 className="mt-2 font-display text-3xl">{SITE.cta}</h2>
         <p className="mt-2 text-sm text-mute">
-          Entry {formatUsdFromCents(minBidToEnter())}. +$1 to overtake. Stripe
-          is authoritative. No fake listings.
+          Entry {entry}. {increment} to overtake. Stripe is authoritative. No
+          fake listings.
         </p>
         {error ? (
           <p className="mt-3 font-mono text-xs text-down">{error}</p>
         ) : null}
         {done ? (
-          <p className="mt-4 font-mono text-sm text-money">{done}</p>
+          <p className="mt-4 font-mono text-sm text-paper">{done}</p>
         ) : !session?.user ? (
           <div className="mt-5 grid gap-3">
             <form className="grid gap-3" onSubmit={handleMagic}>
@@ -143,7 +151,7 @@ export function JoinDialog({ open, onClose, onChanged }: JoinDialogProps) {
               <button
                 type="submit"
                 disabled={busy}
-                className="rounded-sm bg-money px-4 py-2 font-mono text-xs font-semibold text-ink uppercase"
+                className="bg-paper px-4 py-2 font-mono text-xs font-semibold text-ink uppercase"
               >
                 Email a magic link
               </button>
@@ -151,7 +159,7 @@ export function JoinDialog({ open, onClose, onChanged }: JoinDialogProps) {
             {previewUrl ? (
               <a
                 href={previewUrl}
-                className="break-all font-mono text-xs text-money underline"
+                className="break-all font-mono text-xs text-paper underline"
               >
                 Local preview link (email not configured)
               </a>
@@ -202,7 +210,7 @@ export function JoinDialog({ open, onClose, onChanged }: JoinDialogProps) {
             <button
               type="submit"
               disabled={busy}
-              className="rounded-sm bg-money px-4 py-2 font-mono text-xs font-semibold text-ink uppercase"
+              className="bg-paper px-4 py-2 font-mono text-xs font-semibold text-ink uppercase"
             >
               Save profile
             </button>
@@ -213,14 +221,14 @@ export function JoinDialog({ open, onClose, onChanged }: JoinDialogProps) {
               Signed in as {session.user.email} · /{session.profile.handle}
             </p>
             <Field
-              label={`Bid (USD, min ${formatUsdFromCents(minBidToEnter())})`}
+              label={`Bid (USD, min ${entry})`}
               name="bid"
-              placeholder="5"
+              placeholder="2"
             />
             <button
               type="submit"
               disabled={busy}
-              className="rounded-sm bg-money px-4 py-2 font-mono text-xs font-semibold text-ink uppercase"
+              className="bg-paper px-4 py-2 font-mono text-xs font-semibold text-ink uppercase"
             >
               Bid
             </button>
@@ -253,7 +261,7 @@ function Field({
       <input
         name={name}
         placeholder={placeholder}
-        className="rounded-sm border border-line bg-ink px-3 py-2 text-sm text-paper outline-none placeholder:text-mute/70 focus:border-money"
+        className="border border-line bg-ink px-3 py-2 text-sm text-paper outline-none placeholder:text-mute/70 focus:border-paper"
       />
     </label>
   );

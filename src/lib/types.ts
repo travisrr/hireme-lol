@@ -57,9 +57,12 @@ export type BidEconomics = {
   minIncrementCents: number;
 };
 
-export const LAUNCH_ECONOMICS: BidEconomics = {
-  minEntryCents: 500,
-  minIncrementCents: 100,
+/** Launch defaults. Live values come from site_config / /api/config. */
+export const DEFAULT_ECONOMICS: BidEconomics = {
+  minEntryCents: 200,
+  minIncrementCents: 200,
 };
+
+export const LAUNCH_ECONOMICS = DEFAULT_ECONOMICS;
 
 export const PUBLIC_ORIGIN = "https://workwithme.lol";

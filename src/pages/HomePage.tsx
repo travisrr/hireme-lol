@@ -1,13 +1,15 @@
 import { useCallback, useEffect, useState } from "react";
-import { fetchBoard } from "../api/client";
-import { ActivityRail } from "../components/ActivityRail";
-import { Hero } from "../components/Hero";
+import { fetchBoard, fetchConfig } from "../api/client";
+import { ClaimHeadline } from "../components/ClaimHeadline";
 import { JoinDialog } from "../components/JoinDialog";
 import { ListingRow } from "../components/ListingRow";
-import { PreviewBanner } from "../components/PreviewBanner";
+import { ReceiptCard } from "../components/ReceiptCard";
 import { SiteFooter } from "../components/SiteFooter";
 import { SiteHeader } from "../components/SiteHeader";
 import { toPublicListing } from "../lib/board-view";
+import { formatUsdFromCents } from "../lib/money";
+import { receiptLine } from "../lib/receipts";
+import { DEFAULT_ECONOMICS, type BidEconomics } from "../lib/types";
 import type { ActivityRow, RankedBoardRow } from "../server/store";
 
 export function HomePage() {
@@ -15,13 +17,21 @@ export function HomePage() {
   const [joinOpen, setJoinOpen] = useState(false);
   const [listings, setListings] = useState<RankedBoardRow[]>([]);
   const [activity, setActivity] = useState<ActivityRow[]>([]);
+  const [economics, setEconomics] = useState<BidEconomics>(DEFAULT_ECONOMICS);
   const [error, setError] = useState<string | null>(null);
 
   const reload = useCallback(async (nextQuery = query) => {
     try {
-      const data = await fetchBoard(nextQuery);
+      const [data, config] = await Promise.all([
+        fetchBoard(nextQuery),
+        fetchConfig(),
+      ]);
       setListings(data.listings);
       setActivity(data.activity);
+      setEconomics({
+        minEntryCents: config.minEntryCents,
+        minIncrementCents: config.minIncrementCents,
+      });
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "board_failed");
@@ -36,65 +46,102 @@ export function HomePage() {
   }, [query, reload]);
 
   const rows = listings.map(toPublicListing);
-  const lead = rows[0];
-  const rest = rows.slice(1);
+  const topThree = rows.slice(0, 3);
+  const rest = rows.slice(3);
+  const openJoin = () => setJoinOpen(true);
+
+  const trending = rows
+    .filter((row) => row.movement === "up" || row.movement === "new")
+    .sort((a, b) => b.currentBidAt - a.currentBidAt)
+    .slice(0, 5)
+    .map((row) => ({
+      id: row.id,
+      href: `/${row.handle}`,
+      line: `${row.displayName} at #${row.rank} · ${formatUsdFromCents(row.currentBidCents)}`,
+      at: row.currentBidAt,
+    }));
+
+  const receipts = activity.map((item) => ({
+    id: item.id,
+    href: item.handle ? `/${item.handle}` : undefined,
+    line: receiptLine({
+      id: item.id,
+      type: item.type,
+      handle: item.handle ?? "",
+      displayName: item.displayName ?? "Someone",
+      amountCents: item.amountCents,
+      rankAfter: item.rankAfter,
+      createdAt: item.createdAt,
+    }),
+    at: item.createdAt,
+  }));
 
   return (
     <div className="min-h-screen bg-ink">
-      <PreviewBanner />
       <SiteHeader
         query={query}
         onQueryChange={setQuery}
-        onCta={() => setJoinOpen(true)}
+        onCta={openJoin}
       />
-      <Hero onCta={() => setJoinOpen(true)} />
-      <main className="mx-auto grid max-w-6xl gap-6 px-4 pb-10 lg:grid-cols-[1fr_17rem]">
-        <section>
-          <div className="mb-4 flex items-end justify-between gap-3">
-            <h2 className="font-display text-3xl">The board</h2>
-            <p className="font-mono text-[11px] text-mute uppercase">
-              Live · global · {rows.length} listed
-            </p>
-          </div>
+      <main className="mx-auto max-w-5xl px-4 pb-12">
+        <ClaimHeadline
+          board={rows}
+          economics={economics}
+          onAction={openJoin}
+        />
+        <div className="mt-8 grid gap-3 md:grid-cols-2">
+          <ReceiptCard
+            title="Trending"
+            items={trending}
+            empty="No movement yet."
+          />
+          <ReceiptCard
+            title="Latest activity"
+            items={receipts}
+            empty="No receipts yet."
+          />
+        </div>
+        <section className="mt-8">
           {error ? (
-            <p className="border border-down/40 p-6 font-mono text-sm text-down">
+            <p className="border border-down/40 p-4 font-mono text-sm text-down">
               {error}
             </p>
-          ) : lead ? (
-            <ListingRow
-              listing={lead}
-              board={rows}
-              featured
-              onOutbid={() => setJoinOpen(true)}
-            />
-          ) : (
-            <p className="border border-line p-6 text-sm text-mute">
-              The board is empty. First confirmed bid is #1. Five dollars.
-              Nobody is invented to keep you company.
+          ) : rows.length === 0 ? (
+            <p className="border border-line px-4 py-6 font-mono text-xs text-mute">
+              The board is empty. First confirmed bid is #1. Nobody is invented
+              to keep you company.
             </p>
+          ) : (
+            <>
+              <div className="grid gap-2">
+                {topThree.map((listing) => (
+                  <ListingRow
+                    key={listing.id}
+                    listing={listing}
+                    board={rows}
+                    economics={economics}
+                    featured
+                    onOutbid={openJoin}
+                  />
+                ))}
+              </div>
+              {rest.length > 0 ? (
+                <p className="mt-6 mb-2 font-mono text-[11px] tracking-[0.18em] text-mute uppercase">
+                  Top 3
+                </p>
+              ) : null}
+              {rest.map((listing) => (
+                <ListingRow
+                  key={listing.id}
+                  listing={listing}
+                  board={rows}
+                  economics={economics}
+                  onOutbid={openJoin}
+                />
+              ))}
+            </>
           )}
-          <div className="mt-2">
-            {rest.map((listing) => (
-              <ListingRow
-                key={listing.id}
-                listing={listing}
-                board={rows}
-                onOutbid={() => setJoinOpen(true)}
-              />
-            ))}
-          </div>
         </section>
-        <ActivityRail
-          items={activity.map((item) => ({
-            id: item.id,
-            type: item.type,
-            handle: item.handle ?? "",
-            displayName: item.displayName ?? "Someone",
-            amountCents: item.amountCents,
-            rankAfter: item.rankAfter,
-            createdAt: item.createdAt,
-          }))}
-        />
       </main>
       <SiteFooter />
       <JoinDialog

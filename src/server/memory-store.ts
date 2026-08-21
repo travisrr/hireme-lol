@@ -1,6 +1,7 @@
 import { applyConfirmedPayment, type BoardSnapshot } from "../lib/apply-bid";
 import { listingsThatFell } from "../lib/outbid";
 import { movementFor, rankListings } from "../lib/ranking";
+import { DEFAULT_ECONOMICS, type BidEconomics } from "../lib/types";
 import type {
   ActivityRow,
   ApplyStripeInput,
@@ -56,6 +57,11 @@ export class MemoryStore implements Store {
   notifications: NotificationRow[] = [];
   unsubscribes = new Map<string, string>();
   nextId = 1;
+  economics: BidEconomics = { ...DEFAULT_ECONOMICS };
+
+  async getEconomics(): Promise<BidEconomics> {
+    return this.economics;
+  }
 
   private id(prefix: string): string {
     const value = `${prefix}_${this.nextId}`;
@@ -300,13 +306,17 @@ export class MemoryStore implements Store {
     const listing = this.listings.get(bid.listingId);
     const snapshot = this.snapshotForApply(bid, listing);
     const before = this.rankSnapshots();
-    const applied = applyConfirmedPayment(snapshot, {
-      eventId: input.eventId,
-      bidId: bid.id,
-      listingId: bid.listingId,
-      amountCents: input.amountCents ?? bid.amountCents,
-      paidAt: input.paidAt,
-    });
+    const applied = applyConfirmedPayment(
+      snapshot,
+      {
+        eventId: input.eventId,
+        bidId: bid.id,
+        listingId: bid.listingId,
+        amountCents: input.amountCents ?? bid.amountCents,
+        paidAt: input.paidAt,
+      },
+      await this.getEconomics(),
+    );
     this.processedEvents.add(input.eventId);
     if (applied.result.outcome === "refund") {
       bid.status = "refunded";

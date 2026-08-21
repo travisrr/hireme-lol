@@ -11,7 +11,7 @@ import {
 import { minBidToEnter } from "../lib/ranking";
 import { SITE } from "../lib/site";
 import { verifyStripeSignature } from "../lib/stripe-signature";
-import { GLOBAL_BOARD_ID, LAUNCH_ECONOMICS, PUBLIC_ORIGIN } from "../lib/types";
+import { GLOBAL_BOARD_ID, PUBLIC_ORIGIN } from "../lib/types";
 import type { Store } from "./store";
 
 export const SESSION_COOKIE = "wmw_session";
@@ -87,10 +87,11 @@ export function createApp(deps: AppDeps) {
     });
   });
 
-  app.get("/api/config", (c) => {
+  app.get("/api/config", async (c) => {
+    const economics = await deps.store.getEconomics();
     return c.json({
-      minEntryCents: LAUNCH_ECONOMICS.minEntryCents,
-      minIncrementCents: LAUNCH_ECONOMICS.minIncrementCents,
+      minEntryCents: economics.minEntryCents,
+      minIncrementCents: economics.minIncrementCents,
       publicOrigin: deps.config.origin,
       boardId: GLOBAL_BOARD_ID,
       stripeEnabled: Boolean(deps.config.stripeSecretKey),
@@ -242,7 +243,8 @@ export function createApp(deps: AppDeps) {
     if (!session?.profile) return c.json({ error: "profile_required" }, 401);
     const body = await readJson(c);
     const amountCents = Number(body.amountCents);
-    if (!Number.isInteger(amountCents) || amountCents < minBidToEnter()) {
+    const economics = await deps.store.getEconomics();
+    if (!Number.isInteger(amountCents) || amountCents < minBidToEnter(economics)) {
       return c.json({ error: "below_entry" }, 400);
     }
     const now = clock(deps);

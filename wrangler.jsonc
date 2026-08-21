@@ -24,7 +24,7 @@
     {
       "binding": "DB",
       "database_name": "workwithme",
-      "database_id": "REPLACE_AFTER_WRANGLER_D1_CREATE",
+      "database_id": "fcb365fa-3e4b-40fb-8470-9446c3c80c9d",
       "migrations_dir": "migrations",
     },
   ],
