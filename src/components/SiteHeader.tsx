@@ -31,7 +31,7 @@ export function SiteHeader({
         </Link>
       </div>
       {showSearch ? (
-        <div className={`${frame} pt-1 pb-2`.trim()}>
+        <div className={`${frame} site-header-search`.trim()}>
           <label>
             <span className="sr-only">Search people, skills, or keywords</span>
             <input

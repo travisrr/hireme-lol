@@ -1,6 +1,8 @@
 import type { ReceiptItem } from "../components/ReceiptCard";
+import { fillPulseRows, seededActivity, seededTrending } from "./pulse-seed";
 
 export const PULSE_LIST_LIMIT = 5;
+export const PULSE_ROW_PX = 40;
 export const PULSE_TABS = ["trending", "activity"] as const;
 export type PulseTab = (typeof PULSE_TABS)[number];
 
@@ -11,9 +13,9 @@ export function itemsForTab(
 ): ReceiptItem[] {
   switch (tab) {
     case "trending":
-      return trending.slice(0, PULSE_LIST_LIMIT);
+      return fillPulseRows(trending, seededTrending());
     case "activity":
-      return activity.slice(0, PULSE_LIST_LIMIT);
+      return fillPulseRows(activity, seededActivity());
     default: {
       const _exhaustive: never = tab;
       return _exhaustive;
@@ -23,12 +25,8 @@ export function itemsForTab(
 
 export function padPulseRows(
   items: readonly ReceiptItem[],
-): Array<ReceiptItem | null> {
-  const rows: Array<ReceiptItem | null> = items.slice(0, PULSE_LIST_LIMIT);
-  while (rows.length < PULSE_LIST_LIMIT) {
-    rows.push(null);
-  }
-  return rows;
+): ReceiptItem[] {
+  return fillPulseRows(items, seededActivity());
 }
 
 export function pulseTabLabel(tab: PulseTab): string {

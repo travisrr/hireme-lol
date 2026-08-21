@@ -23,8 +23,7 @@ export function ClaimHeadline({ board, economics }: ClaimHeadlineProps) {
           {formatUsdFromCents(claim)}
         </span>
       </h1>
-      <p className="type-body hero-claim-why text-mute">{SITE.claimWhy[0]}</p>
-      <p className="type-body hero-claim-why text-mute">{SITE.claimWhy[1]}</p>
+      <p className="hero-claim-why text-mute">{SITE.claimWhy}</p>
       <div className="hero-claim-cta">
         <Link to="/join" className="btn-hero w-fit no-underline">
           {SITE.outbid}

@@ -2,13 +2,11 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import {
   itemsForTab,
-  padPulseRows,
   pulseEmptyCopy,
   pulseTabLabel,
   PULSE_TABS,
   type PulseTab,
 } from "../lib/pulse";
-import { formatRelativeTime } from "../lib/time";
 import { PhotoTile } from "./PhotoTile";
 import type { ReceiptItem } from "./ReceiptCard";
 
@@ -20,7 +18,6 @@ type PulseCardProps = {
 export function PulseCard({ trending, activity }: PulseCardProps) {
   const [tab, setTab] = useState<PulseTab>("trending");
   const items = itemsForTab(tab, trending, activity);
-  const rows = padPulseRows(items);
   const empty = pulseEmptyCopy(tab);
 
   return (
@@ -51,8 +48,8 @@ export function PulseCard({ trending, activity }: PulseCardProps) {
         <p className="type-meta hero-pulse-empty text-mute">{empty}</p>
       ) : (
         <ul className="hero-pulse-list">
-          {rows.map((item, index) => (
-            <PulseRow key={item?.id ?? `empty-${index}`} item={item} />
+          {items.map((item) => (
+            <PulseRow key={item.id} item={item} />
           ))}
         </ul>
       )}
@@ -69,21 +66,10 @@ export function PulseCard({ trending, activity }: PulseCardProps) {
   );
 }
 
-function PulseRow({ item }: { item: ReceiptItem | null }) {
-  if (!item) {
-    return <li className="hero-pulse-row" aria-hidden="true" />;
-  }
-  const relative = formatRelativeTime(item.at);
+function PulseRow({ item }: { item: ReceiptItem }) {
   return (
     <li className="hero-pulse-row">
-      {item.rank != null ? (
-        <span className="w-3.5 shrink-0 text-[11px] font-bold text-accent tabular">
-          {item.rank}
-        </span>
-      ) : null}
-      {item.photoUrl !== undefined ? (
-        <PhotoTile src={item.photoUrl} className="size-5" radius={4} />
-      ) : null}
+      <PhotoTile src={item.photoUrl ?? null} className="size-5" radius={4} />
       {item.href ? (
         <Link
           to={item.href}
@@ -94,14 +80,6 @@ function PulseRow({ item }: { item: ReceiptItem | null }) {
       ) : (
         <span className="min-w-0 flex-1 truncate text-ink">{item.line}</span>
       )}
-      {item.amount ? (
-        <span className="shrink-0 text-[11px] font-bold text-accent tabular">
-          {item.amount}
-        </span>
-      ) : null}
-      {relative ? (
-        <span className="type-meta shrink-0 text-mute">{relative}</span>
-      ) : null}
     </li>
   );
 }
