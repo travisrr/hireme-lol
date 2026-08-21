@@ -34,8 +34,8 @@
       "bucket_name": "workwithme-media",
     },
   ],
-  // Cloudflare Web Analytics: official JS beacon is injected by the worker
-  // when CF_BEACON_TOKEN (or CF_WEB_ANALYTICS_TOKEN) is set. Never commit the token.
+  // Cloudflare Web Analytics: docu-coach JS beacon is injected by the worker
+  // when CF_WEB_ANALYTICS_TOKEN (or CF_BEACON_TOKEN) is set. Never commit the token.
   "vars": {
     "PUBLIC_SITE_ORIGIN": "https://workwithme.lol",
     "PUBLIC_SITE_NAME": "workwithme.lol",
