@@ -1,8 +1,10 @@
 import { isAllowedImageType } from "./photo";
 
-/** Only set when a founding listing's public LinkedIn page returned og:image. */
-export const FOUNDING_OG_PHOTO_KEYS = {
-  jensen: "photos/og-jenhsunhuang.jpg",
+/** Wikimedia Commons portraits stored on R2. Not LinkedIn. Not generated. */
+export const FOUNDING_HEADSHOT_KEYS = {
+  elon: "photos/founding-elon.jpg",
+  palmer: "photos/founding-palmer.jpg",
+  jensen: "photos/founding-jensen.jpg",
 } as const;
 
 export function isSafePhotoKey(key: string): boolean {

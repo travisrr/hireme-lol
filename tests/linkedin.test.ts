@@ -33,7 +33,7 @@ describe("linkedin public preview", () => {
     expect(preview.photoUrl).toBe("");
   });
 
-  it("only looks at the founding members' public LinkedIn /in/ pages", () => {
+  it("records the founding public LinkedIn URLs without using them for photos", () => {
     expect(FOUNDING_LINKEDIN_URLS.elon).toBe(
       "https://www.linkedin.com/in/elonmusk",
     );
