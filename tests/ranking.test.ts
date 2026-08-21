@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { formatUsdFromCents, parseDollarInput } from "../src/lib/money";
+import {
+  formatUsdFromCents,
+  parseBidAmountCents,
+  parseDollarInput,
+} from "../src/lib/money";
 import {
   claimPriceForRank,
   compareListings,
@@ -165,6 +169,27 @@ describe("claimPriceForRank", () => {
     expect(claimPriceForRank(ranked, 2, launch)).toBe(10200);
     expect(claimPriceForRank(ranked, 3, launch)).toBe(200);
   });
+
+  it("prices founding Elon $6 as $8 to claim #1 and $2 to enter last", () => {
+    const ranked = rankListings([
+      listing({ id: "elon", currentBidCents: 600 }),
+      listing({ id: "palmer", currentBidCents: 400 }),
+      listing({ id: "jensen", currentBidCents: 200 }),
+    ]);
+    expect(claimPriceForRank(ranked, 1, launch)).toBe(800);
+    expect(minBidToEnter(launch)).toBe(200);
+    const withJoin = rankListings([
+      ...ranked,
+      listing({ id: "new", currentBidCents: 200, currentBidAt: 9_000 }),
+    ]);
+    expect(withJoin.map((row) => row.id)).toEqual([
+      "elon",
+      "palmer",
+      "jensen",
+      "new",
+    ]);
+    expect(withJoin[3].rank).toBe(4);
+  });
 });
 
 describe("movementFor", () => {
@@ -198,5 +223,16 @@ describe("money", () => {
     expect(parseDollarInput("$12")).toBe(1200);
     expect(parseDollarInput("12.50")).toBe(1250);
     expect(parseDollarInput("nope")).toBeNull();
+  });
+
+  it("treats a join of 2 / $2 as 200 cents, not 2 cents", () => {
+    expect(parseDollarInput("2")).toBe(200);
+    expect(parseDollarInput("$2")).toBe(200);
+    expect(parseBidAmountCents(2)).toBe(200);
+    expect(parseBidAmountCents("2")).toBe(200);
+    expect(parseBidAmountCents("$2")).toBe(200);
+    expect(parseBidAmountCents(200)).toBe(200);
+    expect(parseBidAmountCents("200")).toBe(200);
+    expect(parseBidAmountCents(8)).toBe(800);
   });
 });

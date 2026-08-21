@@ -32,6 +32,7 @@ import {
   type MediaBucket,
 } from "../lib/media";
 import { isAllowedImageType } from "../lib/photo";
+import { parseBidAmountCents } from "../lib/money";
 import { minBidToEnter } from "../lib/ranking";
 import { BOARD_TABS, parseCategories, parseIndustry } from "../lib/industries";
 import { SITE } from "../lib/site";
@@ -346,9 +347,12 @@ export function createApp(deps: AppDeps) {
     const session = await readSession(c, deps);
     if (!session?.profile) return c.json({ error: "profile_required" }, 401);
     const body = await readJson(c);
-    const amountCents = Number(body.amountCents);
     const economics = await deps.store.getEconomics();
-    if (!Number.isInteger(amountCents) || amountCents < minBidToEnter(economics)) {
+    const amountCents = parseBidAmountCents(
+      body.amountCents ?? body.bid ?? body.dollars,
+      minBidToEnter(economics),
+    );
+    if (amountCents == null || amountCents < minBidToEnter(economics)) {
       return c.json({ error: "below_entry" }, 400);
     }
     const local = isLocalOrigin(deps.config.origin);

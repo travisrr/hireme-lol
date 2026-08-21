@@ -29,7 +29,7 @@ export function ClaimHeadline({ board, economics }: ClaimHeadlineProps) {
         </Link>
       </div>
       <p className="type-body mt-3 text-mute">
-        {entry} to enter. +{increment} to overtake.
+        {entry} to enter at the bottom. Claim #1 is the current top +{increment}.
       </p>
     </section>
   );

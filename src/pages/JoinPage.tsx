@@ -29,7 +29,7 @@ import {
   type JoinDraft,
 } from "../lib/join-draft";
 import { handleFromLinkedinSlug, linkedinSlug } from "../lib/linkedin";
-import { formatUsdFromCents, parseDollarInput } from "../lib/money";
+import { formatUsdFromCents, parseBidAmountCents } from "../lib/money";
 import { isUsableHeadshotUrl } from "../lib/photo";
 import {
   BELOW_ENTRY,
@@ -226,7 +226,7 @@ export function JoinPage() {
   async function handleBid(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const dollars = String(new FormData(event.currentTarget).get("bid") ?? "");
-    const amountCents = parseDollarInput(dollars);
+    const amountCents = parseBidAmountCents(dollars, economics.minEntryCents);
     if (amountCents == null || amountCents < economics.minEntryCents) {
       setError(BELOW_ENTRY);
       return;
@@ -524,7 +524,8 @@ function BidSheet({
         <h1 className="type-claim text-ink">{SITE.tagline}</h1>
         <p className="type-body mt-3 text-ink">{displayName}</p>
         <p className="type-body mt-2 text-mute">
-          {entry} to enter. +{increment} to overtake.
+          {entry} to enter at the bottom. Claiming #1 is the current top +
+          {increment}.
         </p>
         {error ? <p className="type-body mt-4 text-down">{error}</p> : null}
         {done ? <p className="type-body mt-4 text-ink">{done}</p> : null}

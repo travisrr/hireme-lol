@@ -281,6 +281,64 @@ describe("live API", () => {
     expect(board.listings).toEqual([]);
   });
 
+  it("accepts a $2 first entry under the founding three as #4", async () => {
+    const { app } = testApp();
+    const elon = await magicLogin(app, "elon@example.com");
+    const palmer = await magicLogin(app, "palmer@example.com");
+    const jensen = await magicLogin(app, "jensen@example.com");
+    const maya = await magicLogin(app, "maya@example.com");
+    await createProfile(app, elon, "elon");
+    await createProfile(app, palmer, "palmer");
+    await createProfile(app, jensen, "jensen");
+    await createProfile(app, maya, "maya");
+    await pay(app, elon, 600, "evt_elon");
+    await pay(app, palmer, 400, "evt_palmer");
+    await pay(app, jensen, 200, "evt_jensen");
+    const typedDollars = await app.request("/api/bids", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Cookie: maya,
+      },
+      body: JSON.stringify({ amountCents: 2 }),
+    });
+    const bid = await json(typedDollars);
+    expect(typedDollars.status).toBe(200);
+    expect(bid.bidId).toEqual(expect.any(String));
+    const payload = JSON.stringify({
+      id: "evt_maya_join",
+      type: "checkout.session.completed",
+      data: {
+        object: {
+          id: "cs_maya_join",
+          amount_total: 200,
+          payment_intent: "pi_maya_join",
+          metadata: { bid_id: bid.bidId },
+        },
+      },
+    });
+    const webhook = await json(
+      await app.request("/api/stripe/webhook", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: payload,
+      }),
+    );
+    expect(webhook.result).toMatchObject({ outcome: "confirmed" });
+    const board = await json(await app.request("/api/board"));
+    const listings = board.listings as Array<{
+      handle: string;
+      rank: number;
+      currentBidCents: number;
+    }>;
+    expect(listings.map((row) => `${row.handle}:${row.rank}:${row.currentBidCents}`)).toEqual([
+      "elon:1:600",
+      "palmer:2:400",
+      "jensen:3:200",
+      "maya:4:200",
+    ]);
+  });
+
   it("accepts a $2 first entry and keeps empty industry tabs visible", async () => {
     const { app } = testApp();
     const cookie = await magicLogin(app, "maya@example.com");
