@@ -13,7 +13,7 @@ import { PhotoTile } from "./PhotoTile";
 export const TOP_TEN_CUTOFF = 10;
 export const ROW_MIN_PX = 72;
 export const PHOTO_PX = 44;
-export const OUTBID_MIN_PX = 48;
+export const OUTBID_MIN_PX = 32;
 
 type ListingRowProps = {
   listing: RankedPublicListing;

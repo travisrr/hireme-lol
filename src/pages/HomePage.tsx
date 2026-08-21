@@ -97,14 +97,15 @@ export function HomePage() {
 
   return (
     <div className="min-h-screen bg-paper">
-      <SiteHeader query={query} onQueryChange={setQuery} />
-      <main className={`page-gutter mx-auto ${PAGE_COLUMN} pb-8`}>
+      <div className={`page-gutter mx-auto ${PAGE_COLUMN}`}>
+      <SiteHeader query={query} onQueryChange={setQuery} inColumn />
+      <main className="pb-8">
         <section
           data-lock="header-hero"
-          className="grid items-start gap-4 pt-4 lg:grid-cols-[minmax(14rem,0.85fr)_minmax(0,1.45fr)]"
+          className="grid items-start gap-4 pt-4 lg:grid-cols-2"
         >
           <ClaimHeadline board={rows} economics={economics} />
-          <div className="grid min-w-0 gap-3 lg:grid-cols-2">
+          <div className="grid min-w-0 gap-3">
             <ReceiptCard
               title="Trending"
               items={trending}
@@ -171,7 +172,8 @@ export function HomePage() {
           )}
         </section>
       </main>
-      <SiteFooter />
+      <SiteFooter inColumn />
+      </div>
     </div>
   );
 }

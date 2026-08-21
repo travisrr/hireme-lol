@@ -46,9 +46,11 @@ describe("stripe event extract", () => {
       origin: "https://workwithme.lol",
     });
     expect(body.get("mode")).toBe("payment");
+    expect(body.get("managed_payments[enabled]")).toBe("false");
     expect(body.get("payment_method_types[0]")).toBeNull();
     expect(body.has("payment_method_types")).toBe(false);
     expect(body.get("line_items[0][price_data][unit_amount]")).toBe("200");
+    expect(body.get("line_items[0][price_data][product_data][tax_code]")).toBeNull();
   });
 
   it("reads a refunded charge by payment intent", () => {
