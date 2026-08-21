@@ -34,9 +34,10 @@
   --search-h: 40px;
   --hero-cta-h: 40px;
   --pulse-row-h: 40px;
-  --row-min: 72px;
+  --row-min: 56px;
   --photo: 44px;
-  --tab-h: 44px;
+  --rank-col: 28px;
+  --tab-h: 40px;
   --keyboard-inset: 0px;
 }
 
@@ -203,6 +204,7 @@ body {
 @media (max-width: 767px) {
   :root {
     --hero-cta-h: 44px;
+    --tab-h: 44px;
   }
 
   .btn-header {
@@ -429,28 +431,29 @@ body {
 
 .board-tabs {
   display: flex;
-  overflow-x: auto;
-  scrollbar-width: none;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  overflow: hidden;
+  width: 100%;
   border-bottom: 1px solid var(--color-line);
-}
-
-.board-tabs::-webkit-scrollbar {
-  display: none;
 }
 
 .board-tab {
   display: inline-flex;
   align-items: center;
-  flex: 0 0 auto;
+  justify-content: center;
+  flex: 1 1 0;
+  min-width: 0;
   height: var(--tab-h);
-  min-width: 44px;
-  padding: 0 14px;
+  padding: 0 8px;
   border: 0;
   background: transparent;
   color: var(--color-mute);
-  font-size: var(--type-tab);
+  font-size: 13px;
   font-weight: 600;
+  line-height: 1.2;
   text-decoration: none;
+  white-space: nowrap;
 }
 
 .board-tab[data-active="true"] {
@@ -458,14 +461,46 @@ body {
   box-shadow: inset 0 -2px 0 var(--color-accent);
 }
 
+@media (max-width: 1023px) {
+  .board-tabs {
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .board-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .board-tab {
+    flex: 0 0 auto;
+  }
+}
+
 .listing-row {
   display: grid;
-  grid-template-columns: 1.75rem var(--photo) minmax(0, 1fr) auto;
+  grid-template-columns: var(--rank-col) var(--photo) minmax(0, 1fr) auto auto;
   align-items: center;
-  column-gap: 10px;
+  column-gap: 8px;
   min-height: var(--row-min);
-  padding: 8px var(--gutter);
+  padding: 8px 12px;
   border-bottom: 1px solid var(--color-line);
+}
+
+.listing-rank {
+  width: var(--rank-col);
+  text-align: center;
+  font-size: var(--type-rank);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+}
+
+.listing-who {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+  text-align: left;
 }
 
 .listing-row:last-child {
@@ -539,7 +574,7 @@ body {
 }
 
 .rank-wash {
-  background: #ebf3fa;
+  background: var(--color-wash);
 }
 
 @keyframes bid-flash {

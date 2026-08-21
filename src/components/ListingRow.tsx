@@ -7,13 +7,13 @@ import { SITE } from "../lib/site";
 import { isRecentBid } from "../lib/time";
 import type { BidEconomics, RankedPublicListing } from "../lib/types";
 import { ClickStat } from "./ClickStat";
-import { MovementMark } from "./MovementMark";
 import { PHOTO_RADIUS_PX, PhotoTile } from "./PhotoTile";
 
 export const TOP_TEN_CUTOFF = 10;
-export const ROW_MIN_PX = 72;
+export const ROW_MIN_PX = 56;
 export const PHOTO_PX = 44;
 export const PHOTO_RADIUS = PHOTO_RADIUS_PX;
+export const RANK_COL_PX = 28;
 export const OUTBID_MIN_PX = 32;
 
 type ListingRowProps = {
@@ -27,7 +27,7 @@ export function ListingRow({ listing, board, economics }: ListingRowProps) {
   const claim = claimPriceForRank(board, listing.rank, economics);
   const flash = isRecentBid(listing.currentBidAt);
   const highlight = listing.rank <= TOP_TEN_CUTOFF;
-  const pitch = [listing.headline, listing.company].filter(Boolean).join(" · ");
+  const pitch = listing.headline || listing.pitch || listing.company || "";
 
   async function openProfile() {
     try {
@@ -42,49 +42,40 @@ export function ListingRow({ listing, board, economics }: ListingRowProps) {
     <article
       className={`listing-row ${highlight ? "rank-wash" : "bg-card"} ${flash ? "bid-flash" : ""}`}
     >
-      <div className="flex items-center gap-1">
-        <span
-          className={`type-rank ${highlight ? "text-accent" : "text-mute"}`}
-        >
-          {listing.rank}
-        </span>
-        <MovementMark movement={listing.movement} />
-      </div>
+      <span
+        className={`listing-rank ${highlight ? "text-accent" : "text-mute"}`}
+      >
+        {listing.rank}
+      </span>
       <PhotoTile src={listing.photoUrl} radius={PHOTO_RADIUS} />
       <button
         type="button"
         onClick={() => {
           void openProfile();
         }}
-        className="min-w-0 text-left"
+        className="listing-who"
       >
-        <span className="flex min-w-0 items-center gap-1.5">
-          <span className="truncate text-[15px] font-semibold text-ink hover:text-accent">
-            {listing.displayName}
+        <span className="truncate text-[15px] font-semibold text-ink hover:text-accent">
+          {listing.displayName}
+        </span>
+        {listing.isFoundingMember ? (
+          <span className="shrink-0 text-[9px] font-bold tracking-wide text-accent uppercase">
+            FOUNDING
           </span>
-          {listing.isFoundingMember ? (
-            <span className="shrink-0 text-[9px] font-bold tracking-wide text-accent uppercase">
-              Founding
-            </span>
-          ) : null}
-        </span>
-        <span className="type-meta mt-0.5 flex min-w-0 items-center gap-2 text-mute">
-          <span className="truncate">{listing.pitch || pitch}</span>
-          <ClickStat count={totalClicks(listing)} />
-        </span>
+        ) : null}
+        <span className="type-meta min-w-0 truncate text-mute">{pitch}</span>
+        <ClickStat count={totalClicks(listing)} />
       </button>
-      <div className="flex flex-col items-end justify-center gap-1">
-        <span className="type-rank text-accent">
-          {formatUsdFromCents(listing.currentBidCents)}
-        </span>
-        <Link
-          to="/join"
-          className="btn-outbid"
-          aria-label={`${SITE.outbid} ${formatUsdFromCents(claim)}`}
-        >
-          {SITE.outbid}
-        </Link>
-      </div>
+      <span className="type-rank text-accent">
+        {formatUsdFromCents(listing.currentBidCents)}
+      </span>
+      <Link
+        to="/join"
+        className="btn-outbid"
+        aria-label={`${SITE.outbid} ${formatUsdFromCents(claim)}`}
+      >
+        {SITE.outbid}
+      </Link>
     </article>
   );
 }

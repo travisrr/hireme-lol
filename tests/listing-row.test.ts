@@ -3,14 +3,16 @@ import {
   OUTBID_MIN_PX,
   PHOTO_PX,
   PHOTO_RADIUS,
+  RANK_COL_PX,
   ROW_MIN_PX,
   TOP_TEN_CUTOFF,
 } from "../src/components/ListingRow";
 import { SITE } from "../src/lib/site";
 
 describe("board rows", () => {
-  it("locks mobile row geometry", () => {
-    expect(ROW_MIN_PX).toBe(72);
+  it("locks one-line row geometry with no NEW badge", () => {
+    expect(ROW_MIN_PX).toBe(56);
+    expect(RANK_COL_PX).toBe(28);
     expect(PHOTO_PX).toBe(44);
     expect(PHOTO_RADIUS).toBe(12);
     expect(OUTBID_MIN_PX).toBe(32);
