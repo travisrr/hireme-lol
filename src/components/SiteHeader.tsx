@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { PAGE_COLUMN } from "../lib/measure";
 import { SITE } from "../lib/site";
 
 type SiteHeaderProps = {
@@ -14,7 +15,7 @@ export function SiteHeader({
 }: SiteHeaderProps) {
   return (
     <header className="site-header">
-      <div className="page-gutter site-header-bar mx-auto max-w-6xl">
+      <div className={`page-gutter site-header-bar mx-auto ${PAGE_COLUMN}`}>
         <Link
           to="/"
           aria-label={SITE.name}
@@ -27,7 +28,7 @@ export function SiteHeader({
         </Link>
       </div>
       {showSearch ? (
-        <div className="page-gutter mx-auto max-w-6xl pb-2">
+        <div className={`page-gutter mx-auto ${PAGE_COLUMN} pb-2`}>
           <label>
             <span className="sr-only">Search people, skills, or keywords</span>
             <input

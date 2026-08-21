@@ -8,6 +8,7 @@ import { ReceiptCard } from "../components/ReceiptCard";
 import { SiteFooter } from "../components/SiteFooter";
 import { SiteHeader } from "../components/SiteHeader";
 import { toPublicListing } from "../lib/board-view";
+import { PAGE_COLUMN } from "../lib/measure";
 import { formatUsdFromCents } from "../lib/money";
 import { receiptLine } from "../lib/receipts";
 import { SITE } from "../lib/site";
@@ -87,7 +88,7 @@ export function HomePage() {
   return (
     <div className="min-h-screen bg-paper">
       <SiteHeader query={query} onQueryChange={setQuery} />
-      <main className="page-gutter mx-auto max-w-6xl pb-8">
+      <main className={`page-gutter mx-auto ${PAGE_COLUMN} pb-8`}>
         <section
           data-lock="header-hero"
           className="grid items-start gap-4 pt-4 lg:grid-cols-[minmax(14rem,0.85fr)_minmax(0,1.45fr)]"

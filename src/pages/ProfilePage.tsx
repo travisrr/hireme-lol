@@ -76,7 +76,7 @@ export function ProfilePage() {
         onQueryChange={() => undefined}
         showSearch={false}
       />
-      <main className="mx-auto max-w-3xl px-4 py-12">
+      <main className="page-gutter mx-auto max-w-3xl py-12">
         {profile ? (
           <article>
             <p className="text-xs font-semibold text-mute uppercase">

@@ -28,7 +28,7 @@ export function AdminPage() {
 
   return (
     <div className="min-h-screen bg-paper">
-      <main className="mx-auto max-w-xl px-4 py-16">
+      <main className="page-gutter mx-auto max-w-xl py-16">
         <p className="text-xs font-semibold text-mute uppercase">/admin</p>
         <h1 className="mt-3 text-4xl font-extrabold">Board admin</h1>
         {forbidden || !overview ? (

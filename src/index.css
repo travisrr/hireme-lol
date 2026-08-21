@@ -50,6 +50,12 @@
   }
 }
 
+@media (min-width: 768px) {
+  :root {
+    --gutter: 24px;
+  }
+}
+
 html,
 body,
 #root {
