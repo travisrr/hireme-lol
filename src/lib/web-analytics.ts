@@ -15,7 +15,7 @@ export function injectWebAnalyticsBeacon(html: string, token: string): string {
   const safe = token.replace(/[^a-zA-Z0-9_-]/g, "");
   if (!safe) return html;
   if (html.includes("static.cloudflareinsights.com/beacon.min.js")) return html;
-  const beacon = `<script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token":"${safe}"}'></script>`;
+  const beacon = `<script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "${safe}"}'></script>`;
   if (html.includes("</body>")) return html.replace("</body>", `${beacon}\n</body>`);
   return `${html}${beacon}`;
 }

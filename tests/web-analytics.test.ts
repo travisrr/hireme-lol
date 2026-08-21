@@ -25,7 +25,7 @@ describe("Cloudflare Web Analytics beacon", () => {
 
     const withBeacon = injectWebAnalyticsBeacon(html, "site_token_1");
     expect(withBeacon).toContain(
-      `<script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token":"site_token_1"}'></script>`,
+      `<script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "site_token_1"}'></script>`,
     );
     expect(withBeacon).not.toMatch(/google-analytics|gtag|GTM-|clarity/i);
 
