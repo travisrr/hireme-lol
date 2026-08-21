@@ -27,9 +27,9 @@ export function AdminPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-ink">
+    <div className="min-h-screen bg-paper">
       <main className="mx-auto max-w-xl px-4 py-16">
-        <p className="font-mono text-[11px] text-paper uppercase">/admin</p>
+        <p className="font-mono text-[11px] text-ink uppercase">/admin</p>
         <h1 className="mt-3 font-display text-5xl">Board admin</h1>
         {forbidden || !overview ? (
           <p className="mt-4 text-mute">
@@ -48,12 +48,12 @@ export function AdminPage() {
               <input
                 value={listingId}
                 onChange={(event) => setListingId(event.target.value)}
-                className="border border-line bg-panel px-3 py-2 text-paper"
+                className="border border-line bg-panel px-3 py-2 text-ink"
               />
             </label>
             <button
               type="button"
-              className="w-fit bg-paper px-3 py-2 text-xs text-ink uppercase"
+              className="w-fit bg-ink px-3 py-2 text-xs text-paper uppercase"
               onClick={() => {
                 void hideListing(listingId, true)
                   .then(() => setMessage("Hidden"))
@@ -64,12 +64,12 @@ export function AdminPage() {
             >
               Hide
             </button>
-            {message ? <p className="text-paper">{message}</p> : null}
+            {message ? <p className="text-ink">{message}</p> : null}
           </div>
         )}
         <Link
           to="/"
-          className="mt-8 inline-block font-mono text-xs text-paper underline"
+          className="mt-8 inline-block font-mono text-xs text-ink underline"
         >
           ← Board
         </Link>

@@ -16,7 +16,7 @@ type ReceiptCardProps = {
 
 export function ReceiptCard({ title, items, empty }: ReceiptCardProps) {
   return (
-    <section className="border border-line bg-panel p-3">
+    <section className="bg-panel p-3">
       <p className="font-mono text-[11px] tracking-[0.16em] text-mute uppercase">
         {title}
       </p>
@@ -32,12 +32,12 @@ export function ReceiptCard({ title, items, empty }: ReceiptCardProps) {
               {item.href ? (
                 <Link
                   to={item.href}
-                  className="min-w-0 truncate text-paper no-underline hover:text-mute"
+                  className="min-w-0 truncate text-ink no-underline hover:text-mute"
                 >
                   {item.line}
                 </Link>
               ) : (
-                <span className="min-w-0 truncate text-paper">{item.line}</span>
+                <span className="min-w-0 truncate text-ink">{item.line}</span>
               )}
               <span className="shrink-0 text-mute">
                 {formatRelativeTime(item.at)}

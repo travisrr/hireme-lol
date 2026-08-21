@@ -9,7 +9,7 @@ export function MovementMark({ movement }: { movement: Movement }) {
       return <span className="font-mono text-xs text-down">↓</span>;
     case "new":
       return (
-        <span className="font-mono text-[10px] tracking-wide text-paper uppercase">
+        <span className="font-mono text-[10px] tracking-wide text-ink uppercase">
           new
         </span>
       );

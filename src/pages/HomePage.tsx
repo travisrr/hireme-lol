@@ -77,7 +77,7 @@ export function HomePage() {
   }));
 
   return (
-    <div className="min-h-screen bg-ink">
+    <div className="min-h-screen bg-paper">
       <SiteHeader
         query={query}
         onQueryChange={setQuery}
@@ -126,9 +126,13 @@ export function HomePage() {
                 ))}
               </div>
               {rest.length > 0 ? (
-                <p className="mt-6 mb-2 font-mono text-[11px] tracking-[0.18em] text-mute uppercase">
-                  Top 3
-                </p>
+                <div className="my-6 flex items-center gap-3">
+                  <span className="h-px flex-1 bg-line" />
+                  <p className="font-mono text-[10px] tracking-[0.2em] text-mute uppercase">
+                    Top 3
+                  </p>
+                  <span className="h-px flex-1 bg-line" />
+                </div>
               ) : null}
               {rest.map((listing) => (
                 <ListingRow

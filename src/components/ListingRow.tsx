@@ -22,13 +22,14 @@ export function ListingRow({
 }: ListingRowProps) {
   const claim = claimPriceForRank(board, listing.rank, economics);
   const flash = isRecentBid(listing.currentBidAt);
+  const pitch = [listing.headline, listing.company].filter(Boolean).join(" · ");
 
   if (featured) {
     return (
       <article
-        className={`flex flex-col gap-4 border border-line bg-panel px-4 py-5 sm:flex-row sm:items-center sm:gap-5 ${flash ? "bid-flash" : ""}`}
+        className={`flex flex-col gap-4 bg-panel px-4 py-5 sm:flex-row sm:items-center sm:gap-5 ${flash ? "bid-flash" : ""}`}
       >
-        <span className="font-mono text-4xl leading-none text-paper tabular sm:w-16 sm:text-5xl">
+        <span className="font-mono text-4xl leading-none text-ink tabular sm:w-16 sm:text-5xl">
           #{listing.rank}
         </span>
         <img
@@ -40,7 +41,7 @@ export function ListingRow({
           <div className="flex flex-wrap items-baseline gap-2">
             <Link
               to={`/${listing.handle}`}
-              className={`${listing.rank === 1 ? "font-display text-2xl sm:text-3xl" : "font-sans text-xl font-medium"} text-paper no-underline hover:text-paper`}
+              className="font-display text-2xl text-ink no-underline hover:text-mute sm:text-3xl"
             >
               {listing.displayName}
             </Link>
@@ -51,59 +52,49 @@ export function ListingRow({
               </span>
             ) : null}
           </div>
-          <p className="mt-1 truncate text-sm text-mute">
-            {listing.headline}
-            {listing.company ? ` · ${listing.company}` : ""}
-          </p>
-          <p className="mt-1 font-mono text-xs text-mute">/{listing.handle}</p>
+          <p className="mt-1 truncate text-sm text-mute">{pitch}</p>
         </div>
-        <div className="sm:text-right">
-          <p className="font-mono text-3xl text-paper tabular sm:text-4xl">
-            {formatUsdFromCents(listing.currentBidCents)}
-          </p>
-          <button
-            type="button"
-            onClick={onOutbid}
-            className="mt-2 font-mono text-[11px] text-paper uppercase hover:text-paper"
-          >
-            claim this rank for{" "}
-            <span className="text-paper tabular">{formatUsdFromCents(claim)}</span>
-          </button>
-        </div>
+        <p className="font-mono text-3xl text-ink tabular sm:text-4xl">
+          {formatUsdFromCents(listing.currentBidCents)}
+        </p>
+        <button
+          type="button"
+          onClick={onOutbid}
+          className="shrink-0 bg-ink px-3 py-2 font-mono text-[11px] font-semibold tracking-wide text-paper uppercase"
+        >
+          Outbid
+        </button>
       </article>
     );
   }
 
   return (
     <article
-      className={`grid grid-cols-[2.25rem_2.25rem_minmax(0,1fr)_auto] items-center gap-3 border-b border-line py-3 sm:grid-cols-[2.5rem_2.5rem_minmax(0,1fr)_auto_auto] ${flash ? "bid-flash" : ""}`}
+      className={`grid grid-cols-[2.25rem_2.25rem_minmax(0,1fr)_auto] items-center gap-3 border-b border-line py-3 sm:grid-cols-[2.5rem_2.5rem_minmax(0,1fr)_minmax(0,1fr)_auto_auto] ${flash ? "bid-flash" : ""}`}
     >
       <div className="flex items-center gap-1">
-        <span className="font-mono text-sm text-paper tabular">{listing.rank}</span>
+        <span className="font-mono text-sm text-ink tabular">#{listing.rank}</span>
         <MovementMark movement={listing.movement} />
       </div>
       <img src={listing.photoUrl} alt="" className="size-9 object-cover" />
-      <div className="min-w-0">
-        <Link
-          to={`/${listing.handle}`}
-          className="truncate font-sans text-sm text-paper no-underline hover:text-paper"
-        >
-          {listing.displayName}
-        </Link>
-        <p className="truncate font-mono text-[11px] text-mute">
-          /{listing.handle}
-        </p>
-      </div>
-      <span className="font-mono text-base text-paper tabular">
+      <Link
+        to={`/${listing.handle}`}
+        className="truncate font-sans text-sm text-ink no-underline hover:text-mute"
+      >
+        {listing.displayName}
+      </Link>
+      <p className="col-span-4 truncate text-sm text-mute sm:col-span-1">
+        {listing.pitch || pitch}
+      </p>
+      <span className="font-mono text-base text-ink tabular">
         {formatUsdFromCents(listing.currentBidCents)}
       </span>
       <button
         type="button"
         onClick={onOutbid}
-        className="col-span-4 justify-self-start font-mono text-[11px] text-mute uppercase hover:text-paper sm:col-span-1 sm:justify-self-end"
+        className="justify-self-end font-mono text-[11px] text-ink uppercase hover:text-mute"
       >
-        claim this rank for{" "}
-        <span className="text-paper tabular">{formatUsdFromCents(claim)}</span>
+        Outbid · {formatUsdFromCents(claim)}
       </button>
     </article>
   );

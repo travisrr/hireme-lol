@@ -100,6 +100,7 @@ npx wrangler secret put STRIPE_WEBHOOK_SECRET
 npx wrangler secret put ADMIN_EMAILS
 npx wrangler secret put RESEND_API_KEY
 npx wrangler secret put TURNSTILE_SECRET_KEY
+npx wrangler secret put CF_WEB_ANALYTICS_TOKEN
 # optional OAuth:
 # npx wrangler secret put GITHUB_CLIENT_ID
 # npx wrangler secret put GITHUB_CLIENT_SECRET

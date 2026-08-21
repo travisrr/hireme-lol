@@ -16,36 +16,36 @@ export function ClaimHeadline({
 }: ClaimHeadlineProps) {
   const claim = claimPriceForRank(board, 1, economics);
   const entry = formatUsdFromCents(minBidToEnter(economics));
+  const increment = formatUsdFromCents(economics.minIncrementCents);
 
   return (
-    <section className="pt-8 pb-2">
-      <p className="font-display text-base text-mute italic sm:text-lg">
+    <section className="px-2 pt-10 pb-4 text-center">
+      <p className="font-display text-lg text-ink italic sm:text-xl">
         {SITE.tagline}
       </p>
-      <p className="mt-4 font-mono text-[11px] tracking-wide text-mute">
-        New spots start at {entry}. Paying less than the #1 price still puts you
-        on the board wherever that bid lands.
-      </p>
-      <h1 className="mt-3 font-mono text-3xl leading-none text-paper sm:text-5xl">
+      <h1 className="mt-4 font-mono text-4xl leading-[0.95] font-semibold text-ink sm:text-6xl">
         Claim #1 for{" "}
-        <span className="text-paper tabular">{formatUsdFromCents(claim)}</span>
+        <span className="tabular">{formatUsdFromCents(claim)}</span>
       </h1>
-      <div className="mt-5 flex flex-wrap items-center gap-3">
+      <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
         <button
           type="button"
           onClick={onAction}
-          className="bg-paper px-4 py-2 font-mono text-[11px] font-semibold tracking-wide text-ink uppercase hover:bg-mute"
+          className="bg-ink px-4 py-2 font-mono text-[11px] font-semibold tracking-wide text-paper uppercase"
         >
           {SITE.cta}
         </button>
         <button
           type="button"
           onClick={onAction}
-          className="border border-paper px-4 py-2 font-mono text-[11px] font-semibold tracking-wide text-paper uppercase hover:bg-paper hover:text-ink"
+          className="bg-ink px-4 py-2 font-mono text-[11px] font-semibold tracking-wide text-paper uppercase"
         >
           Outbid
         </button>
       </div>
+      <p className="mt-4 font-mono text-[11px] text-mute">
+        {entry} to enter. +{increment} to overtake.
+      </p>
     </section>
   );
 }

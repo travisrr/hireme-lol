@@ -18,6 +18,7 @@ export type Bindings = {
   EMAIL_FROM?: string;
   RESEND_API_KEY?: string;
   TURNSTILE_SECRET_KEY?: string;
+  CF_WEB_ANALYTICS_TOKEN?: string;
 };
 
 function configFromEnv(env: Bindings): AppConfig {
@@ -40,15 +41,39 @@ function configFromEnv(env: Bindings): AppConfig {
   };
 }
 
-function isWorkerFirst(pathname: string): boolean {
+function isApiPath(pathname: string): boolean {
   return pathname.startsWith("/api/") || pathname.startsWith("/og/");
+}
+
+function withAnalytics(html: string, token: string): string {
+  const safe = token.replace(/[^a-zA-Z0-9_-]/g, "");
+  if (!safe) return html;
+  const beacon = `<script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token":"${safe}"}'></script>`;
+  if (html.includes("static.cloudflareinsights.com/beacon.min.js")) return html;
+  if (html.includes("</body>")) return html.replace("</body>", `${beacon}</body>`);
+  return `${html}${beacon}`;
+}
+
+async function serveAsset(request: Request, env: Bindings): Promise<Response> {
+  if (!env.ASSETS) {
+    return new Response("assets_unbound", { status: 500 });
+  }
+  const asset = await env.ASSETS.fetch(request);
+  const type = asset.headers.get("content-type") ?? "";
+  if (!type.includes("text/html") || !env.CF_WEB_ANALYTICS_TOKEN) {
+    return asset;
+  }
+  const html = withAnalytics(await asset.text(), env.CF_WEB_ANALYTICS_TOKEN);
+  const headers = new Headers(asset.headers);
+  headers.delete("content-length");
+  return new Response(html, { status: asset.status, headers });
 }
 
 export default {
   async fetch(request: Request, env: Bindings): Promise<Response> {
     const url = new URL(request.url);
-    if (!isWorkerFirst(url.pathname) && env.ASSETS) {
-      return env.ASSETS.fetch(request);
+    if (!isApiPath(url.pathname)) {
+      return serveAsset(request, env);
     }
     if (!env.DB) {
       return Response.json({ error: "db_unbound" }, { status: 500 });

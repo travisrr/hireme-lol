@@ -123,7 +123,7 @@ export function JoinDialog({ open, onClose, onChanged }: JoinDialogProps) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink/80 p-4 sm:items-center">
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink/40 p-4 sm:items-center">
       <button
         type="button"
         aria-label="Close"
@@ -131,7 +131,7 @@ export function JoinDialog({ open, onClose, onChanged }: JoinDialogProps) {
         onClick={onClose}
       />
       <div className="relative w-full max-w-lg border border-line bg-panel p-5 shadow-2xl">
-        <p className="font-mono text-[11px] text-paper uppercase">
+        <p className="font-mono text-[11px] text-ink uppercase">
           Live board · one-time bid · {SITE.name}
         </p>
         <h2 className="mt-2 font-display text-3xl">{SITE.cta}</h2>
@@ -143,7 +143,7 @@ export function JoinDialog({ open, onClose, onChanged }: JoinDialogProps) {
           <p className="mt-3 font-mono text-xs text-down">{error}</p>
         ) : null}
         {done ? (
-          <p className="mt-4 font-mono text-sm text-paper">{done}</p>
+          <p className="mt-4 font-mono text-sm text-ink">{done}</p>
         ) : !session?.user ? (
           <div className="mt-5 grid gap-3">
             <form className="grid gap-3" onSubmit={handleMagic}>
@@ -151,7 +151,7 @@ export function JoinDialog({ open, onClose, onChanged }: JoinDialogProps) {
               <button
                 type="submit"
                 disabled={busy}
-                className="bg-paper px-4 py-2 font-mono text-xs font-semibold text-ink uppercase"
+                className="bg-ink px-4 py-2 font-mono text-xs font-semibold text-paper uppercase"
               >
                 Email a magic link
               </button>
@@ -159,19 +159,19 @@ export function JoinDialog({ open, onClose, onChanged }: JoinDialogProps) {
             {previewUrl ? (
               <a
                 href={previewUrl}
-                className="break-all font-mono text-xs text-paper underline"
+                className="break-all font-mono text-xs text-ink underline"
               >
                 Local preview link (email not configured)
               </a>
             ) : null}
             <div className="flex gap-3 font-mono text-xs">
               {oauth.github ? (
-                <a href="/api/auth/github" className="text-paper underline">
+                <a href="/api/auth/github" className="text-ink underline">
                   GitHub
                 </a>
               ) : null}
               {oauth.google ? (
-                <a href="/api/auth/google" className="text-paper underline">
+                <a href="/api/auth/google" className="text-ink underline">
                   Google
                 </a>
               ) : null}
@@ -210,7 +210,7 @@ export function JoinDialog({ open, onClose, onChanged }: JoinDialogProps) {
             <button
               type="submit"
               disabled={busy}
-              className="bg-paper px-4 py-2 font-mono text-xs font-semibold text-ink uppercase"
+              className="bg-ink px-4 py-2 font-mono text-xs font-semibold text-paper uppercase"
             >
               Save profile
             </button>
@@ -228,7 +228,7 @@ export function JoinDialog({ open, onClose, onChanged }: JoinDialogProps) {
             <button
               type="submit"
               disabled={busy}
-              className="bg-paper px-4 py-2 font-mono text-xs font-semibold text-ink uppercase"
+              className="bg-ink px-4 py-2 font-mono text-xs font-semibold text-paper uppercase"
             >
               Bid
             </button>
@@ -261,7 +261,7 @@ function Field({
       <input
         name={name}
         placeholder={placeholder}
-        className="border border-line bg-ink px-3 py-2 text-sm text-paper outline-none placeholder:text-mute/70 focus:border-paper"
+        className="border border-line bg-paper px-3 py-2 text-sm text-ink outline-none placeholder:text-mute focus:border-ink"
       />
     </label>
   );

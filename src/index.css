@@ -4,11 +4,11 @@
   --font-display: "Instrument Serif", ui-serif, Georgia, serif;
   --font-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, monospace;
-  --color-ink: #080806;
-  --color-panel: #11110c;
-  --color-line: #2a291f;
-  --color-paper: #f3eee2;
-  --color-mute: #8b8676;
+  --color-paper: #f6f3ec;
+  --color-panel: #efebe3;
+  --color-line: #d9d3c7;
+  --color-ink: #1e2428;
+  --color-mute: #7a756a;
   --color-up: #3dffc5;
   --color-down: #ff5a4f;
   --color-founding: #c4a574;
@@ -22,15 +22,15 @@ body,
 
 body {
   margin: 0;
-  background: var(--color-ink);
-  color: var(--color-paper);
+  background: var(--color-paper);
+  color: var(--color-ink);
   font-family: var(--font-sans);
   font-feature-settings: "ss01" on;
 }
 
 ::selection {
-  background: var(--color-paper);
-  color: var(--color-ink);
+  background: var(--color-ink);
+  color: var(--color-paper);
 }
 
 .tabular {
@@ -39,7 +39,7 @@ body {
 
 @keyframes bid-flash {
   0% {
-    background: color-mix(in srgb, var(--color-paper) 12%, var(--color-panel));
+    background: var(--color-panel);
   }
   100% {
     background: transparent;
