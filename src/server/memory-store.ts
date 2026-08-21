@@ -50,6 +50,7 @@ export class MemoryStore implements Store {
   listingsByProfile = new Map<string, string>();
   bids = new Map<string, BidRow>();
   bidsByCheckout = new Map<string, string>();
+  bidsByPaymentIntent = new Map<string, string>();
   processedEvents = new Set<string>();
   magicLinks: MagicLink[] = [];
   sessions = new Map<string, Session>();
@@ -416,6 +417,9 @@ export class MemoryStore implements Store {
     bid.status = "confirmed";
     bid.stripePaymentIntentId =
       input.paymentIntentId ?? bid.stripePaymentIntentId;
+    if (bid.stripePaymentIntentId) {
+      this.bidsByPaymentIntent.set(bid.stripePaymentIntentId, bid.id);
+    }
     this.bids.set(bid.id, bid);
     const confirmedCount = [...this.listings.values()].filter(
       (row) => row.currentBidId && row.status === "active",
@@ -569,6 +573,10 @@ export class MemoryStore implements Store {
     if (input.bidId) return this.bids.get(input.bidId);
     if (input.checkoutSessionId) {
       const id = this.bidsByCheckout.get(input.checkoutSessionId);
+      if (id) return this.bids.get(id);
+    }
+    if (input.paymentIntentId) {
+      const id = this.bidsByPaymentIntent.get(input.paymentIntentId);
       return id ? this.bids.get(id) : undefined;
     }
     return undefined;

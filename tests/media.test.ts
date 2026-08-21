@@ -23,7 +23,6 @@ describe("media objects", () => {
         origin: "http://localhost:5173",
         siteName: "workwithme.lol",
         adminEmails: [],
-        paddleEnvironment: "sandbox",
         emailFrom: "board@workwithme.lol",
       },
       media,

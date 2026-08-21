@@ -17,17 +17,14 @@ import {
   normalizeLinkedinProfileUrl,
 } from "../lib/linkedin";
 import {
-  classifyPaddleEvent,
-  createPaddleTransaction,
-  paddleAmountCents,
-  paddleBidId,
-  paddleEventId,
-  paddleTransactionId,
-  refundPaddleTransaction,
-  type PaddleEnvironment,
-  type PaddleLikeEvent,
-} from "../lib/paddle";
-import { verifyPaddleSignature } from "../lib/paddle-signature";
+  classifyStripeEvent,
+  createStripeCheckoutSession,
+  createStripeRefund,
+  extractCompletedCheckout,
+  extractRefundedCharge,
+  type StripeLikeEvent,
+} from "../lib/stripe";
+import { verifyStripeSignature } from "../lib/stripe-signature";
 import { isSafePhotoKey, type MediaBucket } from "../lib/media";
 import { minBidToEnter } from "../lib/ranking";
 import { SITE } from "../lib/site";
@@ -40,10 +37,9 @@ export type AppConfig = {
   origin: string;
   siteName: string;
   adminEmails: string[];
-  paddleApiKey?: string;
-  paddleWebhookSecret?: string;
-  paddleClientToken?: string;
-  paddleEnvironment: PaddleEnvironment;
+  stripeSecretKey?: string;
+  stripeWebhookSecret?: string;
+  stripePublishableKey?: string;
   githubClientId?: string;
   githubClientSecret?: string;
   googleClientId?: string;
@@ -94,7 +90,7 @@ export function createApp(deps: AppDeps) {
         "http://127.0.0.1:5173",
       ],
       allowMethods: ["GET", "POST", "OPTIONS"],
-      allowHeaders: ["Content-Type", "Authorization", "Paddle-Signature"],
+      allowHeaders: ["Content-Type", "Authorization", "Stripe-Signature"],
       credentials: true,
     });
     return middleware(c, next);
@@ -134,9 +130,8 @@ export function createApp(deps: AppDeps) {
       minIncrementCents: economics.minIncrementCents,
       publicOrigin: deps.config.origin,
       boardId: GLOBAL_BOARD_ID,
-      paddleEnabled: Boolean(deps.config.paddleApiKey),
-      paddleClientToken: deps.config.paddleClientToken || null,
-      paddleEnvironment: deps.config.paddleEnvironment,
+      stripeEnabled: Boolean(deps.config.stripeSecretKey),
+      stripePublishableKey: deps.config.stripePublishableKey || null,
       oauth: {
         github: Boolean(deps.config.githubClientId),
         google: Boolean(deps.config.googleClientId),
@@ -323,67 +318,77 @@ export function createApp(deps: AppDeps) {
       now,
     );
     let checkoutUrl: string | null = null;
-    let transactionId: string | null = null;
-    if (deps.config.paddleApiKey) {
-      const checkout = await createPaddleTransaction({
-        apiKey: deps.config.paddleApiKey,
-        environment: deps.config.paddleEnvironment,
-        origin: deps.config.origin,
-        amountCents,
-        handle: session.profile.handle,
+    let checkoutSessionId: string | null = null;
+    if (deps.config.stripeSecretKey) {
+      const checkout = await createStripeCheckoutSession({
+        secretKey: deps.config.stripeSecretKey,
         bidId: bid.id,
+        amountCents,
+        origin: deps.config.origin,
       });
       await deps.store.attachCheckoutSession(bid.id, checkout.id);
-      checkoutUrl = checkout.checkoutUrl;
-      transactionId = checkout.id;
+      checkoutUrl = checkout.url;
+      checkoutSessionId = checkout.id;
     }
     return c.json({
       bidId: bid.id,
       checkoutUrl,
-      transactionId,
-      devConfirm: !deps.config.paddleApiKey,
+      checkoutSessionId,
+      devConfirm: !deps.config.stripeSecretKey,
     });
   });
 
-  app.post("/api/paddle/webhook", async (c) => {
+  app.post("/api/stripe/webhook", async (c) => {
     const payload = await c.req.text();
-    const signature = c.req.header("paddle-signature") ?? "";
-    if (deps.config.paddleWebhookSecret) {
-      const ok = await verifyPaddleSignature({
-        payload,
+    const signature = c.req.header("stripe-signature") ?? "";
+    if (deps.config.stripeWebhookSecret) {
+      const ok = await verifyStripeSignature({
+        secret: deps.config.stripeWebhookSecret,
         header: signature,
-        secret: deps.config.paddleWebhookSecret,
+        payload,
       });
       if (!ok) return c.json({ error: "bad_signature" }, 400);
     } else if (!isLocalOrigin(deps.config.origin)) {
       return c.json({ error: "webhook_secret_required" }, 500);
     }
-    let event: PaddleLikeEvent;
+    let event: StripeLikeEvent;
     try {
-      event = JSON.parse(payload) as PaddleLikeEvent;
+      event = JSON.parse(payload) as StripeLikeEvent;
     } catch {
       return c.json({ error: "invalid_json" }, 400);
     }
-    const eventId = paddleEventId(event);
-    const eventType = event.event_type ?? "";
+    const eventId = typeof event.id === "string" ? event.id : "";
+    const eventType = typeof event.type === "string" ? event.type : "";
     if (!eventId) return c.json({ error: "missing_event_id" }, 400);
-    const action = classifyPaddleEvent(eventType, event.data);
-    if (action === "ignore") {
-      return c.json({ ok: true, ignored: eventType });
+    const action = classifyStripeEvent(eventType);
+    switch (action) {
+      case "ignore":
+        return c.json({ ok: true, ignored: eventType });
+      case "complete":
+      case "refund":
+        break;
+      default: {
+        const _never: never = action;
+        return _never;
+      }
     }
-    const transactionId = paddleTransactionId(event);
+    const object = (event.data?.object ?? {}) as Record<string, unknown>;
+    const completed = action === "complete" ? extractCompletedCheckout(object) : null;
+    const refunded = action === "refund" ? extractRefundedCharge(object) : null;
+    const paymentIntentId =
+      completed?.paymentIntentId ?? refunded?.paymentIntentId;
     const result = await deps.store.applyPayment({
       eventId,
       eventType,
       action,
-      bidId: paddleBidId(event),
-      checkoutSessionId: transactionId,
-      paymentIntentId: transactionId,
-      amountCents: paddleAmountCents(event),
+      bidId: completed?.bidId,
+      checkoutSessionId: completed?.checkoutSessionId || undefined,
+      paymentIntentId,
+      amountCents: completed?.amountCents ?? refunded?.amountCents,
       paidAt: clock(deps),
     });
-    if (result.outcome === "refund" && transactionId) {
-      await maybeRefund(deps, transactionId);
+    if (result.outcome === "refund" && action === "complete") {
+      await maybeRefund(deps, paymentIntentId);
     }
     await flushNotifications(deps);
     return c.json({ ok: true, result });
@@ -551,12 +556,11 @@ async function flushNotifications(deps: AppDeps) {
   }
 }
 
-async function maybeRefund(deps: AppDeps, transactionId?: string) {
-  if (!deps.config.paddleApiKey || !transactionId) return;
-  await refundPaddleTransaction({
-    apiKey: deps.config.paddleApiKey,
-    environment: deps.config.paddleEnvironment,
-    transactionId,
+async function maybeRefund(deps: AppDeps, paymentIntentId?: string) {
+  if (!deps.config.stripeSecretKey || !paymentIntentId) return;
+  await createStripeRefund({
+    secretKey: deps.config.stripeSecretKey,
+    paymentIntentId,
   });
 }
 

@@ -1,9 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { signPaddlePayload } from "../src/lib/paddle-signature";
+import {
+  formatStripeSignatureHeader,
+  signStripePayload,
+} from "../src/lib/stripe-signature";
 import { createApp } from "../src/server/app";
 import { MemoryStore } from "../src/server/memory-store";
 
-function testApp(store = new MemoryStore(), paddleSecret?: string) {
+function testApp(store = new MemoryStore(), stripeWebhookSecret?: string) {
   const sent: { to: string; subject: string }[] = [];
   const app = createApp({
     store,
@@ -11,8 +14,7 @@ function testApp(store = new MemoryStore(), paddleSecret?: string) {
       origin: "http://localhost:5173",
       siteName: "workwithme.lol",
       adminEmails: ["admin@workwithme.lol"],
-      paddleWebhookSecret: paddleSecret,
-      paddleEnvironment: "sandbox",
+      stripeWebhookSecret,
       emailFrom: "board@workwithme.lol",
     },
     sendEmail: async (input) => {
@@ -66,6 +68,16 @@ async function createProfile(
   });
 }
 
+async function signedHeaders(payload: string, webhookSecret?: string) {
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (webhookSecret) {
+    const timestamp = String(Math.floor(Date.now() / 1000));
+    const signature = await signStripePayload(webhookSecret, timestamp, payload);
+    headers["stripe-signature"] = formatStripeSignatureHeader(timestamp, signature);
+  }
+  return headers;
+}
+
 async function pay(
   app: ReturnType<typeof createApp>,
   cookie: string,
@@ -83,25 +95,20 @@ async function pay(
   });
   const bid = await json(bidRes);
   const payload = JSON.stringify({
-    event_id: eventId,
-    event_type: "transaction.completed",
+    id: eventId,
+    type: "checkout.session.completed",
     data: {
-      id: `txn_${eventId}`,
-      custom_data: { bid_id: bid.bidId },
-      details: { totals: { grand_total: String(amountCents) } },
+      object: {
+        id: `cs_${eventId}`,
+        amount_total: amountCents,
+        payment_intent: `pi_${eventId}`,
+        metadata: { bid_id: bid.bidId },
+      },
     },
   });
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
-  if (webhookSecret) {
-    headers["paddle-signature"] = await signPaddlePayload(
-      webhookSecret,
-      payload,
-      Math.floor(Date.now() / 1000),
-    );
-  }
-  const webhook = await app.request("/api/paddle/webhook", {
+  const webhook = await app.request("/api/stripe/webhook", {
     method: "POST",
-    headers,
+    headers: await signedHeaders(payload, webhookSecret),
     body: payload,
   });
   return { bid, webhook, webhookBody: await json(webhook) };
@@ -151,8 +158,8 @@ describe("live API", () => {
     expect((profile.ranked as { rank: number }).rank).toBe(1);
   });
 
-  it("replays the same Paddle event once", async () => {
-    const secret = "pdl_ntfset_test";
+  it("replays the same Stripe event once", async () => {
+    const secret = "whsec_test";
     const { app } = testApp(new MemoryStore(), secret);
     const cookie = await magicLogin(app, "maya@example.com");
     await createProfile(app, cookie, "maya");
@@ -167,7 +174,9 @@ describe("live API", () => {
     const body = await json(await app.request("/api/config"));
     expect(body.minEntryCents).toBe(200);
     expect(body.minIncrementCents).toBe(200);
-    expect(body.paddleEnabled).toBe(false);
+    expect(body.stripeEnabled).toBe(false);
+    expect(body.stripePublishableKey).toBeNull();
+    expect(body).not.toHaveProperty("paddleEnabled");
   });
 
   it("rejects a bid under the configured entry and keeps the board empty", async () => {
@@ -234,16 +243,16 @@ describe("live API", () => {
   });
 
   it("rejects a forged webhook when a secret is configured", async () => {
-    const { app } = testApp(new MemoryStore(), "pdl_ntfset_real");
-    const webhook = await app.request("/api/paddle/webhook", {
+    const { app } = testApp(new MemoryStore(), "whsec_real");
+    const webhook = await app.request("/api/stripe/webhook", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "paddle-signature": "ts=1;h1=nope",
+        "stripe-signature": "t=1,v1=nope",
       },
       body: JSON.stringify({
-        event_id: "evt_x",
-        event_type: "transaction.completed",
+        id: "evt_x",
+        type: "checkout.session.completed",
       }),
     });
     expect(webhook.status).toBe(400);
@@ -257,17 +266,16 @@ describe("live API", () => {
         origin: "https://workwithme.lol",
         siteName: "workwithme.lol",
         adminEmails: [],
-        paddleEnvironment: "sandbox",
         emailFrom: "board@workwithme.lol",
       },
     });
-    const webhook = await app.request("/api/paddle/webhook", {
+    const webhook = await app.request("/api/stripe/webhook", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        event_id: "evt_prod",
-        event_type: "transaction.completed",
-        data: { custom_data: { bid_id: "bid_missing" } },
+        id: "evt_prod",
+        type: "checkout.session.completed",
+        data: { object: { metadata: { bid_id: "bid_missing" } } },
       }),
     });
     expect(webhook.status).toBe(500);
@@ -311,28 +319,57 @@ describe("live API", () => {
     ).toBe(1);
   });
 
-  it("reverts rank on an approved Paddle refund adjustment", async () => {
+  it("reverts rank on charge.refunded", async () => {
     const { app } = testApp();
     const cookie = await magicLogin(app, "maya@example.com");
     await createProfile(app, cookie, "maya");
-    const paid = await pay(app, cookie, 200, "evt_pay");
+    await pay(app, cookie, 200, "evt_pay");
     const refundPayload = JSON.stringify({
-      event_id: "evt_refund",
-      event_type: "adjustment.updated",
+      id: "evt_refund",
+      type: "charge.refunded",
       data: {
-        id: "adj_1",
-        action: "refund",
-        status: "approved",
-        transaction_id: `txn_evt_pay`,
-        custom_data: { bid_id: paid.bid.bidId },
+        object: {
+          id: "ch_1",
+          payment_intent: "pi_evt_pay",
+          amount: 200,
+        },
       },
     });
-    const refund = await app.request("/api/paddle/webhook", {
+    const refund = await app.request("/api/stripe/webhook", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: refundPayload,
     });
     expect((await json(refund)).result).toMatchObject({ outcome: "reverted" });
+    const board = await json(await app.request("/api/board"));
+    expect(board.listings).toEqual([]);
+  });
+
+  it("ignores other Stripe event types without moving the board", async () => {
+    const { app } = testApp();
+    const cookie = await magicLogin(app, "maya@example.com");
+    await createProfile(app, cookie, "maya");
+    await app.request("/api/bids", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Cookie: cookie,
+      },
+      body: JSON.stringify({ amountCents: 200 }),
+    });
+    const webhook = await app.request("/api/stripe/webhook", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        id: "evt_invoice",
+        type: "invoice.paid",
+        data: { object: { metadata: { bid_id: "ignored" } } },
+      }),
+    });
+    expect(await json(webhook)).toMatchObject({
+      ok: true,
+      ignored: "invoice.paid",
+    });
     const board = await json(await app.request("/api/board"));
     expect(board.listings).toEqual([]);
   });

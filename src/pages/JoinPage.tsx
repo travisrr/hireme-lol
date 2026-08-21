@@ -23,7 +23,6 @@ import {
 import { handleFromLinkedinSlug, linkedinSlug } from "../lib/linkedin";
 import { formatUsdFromCents } from "../lib/money";
 import { isUsableHeadshotUrl } from "../lib/photo";
-import { openPaddleCheckout } from "../lib/paddle-js";
 import { SITE } from "../lib/site";
 import { DEFAULT_ECONOMICS, type BidEconomics } from "../lib/types";
 import type { SessionRow } from "../server/store";
@@ -37,10 +36,6 @@ export function JoinPage() {
   const [draft, setDraft] = useState<JoinDraft>(emptyJoinDraft);
   const [session, setSession] = useState<SessionRow | null>(null);
   const [economics, setEconomics] = useState<BidEconomics>(DEFAULT_ECONOMICS);
-  const [paddle, setPaddle] = useState<{
-    clientToken: string | null;
-    environment: "sandbox" | "production";
-  }>({ clientToken: null, environment: "sandbox" });
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -56,12 +51,17 @@ export function JoinPage() {
           minEntryCents: config.minEntryCents,
           minIncrementCents: config.minIncrementCents,
         });
-        setPaddle({
-          clientToken: config.paddleClientToken,
-          environment: config.paddleEnvironment,
-        });
         if (searchParams.get("signedin") === "1" && me.user && stored) {
           setStep(me.profile ? "bid" : "identity");
+        }
+        if (searchParams.get("paid") === "1") {
+          setStep("bid");
+          setDone("Payment received. Rank updates after Stripe confirms.");
+          clearJoinDraft();
+        }
+        if (searchParams.get("canceled") === "1") {
+          setStep("bid");
+          setError("Checkout canceled. Bid again when you are ready.");
         }
       })
       .catch(() => {
@@ -169,16 +169,6 @@ export function JoinPage() {
     setError(null);
     try {
       const result = await createBid(amountCents);
-      if (paddle.clientToken && result.transactionId) {
-        await openPaddleCheckout({
-          clientToken: paddle.clientToken,
-          transactionId: result.transactionId,
-          environment: paddle.environment,
-        });
-        setDone("Checkout opened. Rank updates after Paddle confirms payment.");
-        clearJoinDraft();
-        return;
-      }
       if (result.checkoutUrl) {
         window.location.href = result.checkoutUrl;
         return;
@@ -189,7 +179,7 @@ export function JoinPage() {
         clearJoinDraft();
         return;
       }
-      setDone("Bid created. Waiting on Paddle.");
+      setDone("Bid created. Waiting on Stripe.");
     } catch (err) {
       setError(err instanceof Error ? err.message : "bid_failed");
     } finally {

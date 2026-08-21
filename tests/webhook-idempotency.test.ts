@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
  * Pure stand-in for the D1 payment-event PRIMARY KEY gate.
  * The Worker will insert evt_... first; a second delivery is a no-op.
  */
-function applyPaddleEvent(
+function applyStripeEvent(
   seen: Set<string>,
   eventId: string,
   apply: () => void,
@@ -19,10 +19,10 @@ describe("webhook idempotency contract", () => {
   it("applies a new event once and ignores the replay", () => {
     const seen = new Set<string>();
     let boardWrites = 0;
-    const first = applyPaddleEvent(seen, "evt_1", () => {
+    const first = applyStripeEvent(seen, "evt_1", () => {
       boardWrites += 1;
     });
-    const second = applyPaddleEvent(seen, "evt_1", () => {
+    const second = applyStripeEvent(seen, "evt_1", () => {
       boardWrites += 1;
     });
     expect(first).toBe("applied");
@@ -33,10 +33,10 @@ describe("webhook idempotency contract", () => {
   it("still applies a different event", () => {
     const seen = new Set<string>();
     let boardWrites = 0;
-    applyPaddleEvent(seen, "evt_1", () => {
+    applyStripeEvent(seen, "evt_1", () => {
       boardWrites += 1;
     });
-    applyPaddleEvent(seen, "evt_2", () => {
+    applyStripeEvent(seen, "evt_2", () => {
       boardWrites += 1;
     });
     expect(boardWrites).toBe(2);

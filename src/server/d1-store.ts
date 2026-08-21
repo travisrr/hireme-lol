@@ -869,6 +869,12 @@ export class D1Store implements Store {
         .bind(input.checkoutSessionId)
         .first<BidSql>();
     }
+    if (input.paymentIntentId) {
+      return this.db
+        .prepare(`SELECT * FROM bids WHERE stripe_payment_intent_id = ?`)
+        .bind(input.paymentIntentId)
+        .first<BidSql>();
+    }
     return null;
   }
 
