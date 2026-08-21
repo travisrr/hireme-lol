@@ -28,6 +28,7 @@ import {
   type PaddleLikeEvent,
 } from "../lib/paddle";
 import { verifyPaddleSignature } from "../lib/paddle-signature";
+import { isSafePhotoKey, type MediaBucket } from "../lib/media";
 import { minBidToEnter } from "../lib/ranking";
 import { SITE } from "../lib/site";
 import { GLOBAL_BOARD_ID, PUBLIC_ORIGIN } from "../lib/types";
@@ -64,6 +65,7 @@ export type AppDeps = {
   now?: () => number;
   sendEmail?: EmailSender;
   fetchImpl?: typeof fetch;
+  media?: MediaBucket;
 };
 
 type Variables = {
@@ -96,6 +98,22 @@ export function createApp(deps: AppDeps) {
       credentials: true,
     });
     return middleware(c, next);
+  });
+
+  app.get("/api/media/*", async (c) => {
+    const key = decodeURIComponent(c.req.path.replace(/^\/api\/media\//, ""));
+    if (!deps.media || !isSafePhotoKey(key)) {
+      return c.body(null, 404);
+    }
+    const object = await deps.media.get(key);
+    if (!object) return c.body(null, 404);
+    const type = object.httpMetadata?.contentType || "image/jpeg";
+    return new Response(object.body as BodyInit, {
+      headers: {
+        "content-type": type,
+        "cache-control": "public, max-age=86400",
+      },
+    });
   });
 
   app.get("/api/health", (c) => {

@@ -46,7 +46,7 @@ export function ReceiptCard({
                   </span>
                 ) : null}
                 {item.photoUrl !== undefined ? (
-                  <PhotoTile src={item.photoUrl} className="size-5" />
+                  <PhotoTile src={item.photoUrl} className="size-5" radius={4} />
                 ) : null}
                 {item.href ? (
                   <Link

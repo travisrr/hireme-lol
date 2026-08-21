@@ -3,6 +3,7 @@ import {
   injectWebAnalyticsBeacon,
   resolveBeaconToken,
 } from "../src/lib/web-analytics";
+import type { MediaBucket } from "../src/lib/media";
 import { createApp, type AppConfig } from "../src/server/app";
 import { D1Store, type D1Like } from "../src/server/d1-store";
 
@@ -83,6 +84,7 @@ export default {
     const app = createApp({
       store: new D1Store(env.DB),
       config: configFromEnv(env),
+      media: env.MEDIA as unknown as MediaBucket,
     });
     return app.fetch(request);
   },

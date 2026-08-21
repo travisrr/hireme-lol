@@ -57,10 +57,12 @@ export function ListingRow({ listing, board, economics }: ListingRowProps) {
         }}
         className="min-w-0 text-left"
       >
-        <span className="block truncate text-[15px] font-semibold text-ink hover:text-accent">
-          {listing.displayName}
+        <span className="flex min-w-0 items-center gap-1.5">
+          <span className="truncate text-[15px] font-semibold text-ink hover:text-accent">
+            {listing.displayName}
+          </span>
           {listing.isFoundingMember ? (
-            <span className="ml-1.5 align-middle text-[9px] font-bold tracking-wide text-accent uppercase">
+            <span className="shrink-0 text-[9px] font-bold tracking-wide text-accent uppercase">
               Founding
             </span>
           ) : null}

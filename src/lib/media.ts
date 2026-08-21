@@ -1,5 +1,15 @@
 import { isAllowedImageType } from "./photo";
 
+export const FOUNDING_HEADSHOT_KEYS = {
+  elon: "photos/founding-elon.jpg",
+  palmer: "photos/founding-palmer.jpg",
+  jensen: "photos/founding-jensen.jpg",
+} as const;
+
+export function isSafePhotoKey(key: string): boolean {
+  return /^photos\/[a-z0-9._-]+$/i.test(key);
+}
+
 export type MediaObject = {
   body: ReadableStream | ArrayBuffer | Uint8Array | Blob;
   httpMetadata?: { contentType?: string };
