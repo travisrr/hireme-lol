@@ -1,0 +1,40 @@
+@import "tailwindcss";
+
+@theme {
+  --font-display: "Instrument Serif", ui-serif, Georgia, serif;
+  --font-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+  --color-ink: #080806;
+  --color-panel: #11110c;
+  --color-line: #2a291f;
+  --color-paper: #f3eee2;
+  --color-mute: #8b8676;
+  --color-money: #d6ff3d;
+  --color-gold: #f0c14b;
+  --color-up: #3dffc5;
+  --color-down: #ff5a4f;
+  --color-founding: #c4a574;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color-ink);
+  color: var(--color-paper);
+  font-family: var(--font-sans);
+  font-feature-settings: "ss01" on;
+}
+
+::selection {
+  background: var(--color-money);
+  color: var(--color-ink);
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
