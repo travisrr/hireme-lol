@@ -9,7 +9,12 @@ import {
   movementFor,
   rankListings,
 } from "../src/lib/ranking";
-import { DEFAULT_ECONOMICS, type BidEconomics, type ListingForRank } from "../src/lib/types";
+import {
+  DEFAULT_ECONOMICS,
+  LAUNCH_ECONOMICS,
+  type BidEconomics,
+  type ListingForRank,
+} from "../src/lib/types";
 
 const launch = DEFAULT_ECONOMICS;
 
@@ -26,6 +31,11 @@ function listing(
 
 describe("launch economics", () => {
   it("defaults to $2 entry / +$2 overtake and reads from the passed config", () => {
+    expect(LAUNCH_ECONOMICS).toEqual({
+      minEntryCents: 200,
+      minIncrementCents: 200,
+    });
+    expect(DEFAULT_ECONOMICS).toEqual(LAUNCH_ECONOMICS);
     expect(DEFAULT_ECONOMICS.minEntryCents).toBe(200);
     expect(DEFAULT_ECONOMICS.minIncrementCents).toBe(200);
     expect(minBidToEnter(launch)).toBe(200);
