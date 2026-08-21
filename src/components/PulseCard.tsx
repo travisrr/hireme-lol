@@ -24,6 +24,7 @@ export function PulseCard({ trending, activity }: PulseCardProps) {
   const empty = pulseEmptyCopy(tab);
 
   return (
+    <div className="hero-pulse-cell">
     <section data-lock="hero-pulse" className="hero-pulse">
       <div className="pulse-tabs" role="tablist" aria-label="Board pulse">
         {PULSE_TABS.map((id, index) => (
@@ -64,6 +65,7 @@ export function PulseCard({ trending, activity }: PulseCardProps) {
         </a>
       </p>
     </section>
+    </div>
   );
 }
 
