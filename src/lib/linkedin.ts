@@ -11,6 +11,12 @@ export type PulledLinkedin = {
 
 const PROFILE_PATH = /^\/in\/([a-zA-Z0-9._%-]+)\/?$/;
 
+export const FOUNDING_LINKEDIN_URLS = {
+  elon: "https://www.linkedin.com/in/elonmusk",
+  palmer: "https://www.linkedin.com/in/palmerluckey",
+  jensen: "https://www.linkedin.com/in/jenhsunhuang",
+} as const;
+
 export function normalizeLinkedinProfileUrl(raw: string): string | null {
   const trimmed = raw.trim();
   if (!trimmed) return null;

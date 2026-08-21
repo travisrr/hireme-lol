@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createApp } from "../src/server/app";
 import { MemoryStore } from "../src/server/memory-store";
 import {
+  FOUNDING_LINKEDIN_URLS,
   fetchPublicLinkedinPreview,
   parseLinkedinHtml,
 } from "../src/lib/linkedin";
@@ -30,6 +31,18 @@ describe("linkedin public preview", () => {
     expect(preview.displayName).toBe("");
     expect(preview.headline).toBe("");
     expect(preview.photoUrl).toBe("");
+  });
+
+  it("only looks at the founding members' public LinkedIn /in/ pages", () => {
+    expect(FOUNDING_LINKEDIN_URLS.elon).toBe(
+      "https://www.linkedin.com/in/elonmusk",
+    );
+    expect(FOUNDING_LINKEDIN_URLS.palmer).toBe(
+      "https://www.linkedin.com/in/palmerluckey",
+    );
+    expect(FOUNDING_LINKEDIN_URLS.jensen).toBe(
+      "https://www.linkedin.com/in/jenhsunhuang",
+    );
   });
 
   it("does not fail join when preview fetch throws", async () => {
