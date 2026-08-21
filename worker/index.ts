@@ -1,62 +1,51 @@
-import { Hono } from "hono";
-import { cors } from "hono/cors";
+import { createApp, type AppConfig } from "../src/server/app";
+import { D1Store, type D1Like } from "../src/server/d1-store";
 
 export type Bindings = {
-  DB: D1Database;
+  DB: D1Like;
   MEDIA: R2Bucket;
-  ASSETS: Fetcher;
+  ASSETS?: Fetcher;
   PUBLIC_SITE_ORIGIN: string;
   PUBLIC_SITE_NAME: string;
   BOARD_MODE: string;
+  ADMIN_EMAILS?: string;
+  STRIPE_SECRET_KEY?: string;
+  STRIPE_WEBHOOK_SECRET?: string;
+  GITHUB_CLIENT_ID?: string;
+  GITHUB_CLIENT_SECRET?: string;
+  GOOGLE_CLIENT_ID?: string;
+  GOOGLE_CLIENT_SECRET?: string;
+  EMAIL_FROM?: string;
+  RESEND_API_KEY?: string;
+  TURNSTILE_SECRET_KEY?: string;
 };
 
-const app = new Hono<{ Bindings: Bindings }>();
+function configFromEnv(env: Bindings): AppConfig {
+  return {
+    origin: env.PUBLIC_SITE_ORIGIN || "https://workwithme.lol",
+    siteName: env.PUBLIC_SITE_NAME || "workwithme.lol",
+    adminEmails: (env.ADMIN_EMAILS ?? "")
+      .split(",")
+      .map((item) => item.trim().toLowerCase())
+      .filter(Boolean),
+    stripeSecretKey: env.STRIPE_SECRET_KEY,
+    stripeWebhookSecret: env.STRIPE_WEBHOOK_SECRET,
+    githubClientId: env.GITHUB_CLIENT_ID,
+    githubClientSecret: env.GITHUB_CLIENT_SECRET,
+    googleClientId: env.GOOGLE_CLIENT_ID,
+    googleClientSecret: env.GOOGLE_CLIENT_SECRET,
+    emailFrom: env.EMAIL_FROM || "board@workwithme.lol",
+    resendApiKey: env.RESEND_API_KEY,
+    turnstileSecret: env.TURNSTILE_SECRET_KEY,
+  };
+}
 
-const LOCAL_ORIGINS = [
-  "http://localhost:5173",
-  "http://127.0.0.1:5173",
-];
-
-app.use("/api/*", async (c, next) => {
-  const origin = c.env.PUBLIC_SITE_ORIGIN || "https://workwithme.lol";
-  const middleware = cors({
-    origin: [origin, "https://www.workwithme.lol", ...LOCAL_ORIGINS],
-    allowMethods: ["GET", "POST", "OPTIONS"],
-    allowHeaders: ["Content-Type", "Authorization"],
-  });
-  return middleware(c, next);
-});
-
-app.get("/api/health", (c) => {
-  return c.json({
-    ok: true,
-    site: c.env.PUBLIC_SITE_NAME ?? "workwithme.lol",
-    origin: c.env.PUBLIC_SITE_ORIGIN ?? "https://workwithme.lol",
-    boardMode: c.env.BOARD_MODE ?? "global_only",
-    preview: true,
-    note: "Founding preview. hireme.lol is not a deploy target.",
-  });
-});
-
-app.get("/api/config", (c) => {
-  return c.json({
-    minEntryCents: 500,
-    minIncrementCents: 100,
-    publicOrigin: c.env.PUBLIC_SITE_ORIGIN ?? "https://workwithme.lol",
-    boardId: "global",
-    foundingPreview: true,
-  });
-});
-
-app.all("/api/*", (c) => {
-  return c.json(
-    {
-      error: "not_implemented",
-      message:
-        "Live auth, D1 board, and Stripe webhooks are next. This Worker is the workwithme.lol origin stub.",
-    },
-    501,
-  );
-});
-
-export default app;
+export default {
+  async fetch(request: Request, env: Bindings): Promise<Response> {
+    const app = createApp({
+      store: new D1Store(env.DB),
+      config: configFromEnv(env),
+    });
+    return app.fetch(request);
+  },
+};

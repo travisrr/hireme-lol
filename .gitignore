@@ -4,6 +4,8 @@ dist
 .dev.vars
 .env
 .env.local
+.data
+.vite
 *.log
 .DS_Store
 coverage

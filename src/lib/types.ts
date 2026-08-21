@@ -49,7 +49,7 @@ export type BoardActivity = {
   amountCents: number | null;
   rankAfter: number | null;
   createdAt: number;
-  mock: true;
+  mock?: boolean;
 };
 
 export type BidEconomics = {
