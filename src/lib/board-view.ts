@@ -23,6 +23,7 @@ export function toPublicListing(row: RankedBoardRow): RankedPublicListing {
     previousRank: row.previousRank,
     boardId: "global",
     industry: row.industry,
+    categories: row.categories,
     rank: row.rank,
     movement: row.movement,
   };

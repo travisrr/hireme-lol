@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useLocation, useSearchParams } from "react-router-dom";
 import { fetchBoard, fetchConfig } from "../api/client";
 import { BoardTabs } from "../components/BoardTabs";
 import { ClaimHeadline } from "../components/ClaimHeadline";
@@ -10,8 +10,8 @@ import { SiteHeader } from "../components/SiteHeader";
 import { toPublicListing } from "../lib/board-view";
 import {
   emptyIndustryCopy,
-  parseBoardTab,
   parseIndustry,
+  tabFromPath,
   tabLabel,
 } from "../lib/industries";
 import { PAGE_COLUMN } from "../lib/measure";
@@ -22,8 +22,9 @@ import { DEFAULT_ECONOMICS, type BidEconomics } from "../lib/types";
 import type { ActivityRow, RankedBoardRow } from "../server/store";
 
 export function HomePage() {
+  const { pathname } = useLocation();
   const [searchParams] = useSearchParams();
-  const tab = parseBoardTab(searchParams.get("tab"));
+  const tab = tabFromPath(pathname, searchParams.get("tab"));
   const industry = parseIndustry(tab);
   const [query, setQuery] = useState("");
   const [listings, setListings] = useState<RankedBoardRow[]>([]);

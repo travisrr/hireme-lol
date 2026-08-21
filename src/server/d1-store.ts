@@ -1,6 +1,11 @@
 import { applyConfirmedPayment } from "../lib/apply-bid";
 import { parseEconomics } from "../lib/economics";
-import { parseIndustry, type IndustryId } from "../lib/industries";
+import {
+  parseCategories,
+  parseIndustry,
+  serializeCategories,
+  type IndustryId,
+} from "../lib/industries";
 import { listingsThatFell } from "../lib/outbid";
 import { assertNever, movementFor, rankListings } from "../lib/ranking";
 import { DEFAULT_ECONOMICS, type BidEconomics } from "../lib/types";
@@ -95,7 +100,8 @@ function mapProfile(row: ProfileSql): ProfileRow {
     websiteClicks: row.website_clicks ?? 0,
     profileClicks: row.profile_clicks ?? 0,
     isFoundingMember: row.is_founding_member === 1,
-    industry: parseIndustry(row.category_id),
+    industry: parseCategories(row.category_id)[0] ?? null,
+    categories: parseCategories(row.category_id),
     createdAt: row.created_at,
   };
 }
@@ -341,7 +347,7 @@ export class D1Store implements Store {
         input.photoUrl,
         input.linkedinUrl,
         input.websiteUrl,
-        input.industry,
+        serializeCategories(input.categories),
         now,
         now,
       )
@@ -375,7 +381,7 @@ export class D1Store implements Store {
         input.photoUrl,
         input.linkedinUrl,
         input.websiteUrl,
-        input.industry,
+        serializeCategories(input.categories),
         now,
         userId,
       )
@@ -390,7 +396,7 @@ export class D1Store implements Store {
       photo_r2_key: input.photoUrl,
       linkedin_url: input.linkedinUrl,
       website_url: input.websiteUrl,
-      category_id: input.industry,
+      category_id: serializeCategories(input.categories),
     });
   }
 
@@ -940,7 +946,8 @@ export class D1Store implements Store {
       currentBidAt: row.current_bid_at,
       profileCreatedAt: row.created_at,
       previousRank: row.previous_rank,
-      industry: parseIndustry(row.category_id),
+      industry: parseCategories(row.category_id)[0] ?? null,
+      categories: parseCategories(row.category_id),
     }));
   }
 
@@ -949,7 +956,7 @@ export class D1Store implements Store {
   ): Promise<RankedBoardRow[]> {
     const rows = await this.publicRows();
     const filtered = industry
-      ? rows.filter((row) => row.industry === industry)
+      ? rows.filter((row) => row.categories.includes(industry))
       : rows;
     return rankListings(
       filtered.map((row) => ({ ...row, id: row.listingId })),

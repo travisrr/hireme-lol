@@ -27,7 +27,7 @@ import {
 import { verifyStripeSignature } from "../lib/stripe-signature";
 import { isSafePhotoKey, type MediaBucket } from "../lib/media";
 import { minBidToEnter } from "../lib/ranking";
-import { BOARD_TABS, parseIndustry } from "../lib/industries";
+import { BOARD_TABS, parseCategories, parseIndustry } from "../lib/industries";
 import { SITE } from "../lib/site";
 import { GLOBAL_BOARD_ID, PUBLIC_ORIGIN } from "../lib/types";
 import type { Store } from "./store";
@@ -494,7 +494,8 @@ function profileFromBody(body: Record<string, unknown>) {
     photoUrl: String(body.photoUrl ?? "").trim() || null,
     linkedinUrl,
     websiteUrl: websiteUrl || null,
-    industry: parseIndustry(String(body.industry ?? "")),
+    industry: parseCategories(body.categories ?? body.industry)[0] ?? null,
+    categories: parseCategories(body.categories ?? body.industry),
   };
 }
 

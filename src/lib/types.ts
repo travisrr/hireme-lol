@@ -41,6 +41,7 @@ export type PublicListing = ListingForRank & {
   previousRank: number | null;
   boardId: BoardId;
   industry: IndustryId | null;
+  categories: IndustryId[];
 };
 
 export type RankedPublicListing = Ranked<PublicListing> & {

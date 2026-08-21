@@ -14,7 +14,12 @@ import { LinkedInMark } from "../components/LinkedInMark";
 import { PhotoTile } from "../components/PhotoTile";
 import { useKeyboardInset } from "../hooks/useKeyboardInset";
 import { handleFromName } from "../lib/handles";
-import { INDUSTRIES, isIndustryId } from "../lib/industries";
+import {
+  INDUSTRIES,
+  MAX_CATEGORIES,
+  parseCategories,
+  type IndustryId,
+} from "../lib/industries";
 import {
   clearJoinDraft,
   emptyJoinDraft,
@@ -124,7 +129,7 @@ export function JoinPage() {
         displayName: pulled.displayName,
         headline: pulled.headline,
         photoUrl,
-        industry: draft.industry,
+        categories: draft.categories,
       });
       if (!pulled.displayName && !pulled.headline && !photoUrl) {
         setError(LINKEDIN_PULL_EMPTY);
@@ -152,10 +157,7 @@ export function JoinPage() {
       photoUrl: isUsableHeadshotUrl(String(form.get("photoUrl") ?? draft.photoUrl))
         ? String(form.get("photoUrl") ?? draft.photoUrl)
         : "",
-      industry: (() => {
-        const value = String(form.get("industry") ?? "");
-        return isIndustryId(value) ? value : "";
-      })(),
+      categories: parseCategories(form.getAll("category")),
     };
     persist(next);
     if (!session?.user) {
@@ -179,7 +181,8 @@ export function JoinPage() {
         photoUrl: next.photoUrl,
         linkedinUrl: next.linkedinUrl,
         websiteUrl: "",
-        industry: next.industry || null,
+        industry: next.categories[0] ?? null,
+        categories: next.categories,
       });
       setSession(await fetchMe());
       setStep("bid");
@@ -356,6 +359,20 @@ function IdentitySheet({
   busy,
   error,
 }: SheetProps) {
+  const [picked, setPicked] = useState<IndustryId[]>(draft.categories);
+
+  function toggleCategory(id: IndustryId, on: boolean) {
+    setPicked((current) => {
+      if (on) {
+        if (current.includes(id) || current.length >= MAX_CATEGORIES) {
+          return current;
+        }
+        return [...current, id];
+      }
+      return current.filter((item) => item !== id);
+    });
+  }
+
   return (
     <>
       <main className="join-sheet-main page-gutter mx-auto flex w-full max-w-xl flex-col">
@@ -384,26 +401,29 @@ function IdentitySheet({
             defaultValue={draft.photoUrl}
             placeholder="https://"
           />
-          <label className="grid gap-1">
-            <span className="type-meta font-semibold text-mute uppercase">
-              Industry
-            </span>
-            <select
-              name="industry"
-              required
-              defaultValue={draft.industry}
-              className="search-field"
-            >
-              <option value="" disabled>
-                Pick one
-              </option>
-              {INDUSTRIES.map((item) => (
-                <option key={item.id} value={item.id}>
-                  {item.label}
-                </option>
-              ))}
-            </select>
-          </label>
+          <fieldset className="grid gap-2">
+            <legend className="type-meta font-semibold text-mute uppercase">
+              Categories (up to {MAX_CATEGORIES})
+            </legend>
+            <div className="grid grid-cols-2 gap-2">
+              {INDUSTRIES.map((item) => {
+                const checked = picked.includes(item.id);
+                return (
+                  <label key={item.id} className="flex min-h-11 items-center gap-2">
+                    <input
+                      type="checkbox"
+                      name="category"
+                      value={item.id}
+                      checked={checked}
+                      disabled={!checked && picked.length >= MAX_CATEGORIES}
+                      onChange={(event) => toggleCategory(item.id, event.target.checked)}
+                    />
+                    <span className="type-body text-ink">{item.label}</span>
+                  </label>
+                );
+              })}
+            </div>
+          </fieldset>
         </form>
       </main>
       <div className="join-sheet-action page-gutter mx-auto w-full max-w-xl">

@@ -1,5 +1,5 @@
 import { applyConfirmedPayment, type BoardSnapshot } from "../lib/apply-bid";
-import type { IndustryId } from "../lib/industries";
+import { parseCategories, type IndustryId } from "../lib/industries";
 import { listingsThatFell } from "../lib/outbid";
 import { assertNever, movementFor, rankListings } from "../lib/ranking";
 import { DEFAULT_ECONOMICS, type BidEconomics } from "../lib/types";
@@ -222,7 +222,8 @@ export class MemoryStore implements Store {
       websiteClicks: 0,
       profileClicks: 0,
       isFoundingMember: false,
-      industry: input.industry,
+      industry: parseCategories(input.categories)[0] ?? input.industry ?? null,
+      categories: parseCategories(input.categories),
       createdAt: now,
     };
     this.profiles.set(profile.id, profile);
@@ -248,7 +249,13 @@ export class MemoryStore implements Store {
       throw new Error("handle_taken");
     }
     this.profilesByHandle.delete(current.handle);
-    const next: ProfileRow = { ...current, ...input };
+    const categories = parseCategories(input.categories);
+    const next: ProfileRow = {
+      ...current,
+      ...input,
+      categories,
+      industry: categories[0] ?? input.industry ?? null,
+    };
     this.profiles.set(id, next);
     this.profilesByHandle.set(next.handle, id);
     return next;
@@ -640,6 +647,7 @@ export class MemoryStore implements Store {
         profileCreatedAt: profile.createdAt,
         previousRank: listing.previousRank,
         industry: profile.industry,
+        categories: profile.categories,
       });
     }
     return rows;
@@ -647,7 +655,7 @@ export class MemoryStore implements Store {
 
   private rankedActive(industry?: IndustryId | null): RankedBoardRow[] {
     const rows = industry
-      ? this.publicRows().filter((row) => row.industry === industry)
+      ? this.publicRows().filter((row) => row.categories.includes(industry))
       : this.publicRows();
     return rankListings(
       rows.map((row) => ({

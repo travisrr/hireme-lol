@@ -93,6 +93,7 @@ export function saveProfile(input: {
   linkedinUrl: string;
   websiteUrl: string;
   industry: IndustryId | null;
+  categories: IndustryId[];
 }) {
   return request<{ profile: NonNullable<SessionRow["profile"]> }>(
     "/api/me/profile",

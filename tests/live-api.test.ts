@@ -50,6 +50,7 @@ async function createProfile(
   app: ReturnType<typeof createApp>,
   cookie: string,
   handle: string,
+  categories: string[] = [],
 ) {
   return app.request("/api/me/profile", {
     method: "POST",
@@ -64,6 +65,7 @@ async function createProfile(
       company: "Independent",
       pitch: "I bid in tests.",
       websiteUrl: "https://example.com",
+      categories,
     }),
   });
 }
@@ -180,7 +182,8 @@ describe("live API", () => {
     expect(body.industries).toEqual(
       expect.arrayContaining([
         { id: "overall", label: "Overall" },
-        { id: "healthcare", label: "Healthcare" },
+        { id: "founders", label: "Founders" },
+        { id: "hospitality", label: "Hospitality" },
       ]),
     );
   });
@@ -246,13 +249,57 @@ describe("live API", () => {
   it("accepts a $2 first entry and keeps empty industry tabs visible", async () => {
     const { app } = testApp();
     const cookie = await magicLogin(app, "maya@example.com");
-    await createProfile(app, cookie, "maya");
+    await createProfile(app, cookie, "maya", ["founders", "ai"]);
     const paid = await pay(app, cookie, 200, "evt_entry");
     expect(paid.webhookBody.result).toMatchObject({ outcome: "confirmed" });
     const overall = await json(await app.request("/api/board"));
     expect(overall.listings as unknown[]).toHaveLength(1);
-    const healthcare = await json(await app.request("/api/board?industry=healthcare"));
-    expect(healthcare.listings).toEqual([]);
+    const hospitality = await json(
+      await app.request("/api/board?industry=hospitality"),
+    );
+    expect(hospitality.listings).toEqual([]);
+  });
+
+  it("filters the one global board per category and ranks inside the tab", async () => {
+    const { app } = testApp();
+    const maya = await magicLogin(app, "maya@example.com");
+    const noah = await magicLogin(app, "noah@example.com");
+    expect((await createProfile(app, maya, "maya", ["founders", "ai"])).status).toBe(
+      200,
+    );
+    expect((await createProfile(app, noah, "noah", ["developers"])).status).toBe(
+      200,
+    );
+    await pay(app, maya, 400, "evt_maya_cat");
+    await pay(app, noah, 200, "evt_noah_cat");
+    const overall = await json(await app.request("/api/board"));
+    expect(
+      (overall.listings as Array<{ handle: string; rank: number }>).map(
+        (row) => `${row.handle}:${row.rank}`,
+      ),
+    ).toEqual(["maya:1", "noah:2"]);
+    const founders = await json(await app.request("/api/board?industry=founders"));
+    expect(
+      (founders.listings as Array<{ handle: string; rank: number }>).map(
+        (row) => `${row.handle}:${row.rank}`,
+      ),
+    ).toEqual(["maya:1"]);
+    const developers = await json(
+      await app.request("/api/board?industry=developers"),
+    );
+    expect(
+      (developers.listings as Array<{ handle: string; rank: number }>).map(
+        (row) => `${row.handle}:${row.rank}`,
+      ),
+    ).toEqual(["noah:1"]);
+    const ai = await json(await app.request("/api/board?industry=ai"));
+    expect(
+      (ai.listings as Array<{ handle: string }>).map((row) => row.handle),
+    ).toEqual(["maya"]);
+    const hospitality = await json(
+      await app.request("/api/board?industry=hospitality"),
+    );
+    expect(hospitality.listings).toEqual([]);
   });
 
   it("rejects a bid under the configured entry and keeps the board empty", async () => {

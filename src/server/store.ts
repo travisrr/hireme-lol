@@ -24,6 +24,7 @@ export type ProfileRow = {
   profileClicks: number;
   isFoundingMember: boolean;
   industry: IndustryId | null;
+  categories: IndustryId[];
   createdAt: number;
 };
 
@@ -68,6 +69,7 @@ export type PublicBoardRow = {
   profileCreatedAt: number;
   previousRank: number | null;
   industry: IndustryId | null;
+  categories: IndustryId[];
 };
 
 export type RankedBoardRow = PublicBoardRow & {
@@ -101,6 +103,7 @@ export type ProfileInput = {
   linkedinUrl: string | null;
   websiteUrl: string | null;
   industry: IndustryId | null;
+  categories: IndustryId[];
 };
 
 export type CreatePendingBidInput = {

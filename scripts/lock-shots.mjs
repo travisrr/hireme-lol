@@ -54,7 +54,17 @@ async function main() {
       if (headerHero) {
         await writeShot(page, `ui-${viewport.width}-header-hero`, headerHero);
       }
-      await page.goto(`${BASE}/?tab=healthcare`, {
+      const homeBoard = page.locator('[data-lock="board-tabs"]').first();
+      await homeBoard.waitFor({ state: "visible" });
+      await homeBoard.screenshot({
+        path: `${OUT_REPO}/ui-${viewport.width}-homepage-board.png`,
+        animations: "disabled",
+      });
+      await homeBoard.screenshot({
+        path: `${OUT_ART}/ui-${viewport.width}-homepage-board.png`,
+        animations: "disabled",
+      });
+      await page.goto(`${BASE}/hospitality`, {
         waitUntil: "domcontentloaded",
       });
       await ready(page);

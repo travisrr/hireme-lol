@@ -1,15 +1,20 @@
+import { INDUSTRIES, OVERALL_TAB } from "./industries";
+
 const RESERVED = new Set([
   "admin",
   "api",
   "auth",
   "board",
+  "how-it-works",
   "join",
   "login",
   "logout",
   "me",
   "og",
+  OVERALL_TAB,
   "unsubscribe",
   "www",
+  ...INDUSTRIES.map((item) => item.id),
 ]);
 
 export function normalizeHandle(raw: string): string {
