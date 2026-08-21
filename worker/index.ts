@@ -1,3 +1,7 @@
+import {
+  injectWebAnalyticsBeacon,
+  resolveBeaconToken,
+} from "../src/lib/web-analytics";
 import { createApp, type AppConfig } from "../src/server/app";
 import { D1Store, type D1Like } from "../src/server/d1-store";
 
@@ -18,6 +22,7 @@ export type Bindings = {
   EMAIL_FROM?: string;
   RESEND_API_KEY?: string;
   TURNSTILE_SECRET_KEY?: string;
+  CF_BEACON_TOKEN?: string;
   CF_WEB_ANALYTICS_TOKEN?: string;
 };
 
@@ -45,25 +50,17 @@ function isApiPath(pathname: string): boolean {
   return pathname.startsWith("/api/") || pathname.startsWith("/og/");
 }
 
-function withAnalytics(html: string, token: string): string {
-  const safe = token.replace(/[^a-zA-Z0-9_-]/g, "");
-  if (!safe) return html;
-  const beacon = `<script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token":"${safe}"}'></script>`;
-  if (html.includes("static.cloudflareinsights.com/beacon.min.js")) return html;
-  if (html.includes("</body>")) return html.replace("</body>", `${beacon}</body>`);
-  return `${html}${beacon}`;
-}
-
 async function serveAsset(request: Request, env: Bindings): Promise<Response> {
   if (!env.ASSETS) {
     return new Response("assets_unbound", { status: 500 });
   }
   const asset = await env.ASSETS.fetch(request);
   const type = asset.headers.get("content-type") ?? "";
-  if (!type.includes("text/html") || !env.CF_WEB_ANALYTICS_TOKEN) {
+  const token = resolveBeaconToken(env);
+  if (!type.includes("text/html") || !token) {
     return asset;
   }
-  const html = withAnalytics(await asset.text(), env.CF_WEB_ANALYTICS_TOKEN);
+  const html = injectWebAnalyticsBeacon(await asset.text(), token);
   const headers = new Headers(asset.headers);
   headers.delete("content-length");
   return new Response(html, { status: asset.status, headers });

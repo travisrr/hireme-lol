@@ -77,6 +77,9 @@ See [`.env.example`](./.env.example).
 - Optional: `GITHUB_CLIENT_ID` / `GOOGLE_CLIENT_ID` for OAuth
 - Optional: `RESEND_API_KEY` for magic-link + outbid mail
 - Optional: Turnstile keys
+- Optional: `CF_BEACON_TOKEN` — Cloudflare Web Analytics JS beacon (official `beacon.min.js` snippet, injected into HTML when set). If unset, the snippet is omitted. No Google Analytics.
+  - Cloudflare Dashboard → Analytics & logs → Web Analytics → Add a site for workwithme.lol → paste the token into `npx wrangler secret put CF_BEACON_TOKEN`
+  - Existing `CF_WEB_ANALYTICS_TOKEN` is accepted as an alias so a site already created is not duplicated.
 
 `hireme.lol` must not appear as an origin, webhook URL, or custom domain.
 
@@ -100,7 +103,7 @@ npx wrangler secret put STRIPE_WEBHOOK_SECRET
 npx wrangler secret put ADMIN_EMAILS
 npx wrangler secret put RESEND_API_KEY
 npx wrangler secret put TURNSTILE_SECRET_KEY
-npx wrangler secret put CF_WEB_ANALYTICS_TOKEN
+npx wrangler secret put CF_BEACON_TOKEN
 # optional OAuth:
 # npx wrangler secret put GITHUB_CLIENT_ID
 # npx wrangler secret put GITHUB_CLIENT_SECRET

@@ -138,7 +138,7 @@ Tests that must exist before money is live: ranking, ties, min bid, webhook idem
 - **Share / SEO:** `/{handle}` SPA route + Worker `run_worker_first` for `/og/*` and bot user-agents to inject OG. Images: Worker-generated PNG written to R2.
 - **Admin:** `/admin` gated by `ADMIN_EMAILS`. Hide listing, refund, founding-badge, config (`min_entry_cents`, `min_increment_cents`).
 - **Search:** SQL `LIKE` / FTS later; v1 ILIKE on name, handle, headline, company.
-- **Analytics:** stub `window.analytics` / Cloudflare Web Analytics site tag. No third-party maze.
+- **Analytics:** Cloudflare Web Analytics JS beacon only (`CF_BEACON_TOKEN` / `CF_WEB_ANALYTICS_TOKEN`). Official `beacon.min.js` is injected into HTML when the token is set; omitted when missing. No Google Analytics.
 
 ---
 
