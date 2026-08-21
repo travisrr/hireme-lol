@@ -215,6 +215,7 @@ export class MemoryStore implements Store {
       websiteUrl: input.websiteUrl,
       linkedinClicks: 0,
       websiteClicks: 0,
+      profileClicks: 0,
       isFoundingMember: false,
       createdAt: now,
     };
@@ -262,13 +263,20 @@ export class MemoryStore implements Store {
 
   async incrementClick(
     listingId: string,
-    target: "linkedin" | "site",
-  ): Promise<{ linkedinClicks: number; websiteClicks: number } | null> {
+    target: "profile" | "linkedin" | "site",
+  ): Promise<{
+    profileClicks: number;
+    linkedinClicks: number;
+    websiteClicks: number;
+  } | null> {
     const listing = this.listings.get(listingId);
     if (!listing) return null;
     const profile = this.profiles.get(listing.profileId);
     if (!profile) return null;
     switch (target) {
+      case "profile":
+        profile.profileClicks += 1;
+        break;
       case "linkedin":
         profile.linkedinClicks += 1;
         break;
@@ -282,6 +290,7 @@ export class MemoryStore implements Store {
     }
     this.profiles.set(profile.id, profile);
     return {
+      profileClicks: profile.profileClicks,
       linkedinClicks: profile.linkedinClicks,
       websiteClicks: profile.websiteClicks,
     };
@@ -611,6 +620,7 @@ export class MemoryStore implements Store {
         websiteUrl: profile.websiteUrl,
         linkedinClicks: profile.linkedinClicks,
         websiteClicks: profile.websiteClicks,
+        profileClicks: profile.profileClicks,
         isFoundingMember: profile.isFoundingMember,
         currentBidCents: listing.currentBidCents,
         currentBidAt: listing.currentBidAt,

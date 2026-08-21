@@ -15,6 +15,7 @@ export function toPublicListing(row: RankedBoardRow): RankedPublicListing {
     websiteUrl: row.websiteUrl,
     linkedinClicks: row.linkedinClicks ?? 0,
     websiteClicks: row.websiteClicks ?? 0,
+    profileClicks: row.profileClicks ?? 0,
     isFoundingMember: row.isFoundingMember,
     currentBidCents: row.currentBidCents,
     currentBidAt: row.currentBidAt,

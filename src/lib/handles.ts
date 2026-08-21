@@ -22,6 +22,16 @@ export function isValidHandle(raw: string): boolean {
   return /^[a-z][a-z0-9_]{2,19}$/.test(handle);
 }
 
+export function handleFromName(name: string): string {
+  const compact = name
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "")
+    .slice(0, 20);
+  if (isValidHandle(compact)) return compact;
+  const padded = `u${compact}`.replace(/[^a-z0-9]/g, "").slice(0, 20);
+  return isValidHandle(padded) ? padded : "member";
+}
+
 export function normalizeEmail(raw: string): string {
   return raw.trim().toLowerCase();
 }

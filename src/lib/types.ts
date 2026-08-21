@@ -34,6 +34,7 @@ export type PublicListing = ListingForRank & {
   websiteUrl: string | null;
   linkedinClicks: number;
   websiteClicks: number;
+  profileClicks: number;
   isFoundingMember: boolean;
   previousRank: number | null;
   boardId: BoardId;

@@ -1,3 +1,4 @@
+import type { ClickTarget } from "../lib/clicks";
 import type { BidEconomics } from "../lib/types";
 import type { ActivityRow, RankedBoardRow, SessionRow } from "../server/store";
 
@@ -71,6 +72,18 @@ export function saveProfile(input: {
     "/api/me/profile",
     { method: "POST", body: JSON.stringify(input) },
   );
+}
+
+export function recordClick(listingId: string, target: ClickTarget) {
+  return request<{
+    profileClicks: number;
+    linkedinClicks: number;
+    websiteClicks: number;
+    clicks: number;
+  }>(`/api/listings/${encodeURIComponent(listingId)}/clicks`, {
+    method: "POST",
+    body: JSON.stringify({ target }),
+  });
 }
 
 export function createBid(amountCents: number) {

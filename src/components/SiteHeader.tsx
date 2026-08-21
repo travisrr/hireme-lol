@@ -4,14 +4,12 @@ import { SITE } from "../lib/site";
 type SiteHeaderProps = {
   query: string;
   onQueryChange: (value: string) => void;
-  onCta: () => void;
   showSearch?: boolean;
 };
 
 export function SiteHeader({
   query,
   onQueryChange,
-  onCta,
   showSearch = true,
 }: SiteHeaderProps) {
   return (
@@ -38,9 +36,9 @@ export function SiteHeader({
           ) : (
             <span className="flex-1" />
           )}
-          <button type="button" onClick={onCta} className="btn-accent shrink-0">
+          <Link to="/join" className="btn-accent shrink-0 no-underline">
             {SITE.cta}
-          </button>
+          </Link>
         </div>
       </div>
     </header>

@@ -275,6 +275,42 @@ describe("live API", () => {
     expect(board.listings).toEqual([]);
   });
 
+  it("starts click stats at 0 and increments only on a real click-through", async () => {
+    const { app } = testApp();
+    const cookie = await magicLogin(app, "maya@example.com");
+    await createProfile(app, cookie, "maya");
+    const paid = await pay(app, cookie, 200, "evt_click");
+    const listingId = (paid.webhookBody.result as { listingId: string }).listingId;
+    const before = await json(await app.request("/api/board"));
+    const first = (before.listings as Array<{
+      profileClicks: number;
+      linkedinClicks: number;
+      websiteClicks: number;
+    }>)[0];
+    expect(first.profileClicks).toBe(0);
+    expect(first.linkedinClicks).toBe(0);
+    expect(first.websiteClicks).toBe(0);
+    const clicked = await json(
+      await app.request(`/api/listings/${listingId}/clicks`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ target: "profile" }),
+      }),
+    );
+    expect(clicked.clicks).toBe(1);
+    expect(clicked.profileClicks).toBe(1);
+    const forged = await app.request(`/api/listings/${listingId}/clicks`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ target: "impressions" }),
+    });
+    expect(forged.status).toBe(400);
+    const after = await json(await app.request("/api/board"));
+    expect(
+      (after.listings as Array<{ profileClicks: number }>)[0].profileClicks,
+    ).toBe(1);
+  });
+
   it("reverts rank on an approved Paddle refund adjustment", async () => {
     const { app } = testApp();
     const cookie = await magicLogin(app, "maya@example.com");

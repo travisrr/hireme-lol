@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
+import { Link } from "react-router-dom";
 import {
   confirmDevBid,
   createBid,
@@ -7,47 +8,32 @@ import {
   requestMagicLink,
   saveProfile,
 } from "../api/client";
+import { SiteFooter } from "../components/SiteFooter";
+import { SiteHeader } from "../components/SiteHeader";
+import { handleFromName } from "../lib/handles";
+import { handleFromLinkedinSlug, linkedinSlug } from "../lib/linkedin";
 import { formatUsdFromCents } from "../lib/money";
 import { openPaddleCheckout } from "../lib/paddle-js";
 import { SITE } from "../lib/site";
 import { DEFAULT_ECONOMICS, type BidEconomics } from "../lib/types";
 import type { SessionRow } from "../server/store";
 
-type JoinDialogProps = {
-  open: boolean;
-  onClose: () => void;
-  onChanged: () => void;
-};
-
-type PaddleClientConfig = {
-  clientToken: string | null;
-  environment: "sandbox" | "production";
-};
-
-export function JoinDialog({ open, onClose, onChanged }: JoinDialogProps) {
+export function JoinPage() {
   const [session, setSession] = useState<SessionRow | null>(null);
-  const [oauth, setOauth] = useState({ github: false, google: false });
   const [economics, setEconomics] = useState<BidEconomics>(DEFAULT_ECONOMICS);
-  const [paddle, setPaddle] = useState<PaddleClientConfig>({
-    clientToken: null,
-    environment: "sandbox",
-  });
+  const [paddle, setPaddle] = useState<{
+    clientToken: string | null;
+    environment: "sandbox" | "production";
+  }>({ clientToken: null, environment: "sandbox" });
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!open) {
-      setPreviewUrl(null);
-      setError(null);
-      setDone(null);
-      return;
-    }
     void Promise.all([fetchMe(), fetchConfig()])
       .then(([me, config]) => {
         setSession(me);
-        setOauth(config.oauth);
         setEconomics({
           minEntryCents: config.minEntryCents,
           minIncrementCents: config.minIncrementCents,
@@ -60,9 +46,7 @@ export function JoinDialog({ open, onClose, onChanged }: JoinDialogProps) {
       .catch(() => {
         setSession(null);
       });
-  }, [open]);
-
-  if (!open) return null;
+  }, []);
 
   const entry = formatUsdFromCents(economics.minEntryCents);
   const increment = formatUsdFromCents(economics.minIncrementCents);
@@ -85,24 +69,28 @@ export function JoinDialog({ open, onClose, onChanged }: JoinDialogProps) {
     }
   }
 
-  async function handleProfile(event: FormEvent<HTMLFormElement>) {
+  async function handleIdentity(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
+    const displayName = String(form.get("displayName") ?? "");
+    const headline = String(form.get("headline") ?? "");
+    const linkedinUrl = String(form.get("linkedinUrl") ?? "");
+    const websiteUrl = String(form.get("websiteUrl") ?? "");
+    const slug = linkedinSlug(linkedinUrl);
     setBusy(true);
     setError(null);
     try {
       await saveProfile({
-        handle: String(form.get("handle") ?? ""),
-        displayName: String(form.get("displayName") ?? ""),
-        headline: String(form.get("headline") ?? ""),
-        company: String(form.get("company") ?? ""),
-        pitch: String(form.get("pitch") ?? ""),
-        photoUrl: String(form.get("photoUrl") ?? ""),
-        linkedinUrl: String(form.get("linkedinUrl") ?? ""),
-        websiteUrl: String(form.get("websiteUrl") ?? ""),
+        handle: slug ? handleFromLinkedinSlug(slug) : handleFromName(displayName),
+        displayName,
+        headline,
+        company: "",
+        pitch: headline,
+        photoUrl: "",
+        linkedinUrl,
+        websiteUrl,
       });
       setSession(await fetchMe());
-      onChanged();
     } catch (err) {
       setError(err instanceof Error ? err.message : "profile_failed");
     } finally {
@@ -134,7 +122,6 @@ export function JoinDialog({ open, onClose, onChanged }: JoinDialogProps) {
       if (result.devConfirm) {
         await confirmDevBid(result.bidId, amountCents);
         setDone("Local test payment confirmed. You are on the board.");
-        onChanged();
         return;
       }
       setDone("Bid created. Waiting on Paddle.");
@@ -146,92 +133,68 @@ export function JoinDialog({ open, onClose, onChanged }: JoinDialogProps) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink/40 p-4 sm:items-center">
-      <button
-        type="button"
-        aria-label="Close"
-        className="absolute inset-0 cursor-default"
-        onClick={onClose}
-      />
-      <div className="relative w-full max-w-lg rounded-[12px] border border-line bg-card p-5 shadow-2xl">
+    <div className="min-h-screen bg-paper">
+      <SiteHeader query="" onQueryChange={() => undefined} showSearch={false} />
+      <main className="mx-auto max-w-xl px-4 py-8">
         <p className="text-xs font-semibold text-accent uppercase">
-          Live board · one-time bid · {SITE.name}
+          {SITE.name}
         </p>
-        <h2 className="mt-2 text-2xl font-bold">{SITE.cta}</h2>
-        <p className="mt-2 text-sm text-mute">
-          Entry {entry}. {increment} to overtake. Paddle is authoritative. No
-          fake listings.
-        </p>
-        {error ? (
-          <p className="mt-3 text-sm text-down">{error}</p>
-        ) : null}
-        {done ? (
-          <p className="mt-4 text-sm text-ink">{done}</p>
-        ) : !session?.user ? (
-          <div className="mt-5 grid gap-3">
-            <form className="grid gap-3" onSubmit={handleMagic}>
-              <Field label="Email" name="email" placeholder="you@company.com" />
-              <button type="submit" disabled={busy} className="btn-accent">
-                Email a magic link
-              </button>
-            </form>
+        <h1 className="mt-2 text-3xl font-extrabold">{SITE.cta}</h1>
+        <p className="mt-3 text-base text-ink">{SITE.joinLead}</p>
+        <ul className="mt-3 grid gap-1.5 text-sm text-mute">
+          <li>{SITE.joinEntry}</li>
+          <li>{SITE.joinRepeat}</li>
+          <li>{SITE.joinRule}</li>
+          <li>
+            {entry} to enter. +{increment} to overtake.
+          </li>
+        </ul>
+        {error ? <p className="mt-4 text-sm text-down">{error}</p> : null}
+        {done ? <p className="mt-4 text-sm text-ink">{done}</p> : null}
+        {!session?.user ? (
+          <form className="mt-6 grid gap-3" onSubmit={handleMagic}>
+            <Field label="Email" name="email" placeholder="you@company.com" />
+            <button type="submit" disabled={busy} className="btn-accent">
+              Email a magic link
+            </button>
             {previewUrl ? (
               <a href={previewUrl} className="break-all text-sm text-accent">
                 Local preview link (email not configured)
               </a>
             ) : null}
-            <div className="flex gap-3 text-sm">
-              {oauth.github ? (
-                <a href="/api/auth/github" className="text-accent">
-                  GitHub
-                </a>
-              ) : null}
-              {oauth.google ? (
-                <a href="/api/auth/google" className="text-accent">
-                  Google
-                </a>
-              ) : null}
-            </div>
-          </div>
+          </form>
         ) : !session.profile ? (
-          <form className="mt-5 grid gap-3" onSubmit={handleProfile}>
+          <form className="mt-6 grid gap-3" onSubmit={handleIdentity}>
             <Field label="Name" name="displayName" placeholder="Your name" />
-            <Field label="Handle" name="handle" placeholder="maya" />
             <Field
               label="Headline"
               name="headline"
-              placeholder="Staff product designer"
-            />
-            <Field label="Company" name="company" placeholder="Independent" />
-            <Field
-              label="One-line pitch"
-              name="pitch"
-              placeholder="What should someone remember?"
+              placeholder="Founder, designer, operator"
             />
             <Field
-              label="Website"
+              label="LinkedIn URL"
+              name="linkedinUrl"
+              placeholder="https://www.linkedin.com/in/you"
+            />
+            <Field
+              label="Website (optional)"
               name="websiteUrl"
               placeholder="https://"
             />
-            <Field
-              label="LinkedIn"
-              name="linkedinUrl"
-              placeholder="https://linkedin.com/in/…"
-            />
-            <Field
-              label="Photo URL"
-              name="photoUrl"
-              placeholder="https://… (you supply it)"
-            />
+            <p className="text-xs text-mute">
+              Photo upload later. Placeholder avatar is fine.
+            </p>
             <button type="submit" disabled={busy} className="btn-accent">
-              Save profile
+              Save identity
             </button>
           </form>
         ) : (
-          <form className="mt-5 grid gap-3" onSubmit={handleBid}>
-            <p className="text-sm text-mute">
-              Signed in as {session.user.email} · /{session.profile.handle}
+          <form className="mt-6 grid gap-3" onSubmit={handleBid}>
+            <p className="text-sm text-ink">
+              {session.profile.displayName}
+              {session.profile.headline ? ` · ${session.profile.headline}` : ""}
             </p>
+            <p className="text-sm text-mute">{SITE.joinRepeat}</p>
             <Field
               label={`Bid (USD, min ${entry})`}
               name="bid"
@@ -242,14 +205,13 @@ export function JoinDialog({ open, onClose, onChanged }: JoinDialogProps) {
             </button>
           </form>
         )}
-        <button
-          type="button"
-          onClick={onClose}
-          className="mt-4 text-sm text-mute underline"
-        >
-          Close
-        </button>
-      </div>
+        <p className="mt-8">
+          <Link to="/" className="text-sm text-accent">
+            ← The board
+          </Link>
+        </p>
+      </main>
+      <SiteFooter />
     </div>
   );
 }
@@ -269,7 +231,7 @@ function Field({
       <input
         name={name}
         placeholder={placeholder}
-        className="rounded-xl border border-line bg-paper px-3 py-2 text-sm text-ink outline-none placeholder:text-mute focus:border-accent"
+        className="rounded-xl border border-line bg-card px-3 py-2 text-sm text-ink outline-none placeholder:text-mute focus:border-accent"
       />
     </label>
   );

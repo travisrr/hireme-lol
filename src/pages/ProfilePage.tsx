@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { fetchBoard, fetchConfig, fetchProfile } from "../api/client";
-import { JoinDialog } from "../components/JoinDialog";
+import { fetchBoard, fetchConfig, fetchProfile, recordClick } from "../api/client";
 import { MovementMark } from "../components/MovementMark";
 import { PhotoTile } from "../components/PhotoTile";
 import { SiteFooter } from "../components/SiteFooter";
 import { SiteHeader } from "../components/SiteHeader";
 import { toPublicListing } from "../lib/board-view";
+import { initialsFromName } from "../lib/clicks";
 import { formatUsdFromCents } from "../lib/money";
 import { publicPhotoSrc } from "../lib/photo";
 import { claimPriceForRank } from "../lib/ranking";
@@ -16,7 +16,6 @@ import type { RankedBoardRow } from "../server/store";
 
 export function ProfilePage() {
   const { handle = "" } = useParams();
-  const [joinOpen, setJoinOpen] = useState(false);
   const [missing, setMissing] = useState(false);
   const [copied, setCopied] = useState(false);
   const [ranked, setRanked] = useState<RankedBoardRow | null>(null);
@@ -57,12 +56,25 @@ export function ProfilePage() {
 
   const listing = ranked ? toPublicListing(ranked) : null;
 
+  async function openOutbound(
+    target: "linkedin" | "site",
+    url: string,
+  ) {
+    if (listing) {
+      try {
+        await recordClick(listing.id, target);
+      } catch {
+        // Navigation still happens.
+      }
+    }
+    window.open(url, "_blank", "noopener,noreferrer");
+  }
+
   return (
     <div className="min-h-screen bg-paper">
       <SiteHeader
         query=""
         onQueryChange={() => undefined}
-        onCta={() => setJoinOpen(true)}
         showSearch={false}
       />
       <main className="mx-auto max-w-3xl px-4 py-12">
@@ -74,7 +86,8 @@ export function ProfilePage() {
             <div className="mt-4 flex items-start gap-5">
               <PhotoTile
                 src={publicPhotoSrc(profile.photoUrl)}
-                className="size-24"
+                initials={initialsFromName(profile.displayName)}
+                className="size-24 text-lg"
               />
               <div>
                 {listing ? (
@@ -132,19 +145,31 @@ export function ProfilePage() {
             ) : null}
             <div className="mt-6 flex gap-4 text-sm">
               {profile.linkedinUrl ? (
-                <a href={profile.linkedinUrl}>LinkedIn</a>
+                <button
+                  type="button"
+                  className="text-accent"
+                  onClick={() => {
+                    void openOutbound("linkedin", profile.linkedinUrl ?? "");
+                  }}
+                >
+                  LinkedIn
+                </button>
               ) : null}
               {profile.websiteUrl ? (
-                <a href={profile.websiteUrl}>Website</a>
+                <button
+                  type="button"
+                  className="text-accent"
+                  onClick={() => {
+                    void openOutbound("site", profile.websiteUrl ?? "");
+                  }}
+                >
+                  Website
+                </button>
               ) : null}
             </div>
-            <button
-              type="button"
-              onClick={() => setJoinOpen(true)}
-              className="btn-accent mt-8"
-            >
+            <Link to="/join" className="btn-accent mt-8 inline-block no-underline">
               Outbid
-            </button>
+            </Link>
           </article>
         ) : (
           <div>
@@ -165,11 +190,6 @@ export function ProfilePage() {
         </p>
       </main>
       <SiteFooter />
-      <JoinDialog
-        open={joinOpen}
-        onClose={() => setJoinOpen(false)}
-        onChanged={() => undefined}
-      />
     </div>
   );
 }

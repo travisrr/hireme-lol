@@ -8,4 +8,8 @@ export const SITE = {
   micro: "Higher bid = higher rank. That's basically it.",
   footer: "Money buys placement, not quality.",
   share: "I'm #37 on workwithme.lol. Think I deserve to be lower?",
+  joinLead: "Identify yourself and put a number on it.",
+  joinEntry: "New spots start at $2. Paying less than #1 still puts you on the board wherever that bid ranks.",
+  joinRepeat: "Already on the list? Same identity, higher bid.",
+  joinRule: "Higher bid = higher rank. Money buys placement, not quality.",
 } as const;

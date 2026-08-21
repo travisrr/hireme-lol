@@ -2,12 +2,19 @@ import { Hono } from "hono";
 import { deleteCookie, getCookie, setCookie } from "hono/cookie";
 import { cors } from "hono/cors";
 import { randomToken, sha256Hex } from "../lib/crypto";
+import { isClickTarget } from "../lib/clicks";
 import {
+  handleFromName,
   isValidEmail,
   isValidHandle,
   normalizeEmail,
   normalizeHandle,
 } from "../lib/handles";
+import {
+  handleFromLinkedinSlug,
+  linkedinSlug,
+  normalizeLinkedinProfileUrl,
+} from "../lib/linkedin";
 import {
   classifyPaddleEvent,
   createPaddleTransaction,
@@ -125,6 +132,21 @@ export function createApp(deps: AppDeps) {
       boardId: GLOBAL_BOARD_ID,
       listings,
       activity,
+    });
+  });
+
+  app.post("/api/listings/:id/clicks", async (c) => {
+    const body = await readJson(c);
+    const target = String(body.target ?? "");
+    if (!isClickTarget(target)) {
+      return c.json({ error: "invalid_target" }, 400);
+    }
+    const counts = await deps.store.incrementClick(c.req.param("id"), target);
+    if (!counts) return c.json({ error: "not_found" }, 404);
+    return c.json({
+      ...counts,
+      clicks:
+        counts.profileClicks + counts.linkedinClicks + counts.websiteClicks,
     });
   });
 
@@ -399,11 +421,20 @@ async function readJson(c: {
 }
 
 function profileFromBody(body: Record<string, unknown>) {
-  const handle = normalizeHandle(String(body.handle ?? ""));
   const displayName = String(body.displayName ?? "").trim();
   const headline = String(body.headline ?? "").trim();
-  const pitch = String(body.pitch ?? "").trim();
+  const pitch = String(body.pitch ?? headline).trim();
   const websiteUrl = String(body.websiteUrl ?? "").trim();
+  const rawLinkedin = String(body.linkedinUrl ?? "").trim();
+  const linkedinUrl =
+    normalizeLinkedinProfileUrl(rawLinkedin) || rawLinkedin || null;
+  let handle = normalizeHandle(String(body.handle ?? ""));
+  if (!isValidHandle(handle)) {
+    const slug = linkedinUrl ? linkedinSlug(linkedinUrl) : null;
+    handle = slug
+      ? handleFromLinkedinSlug(slug)
+      : handleFromName(displayName);
+  }
   if (!isValidHandle(handle) || !displayName || !headline || !pitch) {
     return null;
   }
@@ -414,7 +445,7 @@ function profileFromBody(body: Record<string, unknown>) {
     company: String(body.company ?? "").trim() || null,
     pitch,
     photoUrl: String(body.photoUrl ?? "").trim() || null,
-    linkedinUrl: String(body.linkedinUrl ?? "").trim() || null,
+    linkedinUrl,
     websiteUrl: websiteUrl || null,
   };
 }

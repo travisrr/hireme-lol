@@ -44,6 +44,7 @@ type ProfileSql = {
   website_url: string | null;
   linkedin_clicks: number;
   website_clicks: number;
+  profile_clicks: number;
   is_founding_member: number;
   created_at: number;
 };
@@ -90,6 +91,7 @@ function mapProfile(row: ProfileSql): ProfileRow {
     websiteUrl: row.website_url,
     linkedinClicks: row.linkedin_clicks ?? 0,
     websiteClicks: row.website_clicks ?? 0,
+    profileClicks: row.profile_clicks ?? 0,
     isFoundingMember: row.is_founding_member === 1,
     createdAt: row.created_at,
   };
@@ -311,6 +313,7 @@ export class D1Store implements Store {
       isFoundingMember: false,
       linkedinClicks: 0,
       websiteClicks: 0,
+      profileClicks: 0,
       createdAt: now,
     };
     await this.db
@@ -397,15 +400,22 @@ export class D1Store implements Store {
 
   async incrementClick(
     listingId: string,
-    target: "linkedin" | "site",
-  ): Promise<{ linkedinClicks: number; websiteClicks: number } | null> {
+    target: "profile" | "linkedin" | "site",
+  ): Promise<{
+    profileClicks: number;
+    linkedinClicks: number;
+    websiteClicks: number;
+  } | null> {
     const listing = await this.db
       .prepare(`SELECT profile_id FROM listings WHERE id = ?`)
       .bind(listingId)
       .first<{ profile_id: string }>();
     if (!listing) return null;
-    let column: "linkedin_clicks" | "website_clicks";
+    let column: "profile_clicks" | "linkedin_clicks" | "website_clicks";
     switch (target) {
+      case "profile":
+        column = "profile_clicks";
+        break;
       case "linkedin":
         column = "linkedin_clicks";
         break;
@@ -420,11 +430,18 @@ export class D1Store implements Store {
       .bind(listing.profile_id)
       .run();
     const row = await this.db
-      .prepare(`SELECT linkedin_clicks, website_clicks FROM profiles WHERE id = ?`)
+      .prepare(
+        `SELECT profile_clicks, linkedin_clicks, website_clicks FROM profiles WHERE id = ?`,
+      )
       .bind(listing.profile_id)
-      .first<{ linkedin_clicks: number; website_clicks: number }>();
+      .first<{
+        profile_clicks: number;
+        linkedin_clicks: number;
+        website_clicks: number;
+      }>();
     if (!row) return null;
     return {
+      profileClicks: row.profile_clicks ?? 0,
       linkedinClicks: row.linkedin_clicks,
       websiteClicks: row.website_clicks,
     };
@@ -861,7 +878,7 @@ export class D1Store implements Store {
         `SELECT l.id as listing_id, l.profile_id, l.current_bid_cents, l.current_bid_at,
                 l.previous_rank, p.handle, p.display_name, p.headline, p.company, p.pitch,
                 p.photo_r2_key, p.linkedin_url, p.website_url, p.linkedin_clicks, p.website_clicks,
-                p.is_founding_member, p.created_at
+                p.profile_clicks, p.is_founding_member, p.created_at
          FROM listings l
          JOIN profiles p ON p.id = l.profile_id
          WHERE l.board_id = 'global' AND l.status = 'active' AND l.current_bid_id IS NOT NULL`,
@@ -882,6 +899,7 @@ export class D1Store implements Store {
         website_url: string | null;
         linkedin_clicks: number;
         website_clicks: number;
+        profile_clicks: number;
         is_founding_member: number;
         created_at: number;
       }>();
@@ -898,6 +916,7 @@ export class D1Store implements Store {
       websiteUrl: row.website_url,
       linkedinClicks: row.linkedin_clicks ?? 0,
       websiteClicks: row.website_clicks ?? 0,
+      profileClicks: row.profile_clicks ?? 0,
       isFoundingMember: row.is_founding_member === 1,
       currentBidCents: row.current_bid_cents,
       currentBidAt: row.current_bid_at,

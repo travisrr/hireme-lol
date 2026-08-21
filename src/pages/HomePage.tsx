@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { fetchBoard, fetchConfig } from "../api/client";
 import { ClaimHeadline } from "../components/ClaimHeadline";
-import { JoinDialog } from "../components/JoinDialog";
 import { ListingRow, TOP_TEN_CUTOFF } from "../components/ListingRow";
 import { ReceiptCard } from "../components/ReceiptCard";
 import { SiteFooter } from "../components/SiteFooter";
@@ -9,12 +9,12 @@ import { SiteHeader } from "../components/SiteHeader";
 import { toPublicListing } from "../lib/board-view";
 import { formatUsdFromCents } from "../lib/money";
 import { receiptLine } from "../lib/receipts";
+import { SITE } from "../lib/site";
 import { DEFAULT_ECONOMICS, type BidEconomics } from "../lib/types";
 import type { ActivityRow, RankedBoardRow } from "../server/store";
 
 export function HomePage() {
   const [query, setQuery] = useState("");
-  const [joinOpen, setJoinOpen] = useState(false);
   const [listings, setListings] = useState<RankedBoardRow[]>([]);
   const [activity, setActivity] = useState<ActivityRow[]>([]);
   const [economics, setEconomics] = useState<BidEconomics>(DEFAULT_ECONOMICS);
@@ -48,7 +48,6 @@ export function HomePage() {
   const rows = listings.map(toPublicListing);
   const topTen = rows.slice(0, TOP_TEN_CUTOFF);
   const rest = rows.slice(TOP_TEN_CUTOFF);
-  const openJoin = () => setJoinOpen(true);
 
   const trending = rows
     .filter((row) => row.movement === "up" || row.movement === "new")
@@ -86,18 +85,10 @@ export function HomePage() {
 
   return (
     <div className="min-h-screen bg-paper">
-      <SiteHeader
-        query={query}
-        onQueryChange={setQuery}
-        onCta={openJoin}
-      />
+      <SiteHeader query={query} onQueryChange={setQuery} />
       <main className="mx-auto max-w-6xl px-4 pb-8">
         <section className="grid items-start gap-3 pt-3 lg:grid-cols-[minmax(14rem,0.85fr)_minmax(0,1.45fr)]">
-          <ClaimHeadline
-            board={rows}
-            economics={economics}
-            onAction={openJoin}
-          />
+          <ClaimHeadline board={rows} economics={economics} />
           <div className="grid min-w-0 gap-2 sm:grid-cols-2">
             <ReceiptCard
               title="Trending"
@@ -119,10 +110,14 @@ export function HomePage() {
           {error ? (
             <p className="p-3 text-sm text-down">{error}</p>
           ) : rows.length === 0 ? (
-            <p className="px-3 py-4 text-sm text-mute">
-              The board is empty. First confirmed bid is #1. Nobody is invented
-              to keep you company.
-            </p>
+            <div className="px-3 py-6">
+              <p className="text-sm text-mute">
+                The board is empty. First confirmed bid is #1.
+              </p>
+              <Link to="/join" className="btn-accent mt-3 inline-block no-underline">
+                {SITE.cta}
+              </Link>
+            </div>
           ) : (
             <>
               {topTen.map((listing) => (
@@ -131,7 +126,6 @@ export function HomePage() {
                   listing={listing}
                   board={rows}
                   economics={economics}
-                  onOutbid={openJoin}
                 />
               ))}
               {rest.length > 0 ? (
@@ -149,7 +143,6 @@ export function HomePage() {
                   listing={listing}
                   board={rows}
                   economics={economics}
-                  onOutbid={openJoin}
                 />
               ))}
             </>
@@ -157,13 +150,6 @@ export function HomePage() {
         </section>
       </main>
       <SiteFooter />
-      <JoinDialog
-        open={joinOpen}
-        onClose={() => setJoinOpen(false)}
-        onChanged={() => {
-          void reload();
-        }}
-      />
     </div>
   );
 }
