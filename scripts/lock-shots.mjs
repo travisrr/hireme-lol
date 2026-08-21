@@ -35,19 +35,22 @@ async function main() {
       });
       await page.goto(`${BASE}/`, { waitUntil: "domcontentloaded" });
       await ready(page);
-      const headerHero = await page.evaluate(() => {
-        const header = document.querySelector("header");
-        const hero = document.querySelector('[data-lock="header-hero"]');
-        if (!header || !hero) return null;
-        const a = header.getBoundingClientRect();
-        const b = hero.getBoundingClientRect();
-        return {
-          x: 0,
-          y: 0,
-          width: Math.min(viewport.width, Math.ceil(Math.max(a.right, b.right))),
-          height: Math.min(viewport.height, Math.ceil(b.bottom)),
-        };
-      });
+      const headerHero = await page.evaluate(
+        ({ width, height }) => {
+          const header = document.querySelector("header");
+          const hero = document.querySelector('[data-lock="header-hero"]');
+          if (!header || !hero) return null;
+          const a = header.getBoundingClientRect();
+          const b = hero.getBoundingClientRect();
+          return {
+            x: 0,
+            y: 0,
+            width: Math.min(width, Math.ceil(Math.max(a.right, b.right))),
+            height: Math.min(height, Math.ceil(b.bottom)),
+          };
+        },
+        viewport,
+      );
       if (headerHero) {
         await writeShot(page, `ui-${viewport.width}-header-hero`, headerHero);
       }
@@ -77,19 +80,22 @@ async function main() {
       });
       await page.goto(`${BASE}/how-it-works`, { waitUntil: "domcontentloaded" });
       await ready(page);
-      const how = await page.evaluate(() => {
-        const header = document.querySelector("header");
-        const main = document.querySelector('[data-lock="how-it-works"]');
-        if (!header || !main) return null;
-        const a = header.getBoundingClientRect();
-        const b = main.getBoundingClientRect();
-        return {
-          x: 0,
-          y: 0,
-          width: Math.min(viewport.width, Math.ceil(Math.max(a.right, b.right))),
-          height: Math.min(viewport.height, Math.ceil(b.bottom + 16)),
-        };
-      });
+      const how = await page.evaluate(
+        ({ width, height }) => {
+          const header = document.querySelector("header");
+          const main = document.querySelector('[data-lock="how-it-works"]');
+          if (!header || !main) return null;
+          const a = header.getBoundingClientRect();
+          const b = main.getBoundingClientRect();
+          return {
+            x: 0,
+            y: 0,
+            width: Math.min(width, Math.ceil(Math.max(a.right, b.right))),
+            height: Math.min(height, Math.ceil(b.bottom + 16)),
+          };
+        },
+        viewport,
+      );
       if (how) await writeShot(page, `ui-${viewport.width}-how-it-works`, how);
       await page.goto(`${BASE}/join?share=1&rank=4`, {
         waitUntil: "domcontentloaded",
