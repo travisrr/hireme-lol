@@ -1,4 +1,6 @@
+import { readFile } from "node:fs/promises";
 import type { IncomingMessage, ServerResponse } from "node:http";
+import { join } from "node:path";
 import type { Plugin } from "vite";
 import { parsePaddleEnvironment } from "./src/lib/paddle";
 import { createApp, type AppConfig } from "./src/server/app";
@@ -48,7 +50,28 @@ export function localApi(): Plugin {
           : Promise.resolve();
       const app = createApp({ store, config: config() });
       server.middlewares.use(async (req, res, next) => {
-        if (!req.url?.startsWith("/api")) {
+        const pathname = req.url?.split("?")[0] ?? "";
+        if (
+          process.env.LOCK_SHOTS === "1" &&
+          pathname.startsWith("/lock-shots/")
+        ) {
+          const name = pathname.slice("/lock-shots/".length);
+          if (!/^[a-z]+\.jpg$/.test(name)) {
+            res.statusCode = 404;
+            res.end();
+            return;
+          }
+          try {
+            const bytes = await readFile(join("lock-shots", name));
+            res.setHeader("content-type", "image/jpeg");
+            res.end(bytes);
+          } catch {
+            res.statusCode = 404;
+            res.end();
+          }
+          return;
+        }
+        if (!pathname.startsWith("/api")) {
           next();
           return;
         }
