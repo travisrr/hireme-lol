@@ -2,7 +2,6 @@ import { applyConfirmedPayment } from "../lib/apply-bid";
 import { parseEconomics } from "../lib/economics";
 import {
   parseCategories,
-  parseIndustry,
   serializeCategories,
   type IndustryId,
 } from "../lib/industries";
