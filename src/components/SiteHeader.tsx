@@ -6,16 +6,19 @@ type SiteHeaderProps = {
   query: string;
   onQueryChange: (value: string) => void;
   showSearch?: boolean;
+  inColumn?: boolean;
 };
 
 export function SiteHeader({
   query,
   onQueryChange,
   showSearch = true,
+  inColumn = false,
 }: SiteHeaderProps) {
+  const frame = inColumn ? "" : `page-gutter mx-auto ${PAGE_COLUMN}`;
   return (
     <header className="site-header">
-      <div className={`page-gutter site-header-bar mx-auto ${PAGE_COLUMN}`}>
+      <div className={`${frame} site-header-bar`.trim()}>
         <Link
           to="/"
           aria-label={SITE.name}
@@ -23,11 +26,11 @@ export function SiteHeader({
         >
           {SITE.wordmark}
         </Link>
-        <Link to="/join" className="btn-accent shrink-0 no-underline">
+        <Link to="/join" className="btn-header shrink-0 no-underline">
           {SITE.cta}
         </Link>
       </div>
-      <div className={`page-gutter mx-auto ${PAGE_COLUMN}`}>
+      <div className={frame}>
         <Link
           to="/how-it-works"
           className="inline-flex min-h-11 items-center type-body text-accent no-underline hover:text-accent-hover"
@@ -36,7 +39,7 @@ export function SiteHeader({
         </Link>
       </div>
       {showSearch ? (
-        <div className={`page-gutter mx-auto ${PAGE_COLUMN} pb-2`}>
+        <div className={`${frame} pb-2`.trim()}>
           <label>
             <span className="sr-only">Search people, skills, or keywords</span>
             <input

@@ -125,6 +125,30 @@ async function main() {
       });
       await page.close();
     }
+    const desktop = { width: 1440, height: 1100 };
+    const page = await browser.newPage({
+      viewport: desktop,
+      deviceScaleFactor: 1,
+    });
+    await page.goto(`${BASE}/`, { waitUntil: "domcontentloaded" });
+    await ready(page);
+    const top = await page.evaluate(() => {
+      const header = document.querySelector("header");
+      const hero = document.querySelector('[data-lock="header-hero"]');
+      const board = document.querySelector('[data-lock="board-tabs"]');
+      if (!header || !hero || !board) return null;
+      const a = header.getBoundingClientRect();
+      const b = hero.getBoundingClientRect();
+      const c = board.getBoundingClientRect();
+      return {
+        x: 0,
+        y: 0,
+        width: 1440,
+        height: Math.min(1100, Math.ceil(Math.max(a.bottom, b.bottom, c.top + 120))),
+      };
+    });
+    if (top) await writeShot(page, "ui-1440-top", top);
+    await page.close();
   } finally {
     await browser.close();
   }

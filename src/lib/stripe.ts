@@ -33,8 +33,12 @@ export function stripeCheckoutForm(opts: {
   origin: string;
 }): URLSearchParams {
   // Omit payment_method_types so Dashboard Link / dynamic methods work.
+  // One-time rank bids are not Stripe Managed Payments. Live account
+  // requires a product tax_code when Managed Payments is on; Travis
+  // proved a $2 session creates with this flag and fails without it.
   return new URLSearchParams({
     mode: "payment",
+    "managed_payments[enabled]": "false",
     success_url: `${opts.origin}/join?paid=1&bid=${opts.bidId}`,
     cancel_url: `${opts.origin}/join?canceled=1`,
     "metadata[bid_id]": opts.bidId,
