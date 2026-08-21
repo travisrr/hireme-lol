@@ -2,9 +2,12 @@
 
 The internet's most competitive professional directory.
 
+**Public name:** workwithme.lol  
 **Understand it in five seconds:** one global leaderboard of people. Money buys the rank. Outbid someone and they fall down the board — they are not deleted. That is the whole product.
 
 Public site: [https://workwithme.lol](https://workwithme.lol)
+
+The GitHub repo is `travisrr/hireme-lol`. That is not the public name. Do not put hireme.lol on the homepage.
 
 ---
 
@@ -29,6 +32,8 @@ We do not claim that a higher rank means a better professional. **Money buys pos
 ---
 
 ## Copy (do not drift)
+
+One public name. The wordmark matches the domain people type.
 
 **Wordmark:** WORKWITHME.LOL
 
@@ -89,9 +94,9 @@ outbid’s #1 claim price appeared to use a larger increment than lower ranks. *
 | **workwithme.lol** | Purchased. Cloudflare nameservers (`deb.ns.cloudflare.com`, `odin.ns.cloudflare.com`). No public A/AAAA yet — Worker is not attached. | **Yes. Production domain and deploy target.** |
 | **hireme.lol** | Resolves to `54.215.31.113`. HTTPS **301** → `https://lively-fog-cef0.louddrums.workers.dev/?domain=hireme.lol`, then a merch/parking page. | **No. Parked / taken. Do not buy. Do not deploy here.** |
 
-Working title was hireme.lol. That name is not ours. Keep the repo as `hireme-lol`. Public brand, CORS, OG, emails, Wrangler custom domain, and every user-facing URL use **workwithme.lol**.
+**Do not buy or attach hireme.lol.** Travis already bought workwithme.lol. Public copy, CORS, OG, emails, Wrangler custom domains, Stripe URLs, and every deploy step use **workwithme.lol** only.
 
-Do not purchase any domain. `.lol` registration is dashboard-only on Cloudflare. At-cost `.lol` was recently observed around **$25.20 register / $20.20 renew** — informational only.
+Do not purchase any other domain. `.lol` registration is dashboard-only on Cloudflare. At-cost `.lol` was recently observed around **$25.20 register / $20.20 renew** — informational only.
 
 Likely-open names Chief saw with no public DNS (not registry-authoritative; do not buy unless Travis says so): `outwork.lol`, `bigdeal.lol`, `hirethis.lol`, `worthit.lol`, `geton.lol`, `ontheboard.lol`. Rechecked 2026-08-21: still no public A records.
 

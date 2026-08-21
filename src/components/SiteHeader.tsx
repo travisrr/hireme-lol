@@ -19,9 +19,11 @@ export function SiteHeader({
       <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
         <Link to="/" className="flex items-baseline gap-2 no-underline">
           <span className="font-display text-2xl tracking-tight text-paper">
-            WORKWITHME
+            {SITE.wordmark}
           </span>
-          <span className="font-mono text-sm font-semibold text-money">.LOL</span>
+          <span className="font-mono text-sm font-semibold text-money">
+            {SITE.tld}
+          </span>
         </Link>
         <div className="flex flex-1 items-center gap-2 sm:max-w-xl sm:justify-end">
           {showSearch ? (

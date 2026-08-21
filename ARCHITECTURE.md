@@ -45,7 +45,7 @@ Stripe stays Stripe. The Worker verifies signatures and treats **webhook events 
 
 **Production hostname: `workwithme.lol`.** Already purchased, already on Cloudflare nameservers. Attach the Worker as a [Custom Domain](https://developers.cloudflare.com/workers/configuration/routing/custom-domains/) (`routes[].custom_domain = true`). Do not use routes-in-front-of-an-origin; the Worker **is** the origin.
 
-`hireme.lol` is parked (A `54.215.31.113` → parking Worker → merch). It is not ours. Never set it as a route, CORS origin, Stripe `success_url`, or OG canonical.
+Public product name is **workwithme.lol** (same as the hostname). `hireme.lol` is parked (A `54.215.31.113` → parking Worker → merch). It is not ours. Never set it as a route, CORS origin, Stripe `success_url`, or OG canonical. Do not buy or attach it.
 
 Local / preview: `http://localhost:5173` and `*.workers.dev`. CORS allowlist: `https://workwithme.lol`, `https://www.workwithme.lol`, localhost.
 

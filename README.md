@@ -6,7 +6,8 @@ The professional leaderboard where money talks. Bid for your spot. Get seen. Get
 
 Production: [https://workwithme.lol](https://workwithme.lol)
 
-This repo still lives at [github.com/travisrr/hireme-lol](https://github.com/travisrr/hireme-lol). The public product, custom domain, CORS, Stripe URLs, and Wrangler routes are **workwithme.lol**.
+Public name and production domain: **workwithme.lol**.  
+Repo: [github.com/travisrr/hireme-lol](https://github.com/travisrr/hireme-lol) — that is not the public name. Do not buy or attach hireme.lol.
 
 ---
 
@@ -85,6 +86,8 @@ Important public values:
 ---
 
 ## Cloudflare
+
+Deploy target: **https://workwithme.lol** only. Do not buy or attach hireme.lol.
 
 Stack: Workers + Assets + D1 + R2 + Turnstile + Wrangler. No AWS / Firebase / Supabase / Vercel.
 

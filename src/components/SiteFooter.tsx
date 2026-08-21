@@ -9,10 +9,7 @@ export function SiteFooter() {
           Money talks. Money does not certify talent. Get outbid, you fall down
           — you are not deleted.
         </p>
-        <p className="mt-4 font-mono text-[11px]">
-          Production domain {SITE.origin}. hireme.lol is parked and is not this
-          product.
-        </p>
+        <p className="mt-4 font-mono text-[11px]">{SITE.origin}</p>
       </div>
     </footer>
   );
