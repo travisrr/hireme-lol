@@ -1,20 +1,20 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
-  --font-display: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
-  --color-paper: #f7f4ee;
-  --color-card: #ffffff;
-  --color-panel: #ffffff;
-  --color-line: #e4dfd6;
-  --color-ink: #1d2226;
-  --color-mute: #6b6560;
-  --color-accent: #0a66c2;
-  --color-accent-hover: #004182;
-  --color-up: #0a66c2;
-  --color-down: #c0392b;
-  --color-founding: #0a66c2;
+  --font-display: "Instrument Serif", ui-serif, Georgia, serif;
+  --font-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+  --color-paper: #f6f3ec;
+  --color-card: #efebe3;
+  --color-panel: #efebe3;
+  --color-line: #d9d3c7;
+  --color-ink: #1e2428;
+  --color-mute: #7a756a;
+  --color-accent: #1e2428;
+  --color-accent-hover: #3a4248;
+  --color-up: #2f6f5e;
+  --color-down: #b42318;
+  --color-founding: #7a756a;
 }
 
 html,
@@ -31,8 +31,8 @@ body {
 }
 
 ::selection {
-  background: var(--color-accent);
-  color: #fff;
+  background: var(--color-ink);
+  color: var(--color-paper);
 }
 
 .tabular {
@@ -40,23 +40,26 @@ body {
 }
 
 .btn-accent {
-  border-radius: 0.75rem;
-  background: var(--color-accent);
-  color: #fff;
+  border-radius: 0;
+  background: var(--color-ink);
+  color: var(--color-paper);
+  font-family: var(--font-mono);
   font-weight: 600;
-  padding: 0.5rem 0.9rem;
-  font-size: 0.8125rem;
+  padding: 0.35rem 0.7rem;
+  font-size: 0.6875rem;
   line-height: 1.2;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .btn-accent:hover {
   background: var(--color-accent-hover);
-  color: #fff;
+  color: var(--color-paper);
 }
 
 @keyframes bid-flash {
   0% {
-    background: color-mix(in srgb, var(--color-accent) 10%, var(--color-card));
+    background: color-mix(in srgb, var(--color-ink) 8%, var(--color-panel));
   }
   100% {
     background: transparent;
@@ -68,5 +71,5 @@ body {
 }
 
 .rank-wash {
-  background: color-mix(in srgb, #0a66c2 8%, #ffffff);
+  background: color-mix(in srgb, #1e2428 6%, #efebe3);
 }

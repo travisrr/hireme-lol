@@ -130,7 +130,7 @@ export function JoinDialog({ open, onClose, onChanged }: JoinDialogProps) {
         className="absolute inset-0 cursor-default"
         onClick={onClose}
       />
-      <div className="relative w-full max-w-lg rounded-[12px] border border-line bg-card p-5 shadow-2xl">
+      <div className="relative w-full max-w-lg border border-line bg-panel p-5 shadow-2xl">
         <p className="text-xs font-semibold text-mute uppercase">
           Live board · one-time bid · {SITE.name}
         </p>
@@ -246,7 +246,7 @@ function Field({
       <input
         name={name}
         placeholder={placeholder}
-        className="rounded-xl border border-line bg-paper px-3 py-2 text-sm text-ink outline-none placeholder:text-mute focus:border-accent"
+        className="border border-line bg-paper px-3 py-2 text-sm text-ink outline-none placeholder:text-mute focus:border-ink"
       />
     </label>
   );

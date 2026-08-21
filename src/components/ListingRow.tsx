@@ -28,11 +28,11 @@ export function ListingRow({
 
   return (
     <article
-      className={`grid grid-cols-[2rem_2.25rem_minmax(0,1fr)_auto] items-center gap-3 border-b border-line px-4 py-2.5 last:border-b-0 sm:grid-cols-[2.25rem_2.25rem_minmax(0,1fr)_minmax(0,1fr)_auto_auto] ${highlight ? "rank-wash" : ""} ${flash ? "bid-flash" : ""}`}
+      className={`grid grid-cols-[1.75rem_2rem_minmax(0,1fr)_auto] items-center gap-2 border-b border-line px-3 py-1.5 last:border-b-0 sm:grid-cols-[2rem_2rem_minmax(0,1fr)_minmax(0,1fr)_auto_auto] ${highlight ? "rank-wash" : ""} ${flash ? "bid-flash" : ""}`}
     >
       <div className="flex items-center gap-1">
         <span
-          className={`text-sm font-bold tabular ${highlight ? "text-accent" : "text-ink"}`}
+          className={`font-mono text-xs font-medium tabular ${highlight ? "text-ink" : "text-mute"}`}
         >
           {listing.rank}
         </span>
@@ -41,20 +41,20 @@ export function ListingRow({
       <PhotoTile src={listing.photoUrl} />
       <Link
         to={`/${listing.handle}`}
-        className="truncate text-sm font-semibold text-ink no-underline hover:text-accent"
+        className="truncate font-display text-[15px] text-ink no-underline hover:text-mute"
       >
         {listing.displayName}
       </Link>
-      <p className="col-span-4 truncate text-sm text-mute sm:col-span-1">
+      <p className="col-span-4 truncate text-xs text-mute sm:col-span-1">
         {listing.pitch || pitch}
       </p>
-      <span className="text-sm font-bold text-accent tabular">
+      <span className="font-mono text-sm text-ink tabular">
         {formatUsdFromCents(listing.currentBidCents)}
       </span>
       <button
         type="button"
         onClick={onOutbid}
-        className="justify-self-end text-sm font-semibold text-accent hover:text-accent-hover"
+        className="justify-self-end font-mono text-[11px] text-ink uppercase hover:text-mute"
       >
         Outbid · {formatUsdFromCents(claim)}
       </button>

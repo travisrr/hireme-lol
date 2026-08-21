@@ -91,14 +91,14 @@ export function HomePage() {
         onQueryChange={setQuery}
         onCta={openJoin}
       />
-      <main className="mx-auto max-w-6xl px-4 pb-10">
-        <section className="grid items-start gap-4 pt-6 lg:grid-cols-[minmax(15rem,0.9fr)_minmax(0,1.4fr)]">
+      <main className="mx-auto max-w-6xl px-4 pb-8">
+        <section className="grid items-start gap-3 pt-3 lg:grid-cols-[minmax(14rem,0.85fr)_minmax(0,1.45fr)]">
           <ClaimHeadline
             board={rows}
             economics={economics}
             onAction={openJoin}
           />
-          <div className="grid min-w-0 gap-3 sm:grid-cols-2">
+          <div className="grid min-w-0 gap-2 sm:grid-cols-2">
             <ReceiptCard
               title="Trending"
               items={trending}
@@ -115,11 +115,11 @@ export function HomePage() {
             />
           </div>
         </section>
-        <section id="board" className="mt-5 overflow-hidden rounded-[12px] border border-line bg-card">
+        <section id="board" className="mt-3 border border-line bg-paper">
           {error ? (
-            <p className="p-4 text-sm text-down">{error}</p>
+            <p className="p-3 font-mono text-sm text-down">{error}</p>
           ) : rows.length === 0 ? (
-            <p className="px-4 py-6 text-sm text-mute">
+            <p className="px-3 py-4 font-mono text-xs text-mute">
               The board is empty. First confirmed bid is #1. Nobody is invented
               to keep you company.
             </p>
@@ -135,9 +135,9 @@ export function HomePage() {
                 />
               ))}
               {rest.length > 0 ? (
-                <div className="flex items-center gap-3 bg-card px-4 py-2">
+                <div className="flex items-center gap-3 bg-paper px-3 py-1">
                   <span className="h-px flex-1 bg-line" />
-                  <p className="text-[10px] font-semibold tracking-[0.16em] text-mute uppercase">
+                  <p className="font-mono text-[10px] tracking-[0.16em] text-mute uppercase">
                     Top 10
                   </p>
                   <span className="h-px flex-1 bg-line" />
