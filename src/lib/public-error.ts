@@ -21,6 +21,7 @@ const HUMAN_BY_CODE: Record<string, string> = {
   invalid_email: "Enter a valid email.",
   magic_failed: "We couldn’t send that link. Try again.",
   bid_failed: PAYMENTS_NOT_READY,
+  bad_signature: PAYMENTS_NOT_READY,
   profile_failed: "We couldn’t save that profile. Check the fields.",
   invalid_photo: "Use a JPEG, PNG, or WebP photo.",
   media_unbound: "Photo upload isn’t ready yet. Paste a photo URL instead.",

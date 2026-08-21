@@ -37,7 +37,7 @@ From [Cloudflare Workers docs](https://developers.cloudflare.com/workers/framewo
 | Wrangler | Dev, migrations, deploy | `wrangler.jsonc` in repo. |
 | Durable Objects | Optional later | Material for a single hot board only if we see refund storms from CAS races. Not in the first deploy. |
 
-Stripe Checkout is the only live payment provider. The Worker verifies `Stripe-Signature` and treats **`/api/stripe/webhook` as the only rank commit**. Pending bids do not move the board.
+Stripe Checkout is the only live payment provider. The Worker verifies `Stripe-Signature` and treats **`/api/webhooks/stripe` and `/api/stripe/webhook` as the only rank commit** (same handler). Pending bids do not move the board. No Paddle routes.
 
 ---
 

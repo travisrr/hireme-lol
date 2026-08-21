@@ -1,4 +1,4 @@
-import { Hono } from "hono";
+import { Hono, type Context } from "hono";
 import { deleteCookie, getCookie, setCookie } from "hono/cookie";
 import { cors } from "hono/cors";
 import { randomToken, sha256Hex } from "../lib/crypto";
@@ -390,61 +390,8 @@ export function createApp(deps: AppDeps) {
     });
   });
 
-  app.post("/api/stripe/webhook", async (c) => {
-    const payload = await c.req.text();
-    const signature = c.req.header("stripe-signature") ?? "";
-    if (deps.config.stripeWebhookSecret) {
-      const ok = await verifyStripeSignature({
-        secret: deps.config.stripeWebhookSecret,
-        header: signature,
-        payload,
-      });
-      if (!ok) return c.json({ error: "bad_signature" }, 400);
-    } else if (!isLocalOrigin(deps.config.origin)) {
-      return c.json({ error: "payments_not_ready" }, 503);
-    }
-    let event: StripeLikeEvent;
-    try {
-      event = JSON.parse(payload) as StripeLikeEvent;
-    } catch {
-      return c.json({ error: "invalid_json" }, 400);
-    }
-    const eventId = typeof event.id === "string" ? event.id : "";
-    const eventType = typeof event.type === "string" ? event.type : "";
-    if (!eventId) return c.json({ error: "missing_event_id" }, 400);
-    const action = classifyStripeEvent(eventType);
-    switch (action) {
-      case "ignore":
-        return c.json({ ok: true, ignored: eventType });
-      case "complete":
-      case "refund":
-        break;
-      default: {
-        const _never: never = action;
-        return _never;
-      }
-    }
-    const object = (event.data?.object ?? {}) as Record<string, unknown>;
-    const completed = action === "complete" ? extractCompletedCheckout(object) : null;
-    const refunded = action === "refund" ? extractRefundedCharge(object) : null;
-    const paymentIntentId =
-      completed?.paymentIntentId ?? refunded?.paymentIntentId;
-    const result = await deps.store.applyPayment({
-      eventId,
-      eventType,
-      action,
-      bidId: completed?.bidId,
-      checkoutSessionId: completed?.checkoutSessionId || undefined,
-      paymentIntentId,
-      amountCents: completed?.amountCents ?? refunded?.amountCents,
-      paidAt: clock(deps),
-    });
-    if (result.outcome === "refund" && action === "complete") {
-      await maybeRefund(deps, paymentIntentId);
-    }
-    await flushNotifications(deps);
-    return c.json({ ok: true, result });
-  });
+  app.post("/api/webhooks/stripe", (c) => stripeWebhook(c, deps));
+  app.post("/api/stripe/webhook", (c) => stripeWebhook(c, deps));
 
   app.get("/api/unsubscribe", async (c) => {
     const email = normalizeEmail(c.req.query("email") ?? "");
@@ -494,6 +441,62 @@ function isLocalOrigin(origin: string): boolean {
 
 function paymentsReady(config: AppConfig): boolean {
   return Boolean(config.stripeSecretKey && config.stripeWebhookSecret);
+}
+
+async function stripeWebhook(c: Context, deps: AppDeps) {
+  const payload = await c.req.text();
+  const signature = c.req.header("stripe-signature") ?? "";
+  if (deps.config.stripeWebhookSecret) {
+    const ok = await verifyStripeSignature({
+      secret: deps.config.stripeWebhookSecret,
+      header: signature,
+      payload,
+    });
+    if (!ok) return c.json({ error: "bad_signature" }, 400);
+  } else if (!isLocalOrigin(deps.config.origin)) {
+    return c.json({ error: "payments_not_ready" }, 503);
+  }
+  let event: StripeLikeEvent;
+  try {
+    event = JSON.parse(payload) as StripeLikeEvent;
+  } catch {
+    return c.json({ error: "invalid_json" }, 400);
+  }
+  const eventId = typeof event.id === "string" ? event.id : "";
+  const eventType = typeof event.type === "string" ? event.type : "";
+  if (!eventId) return c.json({ error: "missing_event_id" }, 400);
+  const action = classifyStripeEvent(eventType);
+  switch (action) {
+    case "ignore":
+      return c.json({ ok: true, ignored: eventType });
+    case "complete":
+    case "refund":
+      break;
+    default: {
+      const _never: never = action;
+      return _never;
+    }
+  }
+  const object = (event.data?.object ?? {}) as Record<string, unknown>;
+  const completed = action === "complete" ? extractCompletedCheckout(object) : null;
+  const refunded = action === "refund" ? extractRefundedCharge(object) : null;
+  const paymentIntentId =
+    completed?.paymentIntentId ?? refunded?.paymentIntentId;
+  const result = await deps.store.applyPayment({
+    eventId,
+    eventType,
+    action,
+    bidId: completed?.bidId,
+    checkoutSessionId: completed?.checkoutSessionId || undefined,
+    paymentIntentId,
+    amountCents: completed?.amountCents ?? refunded?.amountCents,
+    paidAt: clock(deps),
+  });
+  if (result.outcome === "refund" && action === "complete") {
+    await maybeRefund(deps, paymentIntentId);
+  }
+  await flushNotifications(deps);
+  return c.json({ ok: true, result });
 }
 
 async function readJson(c: {

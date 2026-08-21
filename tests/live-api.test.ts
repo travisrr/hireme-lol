@@ -160,6 +160,54 @@ describe("live API", () => {
     expect((profile.ranked as { rank: number }).rank).toBe(1);
   });
 
+  it("accepts the live Stripe Dashboard path and the alias", async () => {
+    const { app } = testApp();
+    const cookie = await magicLogin(app, "maya@example.com");
+    await createProfile(app, cookie, "maya");
+    const bidRes = await app.request("/api/bids", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Cookie: cookie,
+      },
+      body: JSON.stringify({ amountCents: 200 }),
+    });
+    const bid = await json(bidRes);
+    const payload = JSON.stringify({
+      id: "evt_live_path",
+      type: "checkout.session.completed",
+      data: {
+        object: {
+          id: "cs_live_path",
+          amount_total: 200,
+          payment_intent: "pi_live_path",
+          metadata: { bid_id: bid.bidId },
+        },
+      },
+    });
+    const live = await app.request("/api/webhooks/stripe", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: payload,
+    });
+    expect(live.status).toBe(200);
+    expect((await json(live)).result).toMatchObject({ outcome: "confirmed" });
+    const replay = await json(
+      await app.request("/api/stripe/webhook", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: payload,
+      }),
+    );
+    expect(replay.result).toMatchObject({ outcome: "idempotent" });
+    const paddle = await app.request("/api/paddle/webhook", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: payload,
+    });
+    expect(paddle.status).toBe(404);
+  });
+
   it("replays the same Stripe event once", async () => {
     const secret = "whsec_test";
     const { app } = testApp(new MemoryStore(), secret);

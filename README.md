@@ -132,7 +132,7 @@ One-time Checkout Sessions (`mode=payment`) only. No subscriptions. `payment_met
 
 Local (no keys): creating a bid inserts `pending` only. The localhost webhook confirm path applies rank. Pending bids do not move the board.
 
-Production webhook (when Travis sets the destination): `https://workwithme.lol/api/stripe/webhook`
+Live Stripe Dashboard destination: `https://workwithme.lol/api/webhooks/stripe`. Alias: `/api/stripe/webhook`. Same handler.
 
 The webhook is the **only** rank commit. Apply on `checkout.session.completed`. Revert on `charge.refunded`. Idempotent on Stripe event id (`stripe_events` primary key). Concurrent applies: apply engine + D1 CAS on `listings.current_bid_cents`. If apply loses the race, request a Stripe refund on the payment intent.
 
