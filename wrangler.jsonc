@@ -1,0 +1,42 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "workwithme-lol",
+  "main": "worker/index.ts",
+  "compatibility_date": "2026-08-21",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": true,
+  "preview_urls": true,
+  "observability": {
+    "enabled": true,
+  },
+  // Production origin. hireme.lol is parked / not ours — never add it here.
+  "routes": [
+    { "pattern": "workwithme.lol", "custom_domain": true },
+    { "pattern": "www.workwithme.lol", "custom_domain": true },
+  ],
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "single-page-application",
+    "binding": "ASSETS",
+    "run_worker_first": ["/api/*", "/og/*"],
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "workwithme",
+      "database_id": "REPLACE_AFTER_WRANGLER_D1_CREATE",
+      "migrations_dir": "migrations",
+    },
+  ],
+  "r2_buckets": [
+    {
+      "binding": "MEDIA",
+      "bucket_name": "workwithme-media",
+    },
+  ],
+  "vars": {
+    "PUBLIC_SITE_ORIGIN": "https://workwithme.lol",
+    "PUBLIC_SITE_NAME": "workwithme.lol",
+    "BOARD_MODE": "global_only",
+  },
+}
