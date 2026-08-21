@@ -20,7 +20,7 @@ Loop: **Join → Bid → Rank → Share → Get Outbid → Bid Again.**
 CTA: **GET ON THE BOARD**  
 Microcopy: Higher bid = higher rank. That's basically it.
 
-Launch economics: **$5 to enter**, **+$1 to overtake**. Stripe one-time bids. Webhook is authoritative. Outbid drops you down the board; it does not delete you.
+Launch economics live in config: **$2 to enter**, **+$2 to overtake**. Next rank = qualifying bid + $2. Do not revert to $5 / +$1. Stripe Checkout one-time bids (`mode=payment`). Webhook is authoritative. Outbid drops you down the board; it does not delete you.
 
 Read [PRODUCT.md](./PRODUCT.md) and [ARCHITECTURE.md](./ARCHITECTURE.md).
 
@@ -63,6 +63,7 @@ npm run build
 ```
 
 Copy `.env.example` to `.env` for Stripe/OAuth/Resend. **Never commit `.env` or `.dev.vars`.**
+Stripe secret/setup is held until Travis is ready — placeholders only. Do not invent keys.
 
 ---
 
@@ -71,12 +72,15 @@ Copy `.env.example` to `.env` for Stripe/OAuth/Resend. **Never commit `.env` or 
 See [`.env.example`](./.env.example).
 
 - `PUBLIC_SITE_ORIGIN=https://workwithme.lol`
-- Stripe success/cancel and webhook on **workwithme.lol**
+- Stripe Checkout success/cancel and webhook on **workwithme.lol**
 - CORS: `https://workwithme.lol`, `https://www.workwithme.lol`, localhost
 - `ADMIN_EMAILS` — comma-separated
 - Optional: `GITHUB_CLIENT_ID` / `GOOGLE_CLIENT_ID` for OAuth
 - Optional: `RESEND_API_KEY` for magic-link + outbid mail
 - Optional: Turnstile keys
+- Optional: `CF_WEB_ANALYTICS_TOKEN` — Cloudflare Web Analytics JS beacon (same `beacon.min.js` snippet as docu-coach). Injected into HTML when set; omitted when missing. No Google Analytics, Clarity, or extra third-party analytics.
+  - Cloudflare Dashboard → Analytics & logs → Web Analytics → Add a site for workwithme.lol (www shares the apex token) → `npx wrangler secret put CF_WEB_ANALYTICS_TOKEN`
+  - `CF_BEACON_TOKEN` is accepted as an alias.
 
 `hireme.lol` must not appear as an origin, webhook URL, or custom domain.
 
@@ -95,11 +99,13 @@ npx wrangler d1 create workwithme
 npx wrangler r2 bucket create workwithme-media
 npm run db:migrate:local
 npm run db:migrate:remote
-npx wrangler secret put STRIPE_SECRET_KEY
-npx wrangler secret put STRIPE_WEBHOOK_SECRET
+# Stripe secrets are held until Travis is ready. Do not invent or put them.
+# npx wrangler secret put STRIPE_SECRET_KEY
+# npx wrangler secret put STRIPE_WEBHOOK_SECRET
 npx wrangler secret put ADMIN_EMAILS
 npx wrangler secret put RESEND_API_KEY
 npx wrangler secret put TURNSTILE_SECRET_KEY
+npx wrangler secret put CF_WEB_ANALYTICS_TOKEN
 # optional OAuth:
 # npx wrangler secret put GITHUB_CLIENT_ID
 # npx wrangler secret put GITHUB_CLIENT_SECRET
@@ -120,19 +126,17 @@ The Worker **is** the origin. Production D1 is the board of record. Production s
 
 ## Stripe
 
-One-time Checkout, not subscriptions. Webhook commits rank.
+One-time Checkout Sessions (`mode=payment`) only. No subscriptions. `payment_method_types` is omitted so Dashboard Link / dynamic methods work.
 
-Local (with Stripe CLI + test keys):
+**Secret/setup is held until Travis is ready.** Env placeholders only: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`. Optional `STRIPE_PUBLISHABLE_KEY` for client-side use. Do not invent keys. Do not commit values. Do not `wrangler secret put` Stripe values from this repo until Travis sets them.
 
-```bash
-stripe listen --forward-to localhost:5173/api/stripe/webhook
-```
+Local (no keys): creating a bid inserts `pending` only. The localhost webhook confirm path applies rank. Pending bids do not move the board.
 
-Production webhook: `https://workwithme.lol/api/stripe/webhook`
+Live Stripe Dashboard destination: `https://workwithme.lol/api/webhooks/stripe`. Alias: `/api/stripe/webhook`. Same handler.
 
-Idempotency: `stripe_events.id` primary key. Concurrent applies: apply engine + D1 CAS on `listings.current_bid_cents`. Refund if the raise loses the race.
+The webhook is the **only** rank commit. Apply on `checkout.session.completed`. Revert on `charge.refunded`. Idempotent on Stripe event id (`stripe_events` primary key). Concurrent applies: apply engine + D1 CAS on `listings.current_bid_cents`. If apply loses the race, request a Stripe refund on the payment intent.
 
-Do not create a paid Stripe account in someone else’s name from this repo.
+Paddle is not a live provider. Do not add a second payment provider.
 
 ---
 

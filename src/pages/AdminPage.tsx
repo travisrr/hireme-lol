@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { fetchAdminOverview, fetchMe, hideListing } from "../api/client";
-import { PreviewBanner } from "../components/PreviewBanner";
 import { SiteFooter } from "../components/SiteFooter";
 
 export function AdminPage() {
@@ -28,17 +27,16 @@ export function AdminPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-ink">
-      <PreviewBanner />
-      <main className="mx-auto max-w-xl px-4 py-16">
-        <p className="font-mono text-[11px] text-money uppercase">/admin</p>
-        <h1 className="mt-3 font-display text-5xl">Board admin</h1>
+    <div className="min-h-screen bg-paper">
+      <main className="page-gutter mx-auto max-w-xl py-16">
+        <p className="text-xs font-semibold text-mute uppercase">/admin</p>
+        <h1 className="mt-3 text-4xl font-extrabold">Board admin</h1>
         {forbidden || !overview ? (
           <p className="mt-4 text-mute">
             Sign in with an ADMIN_EMAILS address. Nothing here invents bids.
           </p>
         ) : (
-          <div className="mt-6 grid gap-3 font-mono text-sm">
+          <div className="mt-6 grid gap-3 text-sm">
             <p>Users {overview.users}</p>
             <p>Profiles {overview.profiles}</p>
             <p>Live listings {overview.liveListings}</p>
@@ -50,12 +48,12 @@ export function AdminPage() {
               <input
                 value={listingId}
                 onChange={(event) => setListingId(event.target.value)}
-                className="border border-line bg-panel px-3 py-2 text-paper"
+                className="rounded-xl border border-line bg-card px-3 py-2 text-ink"
               />
             </label>
             <button
               type="button"
-              className="w-fit bg-money px-3 py-2 text-xs text-ink uppercase"
+              className="btn-accent w-fit"
               onClick={() => {
                 void hideListing(listingId, true)
                   .then(() => setMessage("Hidden"))
@@ -66,12 +64,12 @@ export function AdminPage() {
             >
               Hide
             </button>
-            {message ? <p className="text-money">{message}</p> : null}
+            {message ? <p className="text-ink">{message}</p> : null}
           </div>
         )}
         <Link
           to="/"
-          className="mt-8 inline-block font-mono text-xs text-money underline"
+          className="mt-8 inline-block text-sm"
         >
           ← Board
         </Link>

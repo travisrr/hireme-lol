@@ -1,35 +1,48 @@
 import { hmacSha256Hex, timingSafeEqual } from "./crypto";
 
-export async function verifyStripeSignature(input: {
-  payload: string;
-  header: string;
-  secret: string;
-  nowMs?: number;
-  toleranceSec?: number;
-}): Promise<boolean> {
-  const nowMs = input.nowMs ?? Date.now();
-  const toleranceSec = input.toleranceSec ?? 300;
-  const parts = Object.fromEntries(
-    input.header.split(",").map((piece) => {
-      const [key, ...rest] = piece.split("=");
-      return [key.trim(), rest.join("=")];
-    }),
-  );
-  const timestamp = parts.t;
-  const signature = parts.v1;
-  if (!timestamp || !signature) return false;
-  const ts = Number(timestamp);
-  if (!Number.isFinite(ts)) return false;
-  if (Math.abs(nowMs / 1000 - ts) > toleranceSec) return false;
-  const expected = await hmacSha256Hex(input.secret, `${timestamp}.${input.payload}`);
-  return timingSafeEqual(expected, signature.toLowerCase());
+export function parseStripeSignatureHeader(header: string): { timestamp: string; signatures: string[] } | null {
+  const parts = header.split(",").map((part) => part.trim());
+  let timestamp = "";
+  const signatures: string[] = [];
+  for (const part of parts) {
+    const [key, value] = part.split("=");
+    if (!key || !value) {
+      continue;
+    }
+    if (key === "t") {
+      timestamp = value;
+    }
+    if (key === "v1") {
+      signatures.push(value);
+    }
+  }
+  if (!timestamp || signatures.length === 0) {
+    return null;
+  }
+  return { timestamp, signatures };
 }
 
 export async function signStripePayload(
   secret: string,
+  timestamp: string,
   payload: string,
-  timestampSec: number,
 ): Promise<string> {
-  const v1 = await hmacSha256Hex(secret, `${timestampSec}.${payload}`);
-  return `t=${timestampSec},v1=${v1}`;
+  return hmacSha256Hex(secret, `${timestamp}.${payload}`);
+}
+
+export function formatStripeSignatureHeader(timestamp: string, signature: string): string {
+  return `t=${timestamp},v1=${signature}`;
+}
+
+export async function verifyStripeSignature(opts: {
+  secret: string;
+  header: string;
+  payload: string;
+}): Promise<boolean> {
+  const parsed = parseStripeSignatureHeader(opts.header);
+  if (!parsed) {
+    return false;
+  }
+  const expected = await signStripePayload(opts.secret, parsed.timestamp, opts.payload);
+  return parsed.signatures.some((signature) => timingSafeEqual(signature, expected));
 }

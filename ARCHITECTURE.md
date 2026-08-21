@@ -37,7 +37,7 @@ From [Cloudflare Workers docs](https://developers.cloudflare.com/workers/framewo
 | Wrangler | Dev, migrations, deploy | `wrangler.jsonc` in repo. |
 | Durable Objects | Optional later | Material for a single hot board only if we see refund storms from CAS races. Not in the first deploy. |
 
-Stripe stays Stripe. The Worker verifies signatures and treats **webhook events as the commit**.
+Stripe Checkout is the only live payment provider. The Worker verifies `Stripe-Signature` and treats **`/api/webhooks/stripe` and `/api/stripe/webhook` as the only rank commit** (same handler). Pending bids do not move the board. No Paddle routes.
 
 ---
 
@@ -45,7 +45,7 @@ Stripe stays Stripe. The Worker verifies signatures and treats **webhook events 
 
 **Production hostname: `workwithme.lol`.** Already purchased, already on Cloudflare nameservers. Attach the Worker as a [Custom Domain](https://developers.cloudflare.com/workers/configuration/routing/custom-domains/) (`routes[].custom_domain = true`). Do not use routes-in-front-of-an-origin; the Worker **is** the origin.
 
-Public product name is **workwithme.lol** (same as the hostname). `hireme.lol` is parked (A `54.215.31.113` → parking Worker → merch). It is not ours. Never set it as a route, CORS origin, Stripe `success_url`, or OG canonical. Do not buy or attach it.
+Public product name is **workwithme.lol** (same as the hostname). `hireme.lol` is parked (A `54.215.31.113` → parking Worker → merch). It is not ours. Never set it as a route, CORS origin, Stripe success URL, or OG canonical. Do not buy or attach it.
 
 Local / preview: `http://localhost:5173` and `*.workers.dev`. CORS allowlist: `https://workwithme.lol`, `https://www.workwithme.lol`, localhost.
 
@@ -77,7 +77,7 @@ flowchart LR
   Worker --> R2
   Worker --> Stripe
   Worker --> Email
-  Stripe -->|checkout.session.completed\npayment_intent + refunds| Worker
+  Stripe -->|checkout.session.completed\ncharge.refunded| Worker
 ```
 
 Bid apply (authoritative path):
@@ -91,10 +91,10 @@ sequenceDiagram
 
   U->>W: POST /api/bids (Turnstile)
   W->>D: insert bid status=pending
-  W->>S: create Checkout Session
+  W->>S: create Checkout Session mode=payment
   S-->>U: pay
   S->>W: webhook (signed)
-  W->>D: insert stripe_events id PRIMARY KEY
+  W->>D: insert payment event id PRIMARY KEY
   alt already processed
     W-->>S: 200 idempotent
   else new event
@@ -119,11 +119,11 @@ Plan:
 
 1. Checkout inserts a `pending` bid. It does **not** move the board.
 2. Webhook verifies Stripe, then:
-   - Insert `stripe_events.id = evt_...`. Duplicate primary key → **200, no second apply**.
+   - Insert payment event `id = evt_...`. Duplicate primary key → **200, no second apply**.
    - In one `env.DB.batch([...])`, confirm the bid and CAS-update the listing (`WHERE current_bid_cents = ?` or `WHERE current_bid_cents < ?` depending on raise vs new).
    - Re-rank is a **read model**: `ORDER BY current_bid_cents DESC, current_bid_at ASC, profiles.created_at ASC`. We do not store rank as source of truth. We store `previous_rank` only for movement arrows.
-3. A valid bid is always **≥ $5**. It places the listing wherever that number ranks. “Claim this rank for $X” is a UI price, not a separate product. If two people pay $101, both stay; earlier `current_bid_at` is above.
-4. Refunds: Stripe refund webhooks, admin refunds, or CAS failure on a bid that cannot legally apply (amount &lt; $5, or a raise that is not +$1 over that listing’s own current bid).
+3. A valid bid is always **≥ `min_entry_cents`** from `site_config` / `/api/config` (launch: **$2 to enter**). It places the listing wherever that number ranks. “Claim this rank for $X” is a UI price, not a separate product. Next rank = qualifying bid + **$2**. If two people pay the same amount, both stay; earlier `current_bid_at` is above.
+4. Refunds: Stripe `charge.refunded` webhooks, admin refunds, or CAS failure on a bid that cannot legally apply (amount below entry, or a raise that is not `min_increment_cents` over that listing’s own current bid). Launch increment is **+$2 to overtake**. Do not revert to $5 / +$1.
 
 **Durable Objects:** a single `GlobalBoardCoordinator` would serialize applies. That helps only if we observe lost CAS + mass refunds. D1 batch already gives us an atomic transaction. We do not pay the DO complexity on day one.
 
@@ -138,7 +138,7 @@ Tests that must exist before money is live: ranking, ties, min bid, webhook idem
 - **Share / SEO:** `/{handle}` SPA route + Worker `run_worker_first` for `/og/*` and bot user-agents to inject OG. Images: Worker-generated PNG written to R2.
 - **Admin:** `/admin` gated by `ADMIN_EMAILS`. Hide listing, refund, founding-badge, config (`min_entry_cents`, `min_increment_cents`).
 - **Search:** SQL `LIKE` / FTS later; v1 ILIKE on name, handle, headline, company.
-- **Analytics:** stub `window.analytics` / Cloudflare Web Analytics site tag. No third-party maze.
+- **Analytics:** Cloudflare Web Analytics JS beacon only (`CF_WEB_ANALYTICS_TOKEN`, same snippet as docu-coach). Injected into HTML when set; omitted when missing. No Google Analytics or Clarity.
 
 ---
 
@@ -177,7 +177,7 @@ Shared ranking code lives in `src/lib` so the preview board and future D1 reads 
 ## 8. Phase plan
 
 1. Docs, D1 schema, ranking tests, homepage shell.
-2. **This slice:** magic-link (+ optional GitHub/Google), live board API, public `/{handle}`, Stripe checkout + webhook-authoritative apply, outbid events + email, search, `/admin`, Wrangler deploy to `workwithme.lol`.
+2. **This slice:** magic-link (+ optional GitHub/Google), live board API, public `/{handle}`, Stripe one-time Checkout + webhook-authoritative apply, outbid events + email, search, `/admin`, Wrangler deploy to `workwithme.lol`. Secret/setup held until Travis is ready.
 3. Share/OG cards, R2 photo upload, Turnstile widgets in UI, production empty-board launch.
 
 Local `npm run dev` runs the same Hono app as the Worker against `MemoryStore`. Production Worker uses `D1Store`. No fake listings in either path.

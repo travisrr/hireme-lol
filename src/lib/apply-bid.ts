@@ -1,5 +1,5 @@
 import { evaluateBidApply } from "./ranking";
-import type { BidStatus } from "./types";
+import type { BidEconomics, BidStatus } from "./types";
 
 export type BidRecord = {
   id: string;
@@ -32,6 +32,7 @@ export type ApplyPaymentInput = {
 export type ApplyPaymentResult =
   | { outcome: "idempotent" }
   | { outcome: "confirmed"; listingId: string }
+  | { outcome: "reverted"; listingId: string }
   | { outcome: "refund"; reason: "below_entry" | "not_an_overtake" | "unknown_bid" };
 
 export function emptyBoard(): BoardSnapshot {
@@ -41,6 +42,7 @@ export function emptyBoard(): BoardSnapshot {
 export function applyConfirmedPayment(
   board: BoardSnapshot,
   input: ApplyPaymentInput,
+  economics: BidEconomics,
 ): { board: BoardSnapshot; result: ApplyPaymentResult } {
   if (board.processedEventIds.includes(input.eventId)) {
     return { board, result: { outcome: "idempotent" } };
@@ -60,6 +62,7 @@ export function applyConfirmedPayment(
   const verdict = evaluateBidApply({
     amountCents: input.amountCents,
     listingCurrentBidCents: current,
+    economics,
   });
 
   if (!verdict.ok) {
@@ -101,13 +104,14 @@ export function applyConcurrentPayments(
   board: BoardSnapshot,
   first: ApplyPaymentInput,
   second: ApplyPaymentInput,
+  economics: BidEconomics,
 ): {
   board: BoardSnapshot;
   first: ApplyPaymentResult;
   second: ApplyPaymentResult;
 } {
-  const afterFirst = applyConfirmedPayment(board, first);
-  const afterSecond = applyConfirmedPayment(afterFirst.board, second);
+  const afterFirst = applyConfirmedPayment(board, first, economics);
+  const afterSecond = applyConfirmedPayment(afterFirst.board, second, economics);
   return {
     board: afterSecond.board,
     first: afterFirst.result,

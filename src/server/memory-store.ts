@@ -1,9 +1,11 @@
 import { applyConfirmedPayment, type BoardSnapshot } from "../lib/apply-bid";
+import { parseCategories, type IndustryId } from "../lib/industries";
 import { listingsThatFell } from "../lib/outbid";
-import { movementFor, rankListings } from "../lib/ranking";
+import { assertNever, movementFor, rankListings } from "../lib/ranking";
+import { DEFAULT_ECONOMICS, type BidEconomics } from "../lib/types";
 import type {
   ActivityRow,
-  ApplyStripeInput,
+  ApplyPaymentInput,
   BidRow,
   CreatePendingBidInput,
   ListingRow,
@@ -49,6 +51,7 @@ export class MemoryStore implements Store {
   listingsByProfile = new Map<string, string>();
   bids = new Map<string, BidRow>();
   bidsByCheckout = new Map<string, string>();
+  bidsByPaymentIntent = new Map<string, string>();
   processedEvents = new Set<string>();
   magicLinks: MagicLink[] = [];
   sessions = new Map<string, Session>();
@@ -56,6 +59,11 @@ export class MemoryStore implements Store {
   notifications: NotificationRow[] = [];
   unsubscribes = new Map<string, string>();
   nextId = 1;
+  economics: BidEconomics = { ...DEFAULT_ECONOMICS };
+
+  async getEconomics(): Promise<BidEconomics> {
+    return this.economics;
+  }
 
   private id(prefix: string): string {
     const value = `${prefix}_${this.nextId}`;
@@ -63,8 +71,11 @@ export class MemoryStore implements Store {
     return value;
   }
 
-  async getBoard(query?: string): Promise<RankedBoardRow[]> {
-    const ranked = this.rankedActive();
+  async getBoard(
+    query?: string,
+    industry?: IndustryId | null,
+  ): Promise<RankedBoardRow[]> {
+    const ranked = this.rankedActive(industry);
     const q = query?.trim().toLowerCase();
     if (!q) return ranked;
     return ranked.filter((row) => {
@@ -207,7 +218,12 @@ export class MemoryStore implements Store {
       photoUrl: input.photoUrl,
       linkedinUrl: input.linkedinUrl,
       websiteUrl: input.websiteUrl,
+      linkedinClicks: 0,
+      websiteClicks: 0,
+      profileClicks: 0,
       isFoundingMember: false,
+      industry: parseCategories(input.categories)[0] ?? input.industry ?? null,
+      categories: parseCategories(input.categories),
       createdAt: now,
     };
     this.profiles.set(profile.id, profile);
@@ -233,10 +249,68 @@ export class MemoryStore implements Store {
       throw new Error("handle_taken");
     }
     this.profilesByHandle.delete(current.handle);
-    const next: ProfileRow = { ...current, ...input };
+    const categories = parseCategories(input.categories);
+    const next: ProfileRow = {
+      ...current,
+      ...input,
+      categories,
+      industry: categories[0] ?? input.industry ?? null,
+    };
     this.profiles.set(id, next);
     this.profilesByHandle.set(next.handle, id);
     return next;
+  }
+
+  async getProfileByLinkedinUrl(url: string): Promise<ProfileRow | null> {
+    for (const profile of this.profiles.values()) {
+      if (profile.linkedinUrl === url) return profile;
+    }
+    return null;
+  }
+
+  async setProfilePhoto(profileId: string, photoKey: string | null): Promise<void> {
+    const profile = this.profiles.get(profileId);
+    if (!profile) return;
+    this.profiles.set(profileId, { ...profile, photoUrl: photoKey });
+  }
+
+  async incrementClick(
+    listingId: string,
+    target: "profile" | "linkedin" | "site",
+  ): Promise<{
+    profileClicks: number;
+    linkedinClicks: number;
+    websiteClicks: number;
+  } | null> {
+    const listing = this.listings.get(listingId);
+    if (!listing) return null;
+    const profile = this.profiles.get(listing.profileId);
+    if (!profile) return null;
+    switch (target) {
+      case "profile":
+        profile.profileClicks += 1;
+        break;
+      case "linkedin":
+        profile.linkedinClicks += 1;
+        break;
+      case "site":
+        profile.websiteClicks += 1;
+        break;
+      default: {
+        const _never: never = target;
+        return _never;
+      }
+    }
+    this.profiles.set(profile.id, profile);
+    return {
+      profileClicks: profile.profileClicks,
+      linkedinClicks: profile.linkedinClicks,
+      websiteClicks: profile.websiteClicks,
+    };
+  }
+
+  async listFoundingProfiles(): Promise<ProfileRow[]> {
+    return [...this.profiles.values()].filter((profile) => profile.isFoundingMember);
   }
 
   async createPendingBid(
@@ -288,9 +362,17 @@ export class MemoryStore implements Store {
     this.bidsByCheckout.set(checkoutSessionId, bidId);
   }
 
-  async applyStripePayment(input: ApplyStripeInput) {
+  async applyPayment(input: ApplyPaymentInput) {
     if (this.processedEvents.has(input.eventId)) {
       return { outcome: "idempotent" as const };
+    }
+    switch (input.action) {
+      case "refund":
+        return this.revertPayment(input);
+      case "complete":
+        break;
+      default:
+        return assertNever(input.action);
     }
     const bid = this.resolveBid(input);
     if (!bid) {
@@ -300,13 +382,17 @@ export class MemoryStore implements Store {
     const listing = this.listings.get(bid.listingId);
     const snapshot = this.snapshotForApply(bid, listing);
     const before = this.rankSnapshots();
-    const applied = applyConfirmedPayment(snapshot, {
-      eventId: input.eventId,
-      bidId: bid.id,
-      listingId: bid.listingId,
-      amountCents: input.amountCents ?? bid.amountCents,
-      paidAt: input.paidAt,
-    });
+    const applied = applyConfirmedPayment(
+      snapshot,
+      {
+        eventId: input.eventId,
+        bidId: bid.id,
+        listingId: bid.listingId,
+        amountCents: input.amountCents ?? bid.amountCents,
+        paidAt: input.paidAt,
+      },
+      await this.getEconomics(),
+    );
     this.processedEvents.add(input.eventId);
     if (applied.result.outcome === "refund") {
       bid.status = "refunded";
@@ -343,6 +429,9 @@ export class MemoryStore implements Store {
     bid.status = "confirmed";
     bid.stripePaymentIntentId =
       input.paymentIntentId ?? bid.stripePaymentIntentId;
+    if (bid.stripePaymentIntentId) {
+      this.bidsByPaymentIntent.set(bid.stripePaymentIntentId, bid.id);
+    }
     this.bids.set(bid.id, bid);
     const confirmedCount = [...this.listings.values()].filter(
       (row) => row.currentBidId && row.status === "active",
@@ -453,10 +542,53 @@ export class MemoryStore implements Store {
     };
   }
 
-  private resolveBid(input: ApplyStripeInput): BidRow | undefined {
+  private revertPayment(input: ApplyPaymentInput) {
+    const bid = this.resolveBid(input);
+    this.processedEvents.add(input.eventId);
+    if (!bid) {
+      return { outcome: "refund" as const, reason: "unknown_bid" as const };
+    }
+    bid.status = "refunded";
+    this.bids.set(bid.id, bid);
+    const listing = this.listings.get(bid.listingId);
+    if (listing && listing.currentBidId === bid.id) {
+      const previous = [...this.bids.values()]
+        .filter(
+          (row) =>
+            row.listingId === bid.listingId &&
+            row.status === "confirmed" &&
+            row.id !== bid.id,
+        )
+        .sort((a, b) => b.amountCents - a.amountCents)[0];
+      if (previous) {
+        listing.currentBidCents = previous.amountCents;
+        listing.currentBidId = previous.id;
+      } else {
+        listing.currentBidCents = 0;
+        listing.currentBidId = null;
+      }
+      this.listings.set(listing.id, listing);
+    }
+    this.events.push({
+      id: this.id("evt"),
+      type: "refunded",
+      actorProfileId: bid.profileId,
+      targetProfileId: bid.profileId,
+      amountCents: bid.amountCents,
+      rankAfter: null,
+      createdAt: input.paidAt,
+    });
+    return { outcome: "reverted" as const, listingId: bid.listingId };
+  }
+
+  private resolveBid(input: ApplyPaymentInput): BidRow | undefined {
     if (input.bidId) return this.bids.get(input.bidId);
     if (input.checkoutSessionId) {
       const id = this.bidsByCheckout.get(input.checkoutSessionId);
+      if (id) return this.bids.get(id);
+    }
+    if (input.paymentIntentId) {
+      const id = this.bidsByPaymentIntent.get(input.paymentIntentId);
       return id ? this.bids.get(id) : undefined;
     }
     return undefined;
@@ -506,25 +638,35 @@ export class MemoryStore implements Store {
         photoUrl: profile.photoUrl,
         linkedinUrl: profile.linkedinUrl,
         websiteUrl: profile.websiteUrl,
+        linkedinClicks: profile.linkedinClicks,
+        websiteClicks: profile.websiteClicks,
+        profileClicks: profile.profileClicks,
         isFoundingMember: profile.isFoundingMember,
         currentBidCents: listing.currentBidCents,
         currentBidAt: listing.currentBidAt,
         profileCreatedAt: profile.createdAt,
         previousRank: listing.previousRank,
+        industry: profile.industry,
+        categories: profile.categories,
       });
     }
     return rows;
   }
 
-  private rankedActive(): RankedBoardRow[] {
+  private rankedActive(industry?: IndustryId | null): RankedBoardRow[] {
+    const rows = industry
+      ? this.publicRows().filter((row) => row.categories.includes(industry))
+      : this.publicRows();
     return rankListings(
-      this.publicRows().map((row) => ({
+      rows.map((row) => ({
         ...row,
         id: row.listingId,
       })),
     ).map((row) => ({
       ...row,
-      movement: movementFor(row.rank, row.previousRank),
+      movement: industry
+        ? movementFor(row.rank, row.rank)
+        : movementFor(row.rank, row.previousRank),
     }));
   }
 

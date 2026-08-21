@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { formatUsdFromCents, parseDollarInput } from "../src/lib/money";
+import {
+  formatUsdFromCents,
+  parseBidAmountCents,
+  parseDollarInput,
+} from "../src/lib/money";
 import {
   claimPriceForRank,
   compareListings,
@@ -9,13 +13,20 @@ import {
   movementFor,
   rankListings,
 } from "../src/lib/ranking";
-import { LAUNCH_ECONOMICS, type ListingForRank } from "../src/lib/types";
+import {
+  DEFAULT_ECONOMICS,
+  LAUNCH_ECONOMICS,
+  type BidEconomics,
+  type ListingForRank,
+} from "../src/lib/types";
+
+const launch = DEFAULT_ECONOMICS;
 
 function listing(
   partial: Partial<ListingForRank> & Pick<ListingForRank, "id">,
 ): ListingForRank {
   return {
-    currentBidCents: 500,
+    currentBidCents: 200,
     currentBidAt: 1_000,
     profileCreatedAt: 1_000,
     ...partial,
@@ -23,19 +34,27 @@ function listing(
 }
 
 describe("launch economics", () => {
-  it("does not drift from $5 entry / +$1 overtake", () => {
-    expect(LAUNCH_ECONOMICS.minEntryCents).toBe(500);
-    expect(LAUNCH_ECONOMICS.minIncrementCents).toBe(100);
-    expect(minBidToEnter()).toBe(500);
-    expect(minBidToOvertake(500)).toBe(600);
-    expect(minBidToOvertake(240000)).toBe(240100);
+  it("defaults to $2 entry / +$2 overtake and reads from the passed config", () => {
+    expect(LAUNCH_ECONOMICS).toEqual({
+      minEntryCents: 200,
+      minIncrementCents: 200,
+    });
+    expect(DEFAULT_ECONOMICS).toEqual(LAUNCH_ECONOMICS);
+    expect(DEFAULT_ECONOMICS.minEntryCents).toBe(200);
+    expect(DEFAULT_ECONOMICS.minIncrementCents).toBe(200);
+    expect(minBidToEnter(launch)).toBe(200);
+    expect(minBidToOvertake(200, launch)).toBe(400);
+    expect(minBidToOvertake(240000, launch)).toBe(240200);
+    const custom: BidEconomics = { minEntryCents: 700, minIncrementCents: 50 };
+    expect(minBidToEnter(custom)).toBe(700);
+    expect(minBidToOvertake(10000, custom)).toBe(10050);
   });
 });
 
 describe("rankListings", () => {
   it("orders by highest bid first", () => {
     const ranked = rankListings([
-      listing({ id: "a", currentBidCents: 500 }),
+      listing({ id: "a", currentBidCents: 200 }),
       listing({ id: "b", currentBidCents: 1500 }),
       listing({ id: "c", currentBidCents: 900 }),
     ]);
@@ -85,43 +104,91 @@ describe("rankListings", () => {
 });
 
 describe("evaluateBidApply", () => {
-  it("rejects anything under $5", () => {
-    expect(evaluateBidApply({ amountCents: 499, listingCurrentBidCents: null })).toEqual({
+  it("rejects anything under the configured entry", () => {
+    expect(
+      evaluateBidApply({
+        amountCents: 199,
+        listingCurrentBidCents: null,
+        economics: launch,
+      }),
+    ).toEqual({
       ok: false,
       reason: "below_entry",
     });
   });
 
-  it("lets a $5 bid enter even if #1 is huge", () => {
-    expect(evaluateBidApply({ amountCents: 500, listingCurrentBidCents: null })).toEqual({
+  it("lets an entry-floor bid enter even if #1 is huge", () => {
+    expect(
+      evaluateBidApply({
+        amountCents: 200,
+        listingCurrentBidCents: null,
+        economics: launch,
+      }),
+    ).toEqual({
       ok: true,
       kind: "enter",
     });
   });
 
-  it("requires +$1 to raise your own listing", () => {
+  it("requires the configured increment to raise your own listing", () => {
     expect(
-      evaluateBidApply({ amountCents: 10000, listingCurrentBidCents: 10000 }),
+      evaluateBidApply({
+        amountCents: 10100,
+        listingCurrentBidCents: 10000,
+        economics: launch,
+      }),
     ).toEqual({ ok: false, reason: "not_an_overtake" });
     expect(
-      evaluateBidApply({ amountCents: 10100, listingCurrentBidCents: 10000 }),
+      evaluateBidApply({
+        amountCents: 10200,
+        listingCurrentBidCents: 10000,
+        economics: launch,
+      }),
+    ).toEqual({ ok: true, kind: "raise" });
+    expect(
+      evaluateBidApply({
+        amountCents: 10100,
+        listingCurrentBidCents: 10000,
+        economics: { minEntryCents: 200, minIncrementCents: 100 },
+      }),
     ).toEqual({ ok: true, kind: "raise" });
   });
 });
 
 describe("claimPriceForRank", () => {
   it("is entry floor on an empty board", () => {
-    expect(claimPriceForRank([], 1)).toBe(500);
+    expect(claimPriceForRank([], 1, launch)).toBe(200);
   });
 
-  it("is occupant + $1 for an occupied rank", () => {
+  it("is occupant plus configured increment for an occupied rank", () => {
     const ranked = rankListings([
       listing({ id: "top", currentBidCents: 240000 }),
       listing({ id: "two", currentBidCents: 10000 }),
     ]);
-    expect(claimPriceForRank(ranked, 1)).toBe(240100);
-    expect(claimPriceForRank(ranked, 2)).toBe(10100);
-    expect(claimPriceForRank(ranked, 3)).toBe(500);
+    expect(claimPriceForRank(ranked, 1, launch)).toBe(240200);
+    expect(claimPriceForRank(ranked, 2, launch)).toBe(10200);
+    expect(claimPriceForRank(ranked, 3, launch)).toBe(200);
+  });
+
+  it("prices founding Elon $6 as $8 to claim #1 and $2 to enter last", () => {
+    const ranked = rankListings([
+      listing({ id: "elon", currentBidCents: 600 }),
+      listing({ id: "palmer", currentBidCents: 400 }),
+      listing({ id: "jensen", currentBidCents: 200 }),
+    ]);
+    expect(claimPriceForRank(ranked, 1, launch)).toBe(800);
+    expect(minBidToEnter(launch)).toBe(200);
+    const withJoin = rankListings([
+      ...ranked,
+      listing({ id: "new", currentBidCents: 200, currentBidAt: 9_000 }),
+    ]);
+    expect(withJoin.map((row) => row.id)).toEqual([
+      "elon",
+      "palmer",
+      "jensen",
+      "new",
+    ]);
+    expect(withJoin[3].rank).toBe(4);
   });
 });
 
@@ -145,6 +212,7 @@ describe("compareListings is a total order", () => {
 
 describe("money", () => {
   it("formats cents without forcing .00 on whole dollars", () => {
+    expect(formatUsdFromCents(200)).toBe("$2");
     expect(formatUsdFromCents(500)).toBe("$5");
     expect(formatUsdFromCents(240000)).toBe("$2,400");
     expect(formatUsdFromCents(181500)).toBe("$1,815");
@@ -155,5 +223,16 @@ describe("money", () => {
     expect(parseDollarInput("$12")).toBe(1200);
     expect(parseDollarInput("12.50")).toBe(1250);
     expect(parseDollarInput("nope")).toBeNull();
+  });
+
+  it("treats a join of 2 / $2 as 200 cents, not 2 cents", () => {
+    expect(parseDollarInput("2")).toBe(200);
+    expect(parseDollarInput("$2")).toBe(200);
+    expect(parseBidAmountCents(2)).toBe(200);
+    expect(parseBidAmountCents("2")).toBe(200);
+    expect(parseBidAmountCents("$2")).toBe(200);
+    expect(parseBidAmountCents(200)).toBe(200);
+    expect(parseBidAmountCents("200")).toBe(200);
+    expect(parseBidAmountCents(8)).toBe(800);
   });
 });

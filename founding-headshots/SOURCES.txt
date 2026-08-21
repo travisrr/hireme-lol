@@ -1,0 +1,14 @@
+License-clean Wikimedia Commons portraits. Cropped to 512px squares for R2.
+Not from LinkedIn. Not generated.
+
+Elon Musk
+https://upload.wikimedia.org/wikipedia/commons/0/06/Elon_Musk%2C_2018_%28cropped%29.jpg
+File:Elon Musk, 2018 (cropped).jpg
+
+Palmer Luckey
+https://upload.wikimedia.org/wikipedia/commons/d/df/Palmer_Luckey_%28Collision_2019%2C_22_May_2019%29.jpg
+File:Palmer Luckey (Collision 2019, 22 May 2019).jpg
+
+Jensen Huang
+https://upload.wikimedia.org/wikipedia/commons/8/87/Jen-Hsun_Huang_Headshot_%2815313247387%29.jpg
+File:Jen-Hsun Huang Headshot (15313247387).jpg

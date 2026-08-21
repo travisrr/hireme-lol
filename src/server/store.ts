@@ -1,5 +1,6 @@
 import type { ApplyPaymentResult } from "../lib/apply-bid";
-import type { EventType, Movement } from "../lib/types";
+import type { IndustryId } from "../lib/industries";
+import type { BidEconomics, EventType, Movement } from "../lib/types";
 
 export type UserRow = {
   id: string;
@@ -18,7 +19,12 @@ export type ProfileRow = {
   photoUrl: string | null;
   linkedinUrl: string | null;
   websiteUrl: string | null;
+  linkedinClicks: number;
+  websiteClicks: number;
+  profileClicks: number;
   isFoundingMember: boolean;
+  industry: IndustryId | null;
+  categories: IndustryId[];
   createdAt: number;
 };
 
@@ -54,11 +60,16 @@ export type PublicBoardRow = {
   photoUrl: string | null;
   linkedinUrl: string | null;
   websiteUrl: string | null;
+  linkedinClicks: number;
+  websiteClicks: number;
+  profileClicks: number;
   isFoundingMember: boolean;
   currentBidCents: number;
   currentBidAt: number;
   profileCreatedAt: number;
   previousRank: number | null;
+  industry: IndustryId | null;
+  categories: IndustryId[];
 };
 
 export type RankedBoardRow = PublicBoardRow & {
@@ -91,6 +102,8 @@ export type ProfileInput = {
   photoUrl: string | null;
   linkedinUrl: string | null;
   websiteUrl: string | null;
+  industry: IndustryId | null;
+  categories: IndustryId[];
 };
 
 export type CreatePendingBidInput = {
@@ -99,9 +112,12 @@ export type CreatePendingBidInput = {
   checkoutSessionId: string | null;
 };
 
-export type ApplyStripeInput = {
+export type ApplyPaymentAction = "complete" | "refund";
+
+export type ApplyPaymentInput = {
   eventId: string;
   eventType: string;
+  action: ApplyPaymentAction;
   bidId?: string;
   checkoutSessionId?: string;
   paymentIntentId?: string | null;
@@ -118,7 +134,8 @@ export type NotificationRow = {
 };
 
 export interface Store {
-  getBoard(query?: string): Promise<RankedBoardRow[]>;
+  getEconomics(): Promise<BidEconomics>;
+  getBoard(query?: string, industry?: IndustryId | null): Promise<RankedBoardRow[]>;
   getActivity(limit: number): Promise<ActivityRow[]>;
   getProfileByHandle(handle: string): Promise<{
     profile: ProfileRow;
@@ -133,9 +150,20 @@ export interface Store {
   deleteSession(id: string): Promise<void>;
   createProfile(userId: string, input: ProfileInput, now: number): Promise<ProfileRow>;
   updateProfile(userId: string, input: ProfileInput, now: number): Promise<ProfileRow>;
+  getProfileByLinkedinUrl(url: string): Promise<ProfileRow | null>;
+  setProfilePhoto(profileId: string, photoKey: string | null): Promise<void>;
+  incrementClick(
+    listingId: string,
+    target: "profile" | "linkedin" | "site",
+  ): Promise<{
+    profileClicks: number;
+    linkedinClicks: number;
+    websiteClicks: number;
+  } | null>;
+  listFoundingProfiles(): Promise<ProfileRow[]>;
   createPendingBid(input: CreatePendingBidInput, now: number): Promise<BidRow>;
   attachCheckoutSession(bidId: string, checkoutSessionId: string): Promise<void>;
-  applyStripePayment(input: ApplyStripeInput): Promise<ApplyPaymentResult>;
+  applyPayment(input: ApplyPaymentInput): Promise<ApplyPaymentResult>;
   hideListing(listingId: string, hidden: boolean, now: number): Promise<void>;
   setFounding(profileId: string, value: boolean): Promise<void>;
   unsubscribe(email: string, token: string, now: number): Promise<void>;

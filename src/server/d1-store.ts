@@ -1,9 +1,16 @@
 import { applyConfirmedPayment } from "../lib/apply-bid";
+import { parseEconomics } from "../lib/economics";
+import {
+  parseCategories,
+  serializeCategories,
+  type IndustryId,
+} from "../lib/industries";
 import { listingsThatFell } from "../lib/outbid";
-import { movementFor, rankListings } from "../lib/ranking";
+import { assertNever, movementFor, rankListings } from "../lib/ranking";
+import { DEFAULT_ECONOMICS, type BidEconomics } from "../lib/types";
 import type {
   ActivityRow,
-  ApplyStripeInput,
+  ApplyPaymentInput,
   BidRow,
   CreatePendingBidInput,
   ListingRow,
@@ -40,7 +47,11 @@ type ProfileSql = {
   photo_r2_key: string | null;
   linkedin_url: string | null;
   website_url: string | null;
+  linkedin_clicks: number;
+  website_clicks: number;
+  profile_clicks: number;
   is_founding_member: number;
+  category_id: string | null;
   created_at: number;
 };
 
@@ -63,6 +74,7 @@ type BidSql = {
   status: BidRow["status"];
   stripe_checkout_session_id: string | null;
   stripe_payment_intent_id: string | null;
+  confirmed_at: number | null;
 };
 
 type UserSql = { id: string; email: string; created_at: number };
@@ -83,7 +95,12 @@ function mapProfile(row: ProfileSql): ProfileRow {
     photoUrl: row.photo_r2_key,
     linkedinUrl: row.linkedin_url,
     websiteUrl: row.website_url,
+    linkedinClicks: row.linkedin_clicks ?? 0,
+    websiteClicks: row.website_clicks ?? 0,
+    profileClicks: row.profile_clicks ?? 0,
     isFoundingMember: row.is_founding_member === 1,
+    industry: parseCategories(row.category_id)[0] ?? null,
+    categories: parseCategories(row.category_id),
     createdAt: row.created_at,
   };
 }
@@ -120,8 +137,29 @@ export class D1Store implements Store {
     this.db = db;
   }
 
-  async getBoard(query?: string): Promise<RankedBoardRow[]> {
-    const ranked = await this.rankedActive();
+  async getEconomics(): Promise<BidEconomics> {
+    try {
+      const result = await this.db
+        .prepare(
+          `SELECT key, value FROM site_config
+           WHERE key IN ('min_entry_cents', 'min_increment_cents')`,
+        )
+        .all<{ key: string; value: string }>();
+      const rows: Record<string, string> = {};
+      for (const row of result.results) {
+        rows[row.key] = row.value;
+      }
+      return parseEconomics(rows);
+    } catch {
+      return { ...DEFAULT_ECONOMICS };
+    }
+  }
+
+  async getBoard(
+    query?: string,
+    industry?: IndustryId | null,
+  ): Promise<RankedBoardRow[]> {
+    const ranked = await this.rankedActive(industry);
     const q = query?.trim().toLowerCase();
     if (!q) return ranked;
     return ranked.filter((row) =>
@@ -284,14 +322,18 @@ export class D1Store implements Store {
       userId,
       ...input,
       isFoundingMember: false,
+      linkedinClicks: 0,
+      websiteClicks: 0,
+      profileClicks: 0,
       createdAt: now,
     };
     await this.db
       .prepare(
         `INSERT INTO profiles (
           id, user_id, handle, display_name, headline, company, pitch,
-          photo_r2_key, linkedin_url, website_url, is_founding_member, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)`,
+          photo_r2_key, linkedin_url, website_url, is_founding_member, category_id,
+          created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?)`,
       )
       .bind(
         profile.id,
@@ -304,6 +346,7 @@ export class D1Store implements Store {
         input.photoUrl,
         input.linkedinUrl,
         input.websiteUrl,
+        serializeCategories(input.categories),
         now,
         now,
       )
@@ -324,7 +367,8 @@ export class D1Store implements Store {
     await this.db
       .prepare(
         `UPDATE profiles SET handle = ?, display_name = ?, headline = ?, company = ?,
-         pitch = ?, photo_r2_key = ?, linkedin_url = ?, website_url = ?, updated_at = ?
+         pitch = ?, photo_r2_key = ?, linkedin_url = ?, website_url = ?, category_id = ?,
+         updated_at = ?
          WHERE user_id = ?`,
       )
       .bind(
@@ -336,6 +380,7 @@ export class D1Store implements Store {
         input.photoUrl,
         input.linkedinUrl,
         input.websiteUrl,
+        serializeCategories(input.categories),
         now,
         userId,
       )
@@ -350,7 +395,79 @@ export class D1Store implements Store {
       photo_r2_key: input.photoUrl,
       linkedin_url: input.linkedinUrl,
       website_url: input.websiteUrl,
+      category_id: serializeCategories(input.categories),
     });
+  }
+
+  async getProfileByLinkedinUrl(url: string): Promise<ProfileRow | null> {
+    const row = await this.db
+      .prepare(`SELECT * FROM profiles WHERE linkedin_url = ?`)
+      .bind(url)
+      .first<ProfileSql>();
+    return row ? mapProfile(row) : null;
+  }
+
+  async setProfilePhoto(profileId: string, photoKey: string | null): Promise<void> {
+    await this.db
+      .prepare(`UPDATE profiles SET photo_r2_key = ? WHERE id = ?`)
+      .bind(photoKey, profileId)
+      .run();
+  }
+
+  async incrementClick(
+    listingId: string,
+    target: "profile" | "linkedin" | "site",
+  ): Promise<{
+    profileClicks: number;
+    linkedinClicks: number;
+    websiteClicks: number;
+  } | null> {
+    const listing = await this.db
+      .prepare(`SELECT profile_id FROM listings WHERE id = ?`)
+      .bind(listingId)
+      .first<{ profile_id: string }>();
+    if (!listing) return null;
+    let column: "profile_clicks" | "linkedin_clicks" | "website_clicks";
+    switch (target) {
+      case "profile":
+        column = "profile_clicks";
+        break;
+      case "linkedin":
+        column = "linkedin_clicks";
+        break;
+      case "site":
+        column = "website_clicks";
+        break;
+      default:
+        return assertNever(target);
+    }
+    await this.db
+      .prepare(`UPDATE profiles SET ${column} = ${column} + 1 WHERE id = ?`)
+      .bind(listing.profile_id)
+      .run();
+    const row = await this.db
+      .prepare(
+        `SELECT profile_clicks, linkedin_clicks, website_clicks FROM profiles WHERE id = ?`,
+      )
+      .bind(listing.profile_id)
+      .first<{
+        profile_clicks: number;
+        linkedin_clicks: number;
+        website_clicks: number;
+      }>();
+    if (!row) return null;
+    return {
+      profileClicks: row.profile_clicks ?? 0,
+      linkedinClicks: row.linkedin_clicks,
+      websiteClicks: row.website_clicks,
+    };
+  }
+
+  async listFoundingProfiles(): Promise<ProfileRow[]> {
+    const { results } = await this.db
+      .prepare(`SELECT * FROM profiles WHERE is_founding_member = 1`)
+      .all<ProfileSql>();
+    return results.map(mapProfile);
   }
 
   async createPendingBid(
@@ -420,7 +537,7 @@ export class D1Store implements Store {
       .run();
   }
 
-  async applyStripePayment(input: ApplyStripeInput) {
+  async applyPayment(input: ApplyPaymentInput) {
     const inserted = await this.db
       .prepare(
         `INSERT OR IGNORE INTO stripe_events (id, type, bid_id, processed_at)
@@ -430,6 +547,9 @@ export class D1Store implements Store {
       .run();
     if ((inserted.meta?.changes ?? 0) === 0) {
       return { outcome: "idempotent" as const };
+    }
+    if (input.action === "refund") {
+      return this.revertConfirmedBid(input);
     }
     const bidSql = await this.findBid(input);
     if (!bidSql) {
@@ -472,6 +592,7 @@ export class D1Store implements Store {
         amountCents: input.amountCents ?? bid.amountCents,
         paidAt: input.paidAt,
       },
+      await this.getEconomics(),
     );
     if (applied.result.outcome === "refund") {
       await this.db
@@ -691,7 +812,70 @@ export class D1Store implements Store {
     };
   }
 
-  private async findBid(input: ApplyStripeInput): Promise<BidSql | null> {
+  private async revertConfirmedBid(input: ApplyPaymentInput) {
+    const bidSql = await this.findBid(input);
+    if (!bidSql) {
+      return { outcome: "refund" as const, reason: "unknown_bid" as const };
+    }
+    const bid = mapBid(bidSql);
+    await this.db
+      .prepare(
+        `UPDATE bids SET status = 'refunded', refunded_at = ?, rejected_reason = 'provider_refund' WHERE id = ?`,
+      )
+      .bind(input.paidAt, bid.id)
+      .run();
+    const listingSql = await this.db
+      .prepare(`SELECT * FROM listings WHERE id = ?`)
+      .bind(bid.listingId)
+      .first<ListingSql>();
+    if (listingSql?.current_bid_id === bid.id) {
+      const previous = await this.db
+        .prepare(
+          `SELECT * FROM bids
+           WHERE listing_id = ? AND status = 'confirmed' AND id != ?
+           ORDER BY confirmed_at DESC LIMIT 1`,
+        )
+        .bind(bid.listingId, bid.id)
+        .first<BidSql>();
+      if (previous) {
+        await this.db
+          .prepare(
+            `UPDATE listings SET current_bid_cents = ?, current_bid_at = ?, current_bid_id = ? WHERE id = ?`,
+          )
+          .bind(
+            previous.amount_cents,
+            previous.confirmed_at ?? input.paidAt,
+            previous.id,
+            bid.listingId,
+          )
+          .run();
+      } else {
+        await this.db
+          .prepare(
+            `UPDATE listings SET current_bid_cents = 0, current_bid_id = NULL WHERE id = ?`,
+          )
+          .bind(bid.listingId)
+          .run();
+      }
+    }
+    await this.db
+      .prepare(
+        `INSERT INTO events (id, type, board_id, actor_profile_id, target_profile_id, bid_id, amount_cents, rank_after, created_at)
+         VALUES (?, 'refunded', 'global', ?, ?, ?, ?, NULL, ?)`,
+      )
+      .bind(
+        newId("evt"),
+        bid.profileId,
+        bid.profileId,
+        bid.id,
+        bid.amountCents,
+        input.paidAt,
+      )
+      .run();
+    return { outcome: "reverted" as const, listingId: bid.listingId };
+  }
+
+  private async findBid(input: ApplyPaymentInput): Promise<BidSql | null> {
     if (input.bidId) {
       return this.db.prepare(`SELECT * FROM bids WHERE id = ?`).bind(input.bidId).first<BidSql>();
     }
@@ -699,6 +883,12 @@ export class D1Store implements Store {
       return this.db
         .prepare(`SELECT * FROM bids WHERE stripe_checkout_session_id = ?`)
         .bind(input.checkoutSessionId)
+        .first<BidSql>();
+    }
+    if (input.paymentIntentId) {
+      return this.db
+        .prepare(`SELECT * FROM bids WHERE stripe_payment_intent_id = ?`)
+        .bind(input.paymentIntentId)
         .first<BidSql>();
     }
     return null;
@@ -709,7 +899,8 @@ export class D1Store implements Store {
       .prepare(
         `SELECT l.id as listing_id, l.profile_id, l.current_bid_cents, l.current_bid_at,
                 l.previous_rank, p.handle, p.display_name, p.headline, p.company, p.pitch,
-                p.photo_r2_key, p.linkedin_url, p.website_url, p.is_founding_member, p.created_at
+                p.photo_r2_key, p.linkedin_url, p.website_url, p.linkedin_clicks, p.website_clicks,
+                p.profile_clicks, p.is_founding_member, p.category_id, p.created_at
          FROM listings l
          JOIN profiles p ON p.id = l.profile_id
          WHERE l.board_id = 'global' AND l.status = 'active' AND l.current_bid_id IS NOT NULL`,
@@ -728,7 +919,11 @@ export class D1Store implements Store {
         photo_r2_key: string | null;
         linkedin_url: string | null;
         website_url: string | null;
+        linkedin_clicks: number;
+        website_clicks: number;
+        profile_clicks: number;
         is_founding_member: number;
+        category_id: string | null;
         created_at: number;
       }>();
     return results.map((row) => ({
@@ -742,22 +937,34 @@ export class D1Store implements Store {
       photoUrl: row.photo_r2_key,
       linkedinUrl: row.linkedin_url,
       websiteUrl: row.website_url,
+      linkedinClicks: row.linkedin_clicks ?? 0,
+      websiteClicks: row.website_clicks ?? 0,
+      profileClicks: row.profile_clicks ?? 0,
       isFoundingMember: row.is_founding_member === 1,
       currentBidCents: row.current_bid_cents,
       currentBidAt: row.current_bid_at,
       profileCreatedAt: row.created_at,
       previousRank: row.previous_rank,
+      industry: parseCategories(row.category_id)[0] ?? null,
+      categories: parseCategories(row.category_id),
     }));
   }
 
-  private async rankedActive(): Promise<RankedBoardRow[]> {
+  private async rankedActive(
+    industry?: IndustryId | null,
+  ): Promise<RankedBoardRow[]> {
     const rows = await this.publicRows();
-    return rankListings(rows.map((row) => ({ ...row, id: row.listingId }))).map(
-      (row) => ({
-        ...row,
-        movement: movementFor(row.rank, row.previousRank),
-      }),
-    );
+    const filtered = industry
+      ? rows.filter((row) => row.categories.includes(industry))
+      : rows;
+    return rankListings(
+      filtered.map((row) => ({ ...row, id: row.listingId })),
+    ).map((row) => ({
+      ...row,
+      movement: industry
+        ? movementFor(row.rank, row.rank)
+        : movementFor(row.rank, row.previousRank),
+    }));
   }
 
   private async rankSnapshots() {

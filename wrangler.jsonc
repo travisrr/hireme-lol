@@ -9,7 +9,7 @@
   "observability": {
     "enabled": true,
   },
-  // Production origin. hireme.lol is parked / not ours — never add it here.
+  // Both hosts are this Worker + the same D1 board. hireme.lol is not ours.
   "routes": [
     { "pattern": "workwithme.lol", "custom_domain": true },
     { "pattern": "www.workwithme.lol", "custom_domain": true },
@@ -18,13 +18,13 @@
     "directory": "./dist",
     "not_found_handling": "single-page-application",
     "binding": "ASSETS",
-    "run_worker_first": ["/api/*", "/og/*"],
+    "run_worker_first": true,
   },
   "d1_databases": [
     {
       "binding": "DB",
       "database_name": "workwithme",
-      "database_id": "REPLACE_AFTER_WRANGLER_D1_CREATE",
+      "database_id": "fcb365fa-3e4b-40fb-8470-9446c3c80c9d",
       "migrations_dir": "migrations",
     },
   ],
@@ -34,6 +34,8 @@
       "bucket_name": "workwithme-media",
     },
   ],
+  // Cloudflare Web Analytics: docu-coach JS beacon is injected by the worker
+  // when CF_WEB_ANALYTICS_TOKEN (or CF_BEACON_TOKEN) is set. Never commit the token.
   "vars": {
     "PUBLIC_SITE_ORIGIN": "https://workwithme.lol",
     "PUBLIC_SITE_NAME": "workwithme.lol",

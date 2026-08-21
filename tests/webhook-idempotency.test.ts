@@ -1,9 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 /**
- * Pure stand-in for the D1 stripe_events PRIMARY KEY gate.
+ * Pure stand-in for the D1 payment-event PRIMARY KEY gate.
  * The Worker will insert evt_... first; a second delivery is a no-op.
- * Full D1 tests land when the webhook handler exists.
  */
 function applyStripeEvent(
   seen: Set<string>,

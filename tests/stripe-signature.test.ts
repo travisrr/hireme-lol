@@ -1,30 +1,32 @@
 import { describe, expect, it } from "vitest";
 import {
+  formatStripeSignatureHeader,
   signStripePayload,
   verifyStripeSignature,
 } from "../src/lib/stripe-signature";
 
 describe("stripe signatures", () => {
-  it("accepts a matching payload and rejects a tampered one", async () => {
-    const secret = "whsec_abc";
-    const payload = `{"id":"evt_1"}`;
-    const now = 1_700_000_000;
-    const header = await signStripePayload(secret, payload, now);
-    expect(
-      await verifyStripeSignature({
+  it("accepts a matching t=,v1= header", async () => {
+    const secret = "whsec_test";
+    const payload = '{"id":"evt_1"}';
+    const timestamp = "1710000000";
+    const signature = await signStripePayload(secret, timestamp, payload);
+    await expect(
+      verifyStripeSignature({
+        secret,
+        header: formatStripeSignatureHeader(timestamp, signature),
         payload,
-        header,
-        secret,
-        nowMs: now * 1000,
       }),
-    ).toBe(true);
-    expect(
-      await verifyStripeSignature({
-        payload: `{"id":"evt_2"}`,
-        header,
-        secret,
-        nowMs: now * 1000,
+    ).resolves.toBe(true);
+  });
+
+  it("rejects a forged signature", async () => {
+    await expect(
+      verifyStripeSignature({
+        secret: "whsec_test",
+        header: "t=1710000000,v1=nope",
+        payload: '{"id":"evt_1"}',
       }),
-    ).toBe(false);
+    ).resolves.toBe(false);
   });
 });

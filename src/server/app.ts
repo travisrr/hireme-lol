@@ -1,17 +1,42 @@
-import { Hono } from "hono";
+import { Hono, type Context } from "hono";
 import { deleteCookie, getCookie, setCookie } from "hono/cookie";
 import { cors } from "hono/cors";
 import { randomToken, sha256Hex } from "../lib/crypto";
+import { isClickTarget } from "../lib/clicks";
 import {
+  handleFromName,
   isValidEmail,
   isValidHandle,
   normalizeEmail,
   normalizeHandle,
 } from "../lib/handles";
-import { minBidToEnter } from "../lib/ranking";
-import { SITE } from "../lib/site";
+import {
+  fetchPublicLinkedinPreview,
+  handleFromLinkedinSlug,
+  linkedinSlug,
+  normalizeLinkedinProfileUrl,
+} from "../lib/linkedin";
+import {
+  classifyStripeEvent,
+  createStripeCheckoutSession,
+  createStripeRefund,
+  extractCompletedCheckout,
+  extractRefundedCharge,
+  type StripeLikeEvent,
+} from "../lib/stripe";
 import { verifyStripeSignature } from "../lib/stripe-signature";
-import { GLOBAL_BOARD_ID, LAUNCH_ECONOMICS, PUBLIC_ORIGIN } from "../lib/types";
+import {
+  isSafePhotoKey,
+  photoKeyForUser,
+  storeHeadshotBytes,
+  type MediaBucket,
+} from "../lib/media";
+import { isAllowedImageType } from "../lib/photo";
+import { parseBidAmountCents } from "../lib/money";
+import { minBidToEnter } from "../lib/ranking";
+import { BOARD_TABS, parseCategories, parseIndustry } from "../lib/industries";
+import { SITE } from "../lib/site";
+import { GLOBAL_BOARD_ID, PUBLIC_ORIGIN } from "../lib/types";
 import type { Store } from "./store";
 
 export const SESSION_COOKIE = "wmw_session";
@@ -22,6 +47,7 @@ export type AppConfig = {
   adminEmails: string[];
   stripeSecretKey?: string;
   stripeWebhookSecret?: string;
+  stripePublishableKey?: string;
   githubClientId?: string;
   githubClientSecret?: string;
   googleClientId?: string;
@@ -42,6 +68,8 @@ export type AppDeps = {
   config: AppConfig;
   now?: () => number;
   sendEmail?: EmailSender;
+  fetchImpl?: typeof fetch;
+  media?: MediaBucket;
 };
 
 type Variables = {
@@ -76,6 +104,22 @@ export function createApp(deps: AppDeps) {
     return middleware(c, next);
   });
 
+  app.get("/api/media/*", async (c) => {
+    const key = decodeURIComponent(c.req.path.replace(/^\/api\/media\//, ""));
+    if (!deps.media || !isSafePhotoKey(key)) {
+      return c.body(null, 404);
+    }
+    const object = await deps.media.get(key);
+    if (!object) return c.body(null, 404);
+    const type = object.httpMetadata?.contentType || "image/jpeg";
+    return new Response(object.body as BodyInit, {
+      headers: {
+        "content-type": type,
+        "cache-control": "public, max-age=86400",
+      },
+    });
+  });
+
   app.get("/api/health", (c) => {
     return c.json({
       ok: true,
@@ -87,13 +131,16 @@ export function createApp(deps: AppDeps) {
     });
   });
 
-  app.get("/api/config", (c) => {
+  app.get("/api/config", async (c) => {
+    const economics = await deps.store.getEconomics();
     return c.json({
-      minEntryCents: LAUNCH_ECONOMICS.minEntryCents,
-      minIncrementCents: LAUNCH_ECONOMICS.minIncrementCents,
+      minEntryCents: economics.minEntryCents,
+      minIncrementCents: economics.minIncrementCents,
       publicOrigin: deps.config.origin,
       boardId: GLOBAL_BOARD_ID,
-      stripeEnabled: Boolean(deps.config.stripeSecretKey),
+      stripeEnabled: paymentsReady(deps.config),
+      stripePublishableKey: deps.config.stripePublishableKey || null,
+      industries: BOARD_TABS,
       oauth: {
         github: Boolean(deps.config.githubClientId),
         google: Boolean(deps.config.googleClientId),
@@ -103,13 +150,38 @@ export function createApp(deps: AppDeps) {
 
   app.get("/api/board", async (c) => {
     const q = c.req.query("q") ?? "";
-    const listings = await deps.store.getBoard(q);
+    const industry = parseIndustry(c.req.query("industry") ?? c.req.query("tab"));
+    const listings = await deps.store.getBoard(q, industry);
     const activity = await deps.store.getActivity(20);
     return c.json({
       boardId: GLOBAL_BOARD_ID,
       listings,
       activity,
     });
+  });
+
+  app.post("/api/listings/:id/clicks", async (c) => {
+    const body = await readJson(c);
+    const target = String(body.target ?? "");
+    if (!isClickTarget(target)) {
+      return c.json({ error: "invalid_target" }, 400);
+    }
+    const counts = await deps.store.incrementClick(c.req.param("id"), target);
+    if (!counts) return c.json({ error: "not_found" }, 404);
+    return c.json({
+      ...counts,
+      clicks:
+        counts.profileClicks + counts.linkedinClicks + counts.websiteClicks,
+    });
+  });
+
+  app.post("/api/linkedin/preview", async (c) => {
+    const body = await readJson(c);
+    const preview = await fetchPublicLinkedinPreview(
+      String(body.url ?? ""),
+      deps.fetchImpl ?? fetch,
+    );
+    return c.json(preview);
   });
 
   app.get("/api/profiles/:handle", async (c) => {
@@ -132,6 +204,11 @@ export function createApp(deps: AppDeps) {
     ) {
       return c.json({ error: "turnstile" }, 400);
     }
+    const local = isLocalOrigin(deps.config.origin);
+    const canSend = Boolean(deps.sendEmail || deps.config.resendApiKey);
+    if (!local && !canSend) {
+      return c.json({ error: "email_not_configured" }, 503);
+    }
     const token = randomToken();
     const tokenHash = await sha256Hex(token);
     const now = clock(deps);
@@ -142,15 +219,17 @@ export function createApp(deps: AppDeps) {
       now,
     );
     const verifyUrl = `${deps.config.origin}/api/auth/callback?token=${token}`;
-    await send(
-      deps,
-      email,
-      `Sign in to ${SITE.name}`,
-      `Open this link to get on the board:\n${verifyUrl}\n\nIt expires in 15 minutes.`,
-    );
+    if (canSend) {
+      await send(
+        deps,
+        email,
+        `Sign in to ${SITE.name}`,
+        `Open this link to get on the board:\n${verifyUrl}\n\nIt expires in 15 minutes.`,
+      );
+    }
     return c.json({
       ok: true,
-      previewUrl: deps.config.resendApiKey ? undefined : verifyUrl,
+      previewUrl: local && !deps.config.resendApiKey ? verifyUrl : undefined,
     });
   });
 
@@ -161,7 +240,7 @@ export function createApp(deps: AppDeps) {
     const email = await deps.store.consumeMagicLink(await sha256Hex(token), now);
     if (!email) return c.json({ error: "invalid_token" }, 400);
     await establishSession(c, deps, email, now);
-    return c.redirect(`${deps.config.origin}/?signedin=1`);
+    return c.redirect(`${deps.config.origin}/join?signedin=1`);
   });
 
   app.get("/api/auth/github", (c) => {
@@ -182,7 +261,7 @@ export function createApp(deps: AppDeps) {
     const email = await githubEmail(c, deps);
     if (!email) return c.json({ error: "oauth_failed", provider: "github" }, 400);
     await establishSession(c, deps, email, clock(deps));
-    return c.redirect(`${deps.config.origin}/?signedin=1`);
+    return c.redirect(`${deps.config.origin}/join?signedin=1`);
   });
 
   app.get("/api/auth/google", (c) => {
@@ -204,7 +283,7 @@ export function createApp(deps: AppDeps) {
     const email = await googleEmail(c, deps);
     if (!email) return c.json({ error: "oauth_failed", provider: "google" }, 400);
     await establishSession(c, deps, email, clock(deps));
-    return c.redirect(`${deps.config.origin}/?signedin=1`);
+    return c.redirect(`${deps.config.origin}/join?signedin=1`);
   });
 
   app.post("/api/auth/logout", async (c) => {
@@ -237,13 +316,49 @@ export function createApp(deps: AppDeps) {
     }
   });
 
+  app.post("/api/me/photo", async (c) => {
+    const session = await readSession(c, deps);
+    if (!session) return c.json({ error: "unauthorized" }, 401);
+    if (!deps.media) return c.json({ error: "media_unbound" }, 503);
+    let file: File | null = null;
+    try {
+      const form = await c.req.parseBody();
+      file = form.photo instanceof File ? form.photo : null;
+    } catch {
+      file = null;
+    }
+    if (!file) return c.json({ error: "invalid_photo" }, 400);
+    const type = file.type.toLowerCase();
+    if (!isAllowedImageType(type)) return c.json({ error: "invalid_photo" }, 400);
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    const key = photoKeyForUser(session.user.id, type);
+    const stored = await storeHeadshotBytes(deps.media, key, bytes, type);
+    if (!stored) return c.json({ error: "invalid_photo" }, 400);
+    if (session.profile) {
+      await deps.store.setProfilePhoto(session.profile.id, stored);
+    }
+    return c.json({
+      photoKey: stored,
+      photoUrl: `/api/media/${stored}`,
+    });
+  });
+
   app.post("/api/bids", async (c) => {
     const session = await readSession(c, deps);
     if (!session?.profile) return c.json({ error: "profile_required" }, 401);
     const body = await readJson(c);
-    const amountCents = Number(body.amountCents);
-    if (!Number.isInteger(amountCents) || amountCents < minBidToEnter()) {
+    const economics = await deps.store.getEconomics();
+    const amountCents = parseBidAmountCents(
+      body.amountCents ?? body.bid ?? body.dollars,
+      minBidToEnter(economics),
+    );
+    if (amountCents == null || amountCents < minBidToEnter(economics)) {
       return c.json({ error: "below_entry" }, 400);
+    }
+    const local = isLocalOrigin(deps.config.origin);
+    const stripeReady = paymentsReady(deps.config);
+    if (!local && !stripeReady) {
+      return c.json({ error: "payments_not_ready" }, 503);
     }
     const now = clock(deps);
     const bid = await deps.store.createPendingBid(
@@ -255,68 +370,28 @@ export function createApp(deps: AppDeps) {
       now,
     );
     let checkoutUrl: string | null = null;
-    if (deps.config.stripeSecretKey) {
-      const checkout = await createStripeCheckout({
-        secret: deps.config.stripeSecretKey,
-        origin: deps.config.origin,
-        amountCents,
-        handle: session.profile.handle,
+    let checkoutSessionId: string | null = null;
+    if (stripeReady && deps.config.stripeSecretKey) {
+      const checkout = await createStripeCheckoutSession({
+        secretKey: deps.config.stripeSecretKey,
         bidId: bid.id,
+        amountCents,
+        origin: deps.config.origin,
       });
       await deps.store.attachCheckoutSession(bid.id, checkout.id);
       checkoutUrl = checkout.url;
+      checkoutSessionId = checkout.id;
     }
     return c.json({
       bidId: bid.id,
       checkoutUrl,
-      devConfirm: !deps.config.stripeSecretKey,
+      checkoutSessionId,
+      devConfirm: local && !stripeReady,
     });
   });
 
-  app.post("/api/stripe/webhook", async (c) => {
-    const payload = await c.req.text();
-    const signature = c.req.header("stripe-signature") ?? "";
-    if (deps.config.stripeWebhookSecret) {
-      const ok = await verifyStripeSignature({
-        payload,
-        header: signature,
-        secret: deps.config.stripeWebhookSecret,
-      });
-      if (!ok) return c.json({ error: "bad_signature" }, 400);
-    } else if (!isLocalOrigin(deps.config.origin)) {
-      return c.json({ error: "webhook_secret_required" }, 500);
-    }
-    let event: StripeLikeEvent;
-    try {
-      event = JSON.parse(payload) as StripeLikeEvent;
-    } catch {
-      return c.json({ error: "invalid_json" }, 400);
-    }
-    if (
-      event.type !== "checkout.session.completed" &&
-      event.type !== "charge.refunded"
-    ) {
-      return c.json({ ok: true, ignored: event.type });
-    }
-    const sessionObj = event.data?.object;
-    const result = await deps.store.applyStripePayment({
-      eventId: event.id,
-      eventType: event.type,
-      bidId: optionalString(sessionObj?.metadata?.bid_id),
-      checkoutSessionId: optionalString(sessionObj?.id),
-      paymentIntentId: optionalString(sessionObj?.payment_intent),
-      amountCents:
-        typeof sessionObj?.amount_total === "number"
-          ? sessionObj.amount_total
-          : undefined,
-      paidAt: clock(deps),
-    });
-    if (result.outcome === "refund") {
-      await maybeRefund(deps, optionalString(sessionObj?.payment_intent));
-    }
-    await flushNotifications(deps);
-    return c.json({ ok: true, result });
-  });
+  app.post("/api/webhooks/stripe", (c) => stripeWebhook(c, deps));
+  app.post("/api/stripe/webhook", (c) => stripeWebhook(c, deps));
 
   app.get("/api/unsubscribe", async (c) => {
     const email = normalizeEmail(c.req.query("email") ?? "");
@@ -357,28 +432,71 @@ export function createApp(deps: AppDeps) {
   return app;
 }
 
-type StripeLikeEvent = {
-  id: string;
-  type: string;
-  data?: {
-    object?: {
-      id?: string;
-      amount_total?: number;
-      payment_intent?: string;
-      metadata?: { bid_id?: string };
-    };
-  };
-};
-
-function optionalString(value: string | undefined): string | undefined {
-  return value ? value : undefined;
-}
-
 function isLocalOrigin(origin: string): boolean {
   return (
     origin.startsWith("http://localhost") ||
     origin.startsWith("http://127.0.0.1")
   );
+}
+
+function paymentsReady(config: AppConfig): boolean {
+  return Boolean(config.stripeSecretKey && config.stripeWebhookSecret);
+}
+
+async function stripeWebhook(c: Context, deps: AppDeps) {
+  const payload = await c.req.text();
+  const signature = c.req.header("stripe-signature") ?? "";
+  if (deps.config.stripeWebhookSecret) {
+    const ok = await verifyStripeSignature({
+      secret: deps.config.stripeWebhookSecret,
+      header: signature,
+      payload,
+    });
+    if (!ok) return c.json({ error: "bad_signature" }, 400);
+  } else if (!isLocalOrigin(deps.config.origin)) {
+    return c.json({ error: "payments_not_ready" }, 503);
+  }
+  let event: StripeLikeEvent;
+  try {
+    event = JSON.parse(payload) as StripeLikeEvent;
+  } catch {
+    return c.json({ error: "invalid_json" }, 400);
+  }
+  const eventId = typeof event.id === "string" ? event.id : "";
+  const eventType = typeof event.type === "string" ? event.type : "";
+  if (!eventId) return c.json({ error: "missing_event_id" }, 400);
+  const action = classifyStripeEvent(eventType);
+  switch (action) {
+    case "ignore":
+      return c.json({ ok: true, ignored: eventType });
+    case "complete":
+    case "refund":
+      break;
+    default: {
+      const _never: never = action;
+      return _never;
+    }
+  }
+  const object = (event.data?.object ?? {}) as Record<string, unknown>;
+  const completed = action === "complete" ? extractCompletedCheckout(object) : null;
+  const refunded = action === "refund" ? extractRefundedCharge(object) : null;
+  const paymentIntentId =
+    completed?.paymentIntentId ?? refunded?.paymentIntentId;
+  const result = await deps.store.applyPayment({
+    eventId,
+    eventType,
+    action,
+    bidId: completed?.bidId,
+    checkoutSessionId: completed?.checkoutSessionId || undefined,
+    paymentIntentId,
+    amountCents: completed?.amountCents ?? refunded?.amountCents,
+    paidAt: clock(deps),
+  });
+  if (result.outcome === "refund" && action === "complete") {
+    await maybeRefund(deps, paymentIntentId);
+  }
+  await flushNotifications(deps);
+  return c.json({ ok: true, result });
 }
 
 async function readJson(c: {
@@ -396,11 +514,20 @@ async function readJson(c: {
 }
 
 function profileFromBody(body: Record<string, unknown>) {
-  const handle = normalizeHandle(String(body.handle ?? ""));
   const displayName = String(body.displayName ?? "").trim();
   const headline = String(body.headline ?? "").trim();
-  const pitch = String(body.pitch ?? "").trim();
+  const pitch = String(body.pitch ?? headline).trim();
   const websiteUrl = String(body.websiteUrl ?? "").trim();
+  const rawLinkedin = String(body.linkedinUrl ?? "").trim();
+  const linkedinUrl =
+    normalizeLinkedinProfileUrl(rawLinkedin) || rawLinkedin || null;
+  let handle = normalizeHandle(String(body.handle ?? ""));
+  if (!isValidHandle(handle)) {
+    const slug = linkedinUrl ? linkedinSlug(linkedinUrl) : null;
+    handle = slug
+      ? handleFromLinkedinSlug(slug)
+      : handleFromName(displayName);
+  }
   if (!isValidHandle(handle) || !displayName || !headline || !pitch) {
     return null;
   }
@@ -411,8 +538,10 @@ function profileFromBody(body: Record<string, unknown>) {
     company: String(body.company ?? "").trim() || null,
     pitch,
     photoUrl: String(body.photoUrl ?? "").trim() || null,
-    linkedinUrl: String(body.linkedinUrl ?? "").trim() || null,
+    linkedinUrl,
     websiteUrl: websiteUrl || null,
+    industry: parseCategories(body.categories ?? body.industry)[0] ?? null,
+    categories: parseCategories(body.categories ?? body.industry),
   };
 }
 
@@ -490,46 +619,10 @@ async function flushNotifications(deps: AppDeps) {
 
 async function maybeRefund(deps: AppDeps, paymentIntentId?: string) {
   if (!deps.config.stripeSecretKey || !paymentIntentId) return;
-  await fetch(`https://api.stripe.com/v1/refunds`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${deps.config.stripeSecretKey}`,
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body: new URLSearchParams({ payment_intent: paymentIntentId }),
+  await createStripeRefund({
+    secretKey: deps.config.stripeSecretKey,
+    paymentIntentId,
   });
-}
-
-async function createStripeCheckout(input: {
-  secret: string;
-  origin: string;
-  amountCents: number;
-  handle: string;
-  bidId: string;
-}) {
-  const body = new URLSearchParams({
-    mode: "payment",
-    success_url: `${input.origin}/?bid=success`,
-    cancel_url: `${input.origin}/?bid=cancel`,
-    "metadata[bid_id]": input.bidId,
-    "line_items[0][quantity]": "1",
-    "line_items[0][price_data][currency]": "usd",
-    "line_items[0][price_data][unit_amount]": String(input.amountCents),
-    "line_items[0][price_data][product_data][name]": `workwithme.lol bid @${input.handle}`,
-  });
-  const response = await fetch("https://api.stripe.com/v1/checkout/sessions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${input.secret}`,
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body,
-  });
-  const data = (await response.json()) as { id?: string; url?: string };
-  if (!data.id || !data.url) {
-    throw new Error("stripe_checkout_failed");
-  }
-  return { id: data.id, url: data.url };
 }
 
 async function verifyTurnstile(secret: string | undefined, token: string) {

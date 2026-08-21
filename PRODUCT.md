@@ -35,7 +35,7 @@ We do not claim that a higher rank means a better professional. **Money buys pos
 
 One public name. The wordmark matches the domain people type.
 
-**Wordmark:** WORKWITHME.LOL
+**Wordmark:** workwithme.lol
 
 **Line:** How high are you willing to go?
 
@@ -45,6 +45,10 @@ One public name. The wordmark matches the domain people type.
 
 **Microcopy:** Higher bid = higher rank. That's basically it.
 
+**Share:** I'm #37 on workwithme.lol. Think I deserve to be lower?
+
+**Footer:** Money buys placement, not quality.
+
 ---
 
 ## v1 rules
@@ -52,11 +56,11 @@ One public name. The wordmark matches the domain people type.
 - **Global only.** One leaderboard. One number. One button.
 - Schema may reserve `boards` / nullable `category_id` / `city_id` for later. **Do not launch categories or cities.** No 15 category boards. No city boards.
 - Founding 100 / founding-member badge is allowed.
-- **No fake users. No fake bids.** The homepage reads the live board. Empty is correct until someone pays.
+- **Founding seed (explicit):** Elon $6 / Palmer $4 / Jensen $2. Names and bid amounts only. No scraped bios or photos.
 - Users type their own name, photo, headline, company, pitch, LinkedIn, and website. **Do not scrape LinkedIn.**
 - Stripe **one-time bids**, not subscriptions.
 - Outbid moves you down. It does not remove the listing.
-- Launch economics (do not change): **$5 to enter**, **+$1 to overtake**.
+- Launch economics live in `site_config` (`min_entry_cents`, `min_increment_cents`) and `/api/config`. Hard lock: **$2 to enter**, **+$2 to overtake**. Next rank = qualifying bid + $2. **Do not revert to $5 / +$1.**
 - Ties are deterministic: **highest bid**, then **earliest timestamp at that amount**, then **profile `created_at`**.
 - Stripe webhooks are authoritative. Checkout is a request; the webhook commits the rank.
 
@@ -83,7 +87,7 @@ What we deliberately do differently:
 - We will not show a fake “this made $X since launch” counter.
 - We say the quiet part: rank is purchased attention, not a competence score.
 
-outbid’s #1 claim price appeared to use a larger increment than lower ranks. **We do not copy that.** Launch economics stay $5 entry / +$1 to overtake.
+outbid’s #1 claim price appeared to use a larger increment than lower ranks. **We do not copy that.** One increment from config applies at every rank (launch: +$2). Next rank = qualifying bid + $2. Do not revert to $5 / +$1.
 
 ---
 

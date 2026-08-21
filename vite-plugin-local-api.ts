@@ -1,9 +1,14 @@
+import { readFile } from "node:fs/promises";
 import type { IncomingMessage, ServerResponse } from "node:http";
+import { join } from "node:path";
 import type { Plugin } from "vite";
+import { MemoryMedia } from "./src/lib/media";
 import { createApp, type AppConfig } from "./src/server/app";
+import { seedLockShotBoard } from "./src/server/lock-shot-seed";
 import { MemoryStore } from "./src/server/memory-store";
 
 const store = new MemoryStore();
+const media = new MemoryMedia();
 
 function config(): AppConfig {
   return {
@@ -15,6 +20,7 @@ function config(): AppConfig {
       .filter(Boolean),
     stripeSecretKey: process.env.STRIPE_SECRET_KEY,
     stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
+    stripePublishableKey: process.env.STRIPE_PUBLISHABLE_KEY,
     githubClientId: process.env.GITHUB_CLIENT_ID,
     githubClientSecret: process.env.GITHUB_CLIENT_SECRET,
     googleClientId: process.env.GOOGLE_CLIENT_ID,
@@ -38,13 +44,39 @@ export function localApi(): Plugin {
   return {
     name: "workwithme-local-api",
     configureServer(server) {
-      const app = createApp({ store, config: config() });
+      const seeded =
+        process.env.LOCK_SHOTS === "1"
+          ? seedLockShotBoard(store)
+          : Promise.resolve();
+      const app = createApp({ store, config: config(), media });
       server.middlewares.use(async (req, res, next) => {
-        if (!req.url?.startsWith("/api")) {
+        const pathname = req.url?.split("?")[0] ?? "";
+        if (
+          process.env.LOCK_SHOTS === "1" &&
+          pathname.startsWith("/lock-shots/")
+        ) {
+          const name = pathname.slice("/lock-shots/".length);
+          if (!/^[a-z]+\.jpg$/.test(name)) {
+            res.statusCode = 404;
+            res.end();
+            return;
+          }
+          try {
+            const bytes = await readFile(join("lock-shots", name));
+            res.setHeader("content-type", "image/jpeg");
+            res.end(bytes);
+          } catch {
+            res.statusCode = 404;
+            res.end();
+          }
+          return;
+        }
+        if (!pathname.startsWith("/api")) {
           next();
           return;
         }
         try {
+          await seeded;
           await pipeToHono(app, req, res);
         } catch (error) {
           console.error(error);
