@@ -26,7 +26,7 @@ export function ClaimHeadline({ board, economics }: ClaimHeadlineProps) {
       <p className="type-body mt-3 text-mute">{SITE.claimWhy[0]}</p>
       <p className="type-body mt-1 text-mute">{SITE.claimWhy[1]}</p>
       <div className="mt-4">
-        <Link to="/join" className="btn-hero no-underline">
+        <Link to="/join" className="btn-hero w-fit no-underline">
           {SITE.outbid}
         </Link>
       </div>

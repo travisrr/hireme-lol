@@ -157,7 +157,7 @@ body {
   align-items: center;
   justify-content: center;
   height: 36px;
-  width: auto;
+  width: fit-content;
   padding: 0 1rem;
   border-radius: 0.75rem;
   background: var(--color-accent);
@@ -180,7 +180,7 @@ body {
   align-items: center;
   justify-content: center;
   height: 44px;
-  width: auto;
+  width: fit-content;
   max-width: 100%;
   padding: 0 1rem;
   border-radius: 0.75rem;
@@ -224,6 +224,35 @@ body {
 .btn-outbid:hover {
   background: var(--color-accent-hover);
   color: #ffffff;
+}
+
+.pulse-tabs {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.pulse-tab {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: var(--color-mute);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+  cursor: pointer;
+}
+
+.pulse-tab[data-active="true"] {
+  color: var(--color-accent);
+}
+
+.pulse-tab-rule {
+  color: var(--color-line);
+  font-size: 12px;
+  line-height: 1.2;
 }
 
 .search-field {

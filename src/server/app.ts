@@ -372,15 +372,20 @@ export function createApp(deps: AppDeps) {
     let checkoutUrl: string | null = null;
     let checkoutSessionId: string | null = null;
     if (stripeReady && deps.config.stripeSecretKey) {
-      const checkout = await createStripeCheckoutSession({
-        secretKey: deps.config.stripeSecretKey,
-        bidId: bid.id,
-        amountCents,
-        origin: deps.config.origin,
-      });
-      await deps.store.attachCheckoutSession(bid.id, checkout.id);
-      checkoutUrl = checkout.url;
-      checkoutSessionId = checkout.id;
+      try {
+        const checkout = await createStripeCheckoutSession({
+          secretKey: deps.config.stripeSecretKey,
+          bidId: bid.id,
+          amountCents,
+          origin: deps.config.origin,
+          fetchImpl: deps.fetchImpl,
+        });
+        await deps.store.attachCheckoutSession(bid.id, checkout.id);
+        checkoutUrl = checkout.url;
+        checkoutSessionId = checkout.id;
+      } catch {
+        return c.json({ error: "payments_not_ready" }, 503);
+      }
     }
     return c.json({
       bidId: bid.id,

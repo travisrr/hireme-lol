@@ -4,7 +4,7 @@ import { fetchBoard, fetchConfig } from "../api/client";
 import { BoardTabs } from "../components/BoardTabs";
 import { ClaimHeadline } from "../components/ClaimHeadline";
 import { ListingRow, TOP_TEN_CUTOFF } from "../components/ListingRow";
-import { ReceiptCard } from "../components/ReceiptCard";
+import { PulseCard } from "../components/PulseCard";
 import { SiteFooter } from "../components/SiteFooter";
 import { SiteHeader } from "../components/SiteHeader";
 import { toPublicListing } from "../lib/board-view";
@@ -105,22 +105,7 @@ export function HomePage() {
           className="grid items-start gap-4 pt-4 lg:grid-cols-2"
         >
           <ClaimHeadline board={rows} economics={economics} />
-          <div className="grid min-w-0 gap-3">
-            <ReceiptCard
-              title="Trending"
-              items={trending}
-              empty="No movement yet."
-              footerHref="#board"
-              footerLabel="View full board →"
-            />
-            <ReceiptCard
-              title="Latest activity"
-              items={receipts}
-              empty="No receipts yet."
-              footerHref="#board"
-              footerLabel="View all activity →"
-            />
-          </div>
+          <PulseCard trending={trending} activity={receipts} />
         </section>
         <section
           id="board"
