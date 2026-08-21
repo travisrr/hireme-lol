@@ -15,22 +15,22 @@ export function ClaimHeadline({ board, economics }: ClaimHeadlineProps) {
   const increment = formatUsdFromCents(economics.minIncrementCents);
 
   return (
-    <section className="min-w-0">
+    <section className="hero-claim">
       <p className="type-claim text-ink">{SITE.tagline}</p>
-      <h1 className="type-claim mt-2 text-ink">
+      <h1 className="type-claim text-ink">
         Claim #1 for{" "}
         <span className="type-price text-accent">
           {formatUsdFromCents(claim)}
         </span>
       </h1>
-      <p className="type-body mt-3 text-mute">{SITE.claimWhy[0]}</p>
-      <p className="type-body mt-1 text-mute">{SITE.claimWhy[1]}</p>
-      <div className="mt-4">
+      <p className="type-body hero-claim-why text-mute">{SITE.claimWhy[0]}</p>
+      <p className="type-body hero-claim-why text-mute">{SITE.claimWhy[1]}</p>
+      <div className="hero-claim-cta">
         <Link to="/join" className="btn-hero w-fit no-underline">
           {SITE.outbid}
         </Link>
       </div>
-      <p className="type-body mt-3 text-mute">
+      <p className="type-body hero-claim-help text-mute">
         {entry} to enter. +{increment} to overtake.
       </p>
     </section>

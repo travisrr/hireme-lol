@@ -21,6 +21,16 @@ export function itemsForTab(
   }
 }
 
+export function padPulseRows(
+  items: readonly ReceiptItem[],
+): Array<ReceiptItem | null> {
+  const rows: Array<ReceiptItem | null> = items.slice(0, PULSE_LIST_LIMIT);
+  while (rows.length < PULSE_LIST_LIMIT) {
+    rows.push(null);
+  }
+  return rows;
+}
+
 export function pulseTabLabel(tab: PulseTab): string {
   switch (tab) {
     case "trending":

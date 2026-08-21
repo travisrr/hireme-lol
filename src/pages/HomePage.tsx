@@ -100,10 +100,7 @@ export function HomePage() {
       <div className={`page-gutter mx-auto ${PAGE_COLUMN}`}>
       <SiteHeader query={query} onQueryChange={setQuery} inColumn />
       <main className="pb-8">
-        <section
-          data-lock="header-hero"
-          className="grid items-start gap-4 pt-4 lg:grid-cols-2"
-        >
+        <section data-lock="header-hero" className="hero-lock">
           <ClaimHeadline board={rows} economics={economics} />
           <PulseCard trending={trending} activity={receipts} />
         </section>

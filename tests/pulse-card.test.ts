@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   itemsForTab,
+  padPulseRows,
   PULSE_LIST_LIMIT,
   PULSE_TABS,
 } from "../src/lib/pulse";
@@ -29,5 +30,9 @@ describe("hero pulse card", () => {
       "n3",
       "n4",
     ]);
+    expect(padPulseRows(many.slice(0, 3))).toHaveLength(5);
+    expect(padPulseRows(many.slice(0, 3)).filter((row) => row == null)).toHaveLength(
+      2,
+    );
   });
 });

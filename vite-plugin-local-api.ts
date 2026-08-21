@@ -25,6 +25,8 @@ function config(): AppConfig {
     githubClientSecret: process.env.GITHUB_CLIENT_SECRET,
     googleClientId: process.env.GOOGLE_CLIENT_ID,
     googleClientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    linkedinClientId: process.env.LINKEDIN_CLIENT_ID,
+    linkedinClientSecret: process.env.LINKEDIN_CLIENT_SECRET,
     emailFrom: process.env.EMAIL_FROM || "board@workwithme.lol",
     resendApiKey: process.env.RESEND_API_KEY,
     turnstileSecret: process.env.TURNSTILE_SECRET_KEY,
