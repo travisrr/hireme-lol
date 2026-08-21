@@ -70,6 +70,10 @@ async function main() {
       await ready(page);
       const board = page.locator('[data-lock="board-tabs"]').first();
       await board.waitFor({ state: "visible" });
+      await page.locator('.board-tab[data-active="true"]').evaluate((el) => {
+        el.scrollIntoView({ inline: "center", block: "nearest" });
+      });
+      await page.waitForTimeout(150);
       await board.screenshot({
         path: `${OUT_REPO}/ui-${viewport.width}-board-tabs.png`,
         animations: "disabled",
