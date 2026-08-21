@@ -121,6 +121,7 @@ describe("live API", () => {
     const { app } = testApp();
     const body = await json(await app.request("/api/board"));
     expect(body.listings).toEqual([]);
+    expect(body.activity).toHaveLength(5);
   });
 
   it("creating a checkout does not move the board", async () => {

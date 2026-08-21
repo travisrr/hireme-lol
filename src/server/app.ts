@@ -38,6 +38,7 @@ import {
   requestHostOrigin,
 } from "../lib/linkedin-oidc";
 import { parseBidAmountCents } from "../lib/money";
+import { boardActivityOrSeed } from "../lib/activity-seed";
 import { minBidToEnter } from "../lib/ranking";
 import { BOARD_TABS, parseCategories, parseIndustry } from "../lib/industries";
 import { SITE } from "../lib/site";
@@ -162,7 +163,7 @@ export function createApp(deps: AppDeps) {
     const q = c.req.query("q") ?? "";
     const industry = parseIndustry(c.req.query("industry") ?? c.req.query("tab"));
     const listings = await deps.store.getBoard(q, industry);
-    const activity = await deps.store.getActivity(20);
+    const activity = boardActivityOrSeed(await deps.store.getActivity(20));
     return c.json({
       boardId: GLOBAL_BOARD_ID,
       listings,

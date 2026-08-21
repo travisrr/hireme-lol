@@ -32,7 +32,6 @@ export function pulseTrendingLine(
   return `${name} · #${rank} · ${amount} · ${time}`;
 }
 
-/** Live Activity is empty/old. These five named rows are the lock. */
 export function seededActivity(): SeededPulseRow[] {
   return [
     {

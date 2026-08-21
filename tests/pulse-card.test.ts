@@ -19,6 +19,10 @@ import {
   PULSE_LIST_LIMIT,
   PULSE_TABS,
 } from "../src/lib/pulse";
+import {
+  boardActivityOrSeed,
+  seededBoardActivity,
+} from "../src/lib/activity-seed";
 import { seededActivity, seededTrending } from "../src/lib/pulse-seed";
 import type { ReceiptItem } from "../src/components/ReceiptCard";
 
@@ -74,6 +78,14 @@ describe("hero pulse card", () => {
       publicPhotoSrc(FOUNDING_HEADSHOT_KEYS.elon),
     ]);
     expect(seededTrending()).toHaveLength(5);
+    expect(seededBoardActivity()).toHaveLength(5);
+    expect(boardActivityOrSeed([]).map((row) => row.displayName)).toEqual([
+      "Elon Musk",
+      "Palmer Luckey",
+      "Jensen Huang",
+      "Palmer Luckey",
+      "Elon Musk",
+    ]);
   });
 
   it("locks header/hero density to 8 / 12 / 16 and 40 desktop taps", () => {
