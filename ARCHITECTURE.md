@@ -122,8 +122,8 @@ Plan:
    - Insert payment event `id = evt_...`. Duplicate primary key → **200, no second apply**.
    - In one `env.DB.batch([...])`, confirm the bid and CAS-update the listing (`WHERE current_bid_cents = ?` or `WHERE current_bid_cents < ?` depending on raise vs new).
    - Re-rank is a **read model**: `ORDER BY current_bid_cents DESC, current_bid_at ASC, profiles.created_at ASC`. We do not store rank as source of truth. We store `previous_rank` only for movement arrows.
-3. A valid bid is always **≥ `min_entry_cents`** from `site_config` / `/api/config` (launch: $2). It places the listing wherever that number ranks. “Claim this rank for $X” is a UI price, not a separate product. If two people pay the same amount, both stay; earlier `current_bid_at` is above.
-4. Refunds: Paddle adjustment refund/chargeback webhooks, admin refunds, or CAS failure on a bid that cannot legally apply (amount below entry, or a raise that is not `min_increment_cents` over that listing’s own current bid). Launch increment is $2.
+3. A valid bid is always **≥ `min_entry_cents`** from `site_config` / `/api/config` (launch: **$2 to enter**). It places the listing wherever that number ranks. “Claim this rank for $X” is a UI price, not a separate product. Next rank = qualifying bid + **$2**. If two people pay the same amount, both stay; earlier `current_bid_at` is above.
+4. Refunds: Paddle adjustment refund/chargeback webhooks, admin refunds, or CAS failure on a bid that cannot legally apply (amount below entry, or a raise that is not `min_increment_cents` over that listing’s own current bid). Launch increment is **+$2 to overtake**. Do not revert to $5 / +$1.
 
 **Durable Objects:** a single `GlobalBoardCoordinator` would serialize applies. That helps only if we observe lost CAS + mass refunds. D1 batch already gives us an atomic transaction. We do not pay the DO complexity on day one.
 

@@ -15,7 +15,8 @@ export const SITE = {
     "Paste your LinkedIn URL. We’ll fill in your name, photo, and headline.",
   joinLoop: "Higher bid = higher rank. Get seen. Get outbid. That’s it.",
   joinEdit: "You can edit anything before you bid. Money buys placement, not quality.",
-  joinEntry: "New spots start at $2. Paying less than #1 still puts you on the board wherever that bid ranks.",
+  joinEntry:
+    "New spots start at the configured entry. Paying less than #1 still puts you on the board wherever that bid ranks.",
   joinRepeat: "Already on the list? Same identity, higher bid.",
   joinRule: "Higher bid = higher rank. Money buys placement, not quality.",
   linkedinPlaceholder: "https://www.linkedin.com/in/you",

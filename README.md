@@ -20,7 +20,7 @@ Loop: **Join → Bid → Rank → Share → Get Outbid → Bid Again.**
 CTA: **GET ON THE BOARD**  
 Microcopy: Higher bid = higher rank. That's basically it.
 
-Launch economics live in config: **$2 to enter**, **+$2 to overtake**. Paddle one-time bids. Webhook is authoritative. Outbid drops you down the board; it does not delete you.
+Launch economics live in config: **$2 to enter**, **+$2 to overtake**. Next rank = qualifying bid + $2. Do not revert to $5 / +$1. Paddle one-time bids. Webhook is authoritative. Outbid drops you down the board; it does not delete you.
 
 Read [PRODUCT.md](./PRODUCT.md) and [ARCHITECTURE.md](./ARCHITECTURE.md).
 

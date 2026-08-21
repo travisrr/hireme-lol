@@ -60,7 +60,8 @@ export type BidEconomics = {
   minIncrementCents: number;
 };
 
-/** Launch defaults. Live values come from site_config / /api/config. */
+/** Launch defaults. Live values come from site_config / /api/config.
+ *  Hard lock: $2 to enter, +$2 to overtake. Do not revert to 500/100. */
 export const DEFAULT_ECONOMICS: BidEconomics = {
   minEntryCents: 200,
   minIncrementCents: 200,
