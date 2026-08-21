@@ -13,34 +13,32 @@ export function SiteHeader({
   showSearch = true,
 }: SiteHeaderProps) {
   return (
-    <header className="sticky top-0 z-40 border-b border-line bg-paper">
-      <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-2">
+    <header className="site-header">
+      <div className="page-gutter site-header-bar mx-auto max-w-6xl">
         <Link
           to="/"
           aria-label={SITE.name}
-          className="shrink-0 text-[17px] font-bold tracking-tight text-accent no-underline hover:text-accent-hover"
+          className="type-wordmark shrink-0 text-accent no-underline hover:text-accent-hover"
         >
           {SITE.wordmark}
         </Link>
-        <div className="flex min-w-0 flex-1 items-center gap-2">
-          {showSearch ? (
-            <label className="relative min-w-0 flex-1">
-              <span className="sr-only">Search people, skills, or keywords</span>
-              <input
-                value={query}
-                onChange={(event) => onQueryChange(event.target.value)}
-                placeholder="Search people, skills, or keywords"
-                className="w-full rounded-xl border border-line bg-card px-3 py-2 text-sm text-ink outline-none placeholder:text-mute focus:border-accent"
-              />
-            </label>
-          ) : (
-            <span className="flex-1" />
-          )}
-          <Link to="/join" className="btn-accent shrink-0 no-underline">
-            {SITE.cta}
-          </Link>
-        </div>
+        <Link to="/join" className="btn-accent shrink-0 no-underline">
+          {SITE.cta}
+        </Link>
       </div>
+      {showSearch ? (
+        <div className="page-gutter mx-auto max-w-6xl pb-2">
+          <label>
+            <span className="sr-only">Search people, skills, or keywords</span>
+            <input
+              value={query}
+              onChange={(event) => onQueryChange(event.target.value)}
+              placeholder="Search people, skills, or keywords"
+              className="search-field"
+            />
+          </label>
+        </div>
+      ) : null}
     </header>
   );
 }

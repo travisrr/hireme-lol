@@ -16,22 +16,20 @@ export function ClaimHeadline({ board, economics }: ClaimHeadlineProps) {
 
   return (
     <section className="min-w-0">
-      <p className="text-sm font-medium text-ink sm:text-base">{SITE.tagline}</p>
-      <h1 className="mt-1 text-2xl leading-tight font-extrabold text-ink sm:text-3xl">
+      <p className="type-claim text-ink">{SITE.tagline}</p>
+      <h1 className="type-claim mt-2 text-ink">
         Claim #1 for{" "}
-        <span className="text-accent tabular">{formatUsdFromCents(claim)}</span>
+        <span className="type-price text-accent">
+          {formatUsdFromCents(claim)}
+        </span>
       </h1>
-      <p className="mt-2 text-sm text-ink">{SITE.joinLead}</p>
-      <p className="mt-1 text-sm text-mute">
-        {SITE.joinEntry} {SITE.joinRepeat}
-      </p>
-      <div className="mt-3">
-        <Link to="/join" className="btn-accent inline-block no-underline">
-          {SITE.cta}
+      <div className="mt-4">
+        <Link to="/join" className="btn-accent w-full no-underline">
+          {SITE.outbid}
         </Link>
       </div>
-      <p className="mt-2 text-sm text-mute">
-        {entry} to enter. +{increment} to overtake. {SITE.joinRule}
+      <p className="type-body mt-3 text-mute">
+        {entry} to enter. +{increment} to overtake.
       </p>
     </section>
   );

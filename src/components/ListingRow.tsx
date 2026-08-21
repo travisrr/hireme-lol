@@ -1,8 +1,9 @@
 import { Link, useNavigate } from "react-router-dom";
 import { recordClick } from "../api/client";
-import { initialsFromName, totalClicks } from "../lib/clicks";
+import { totalClicks } from "../lib/clicks";
 import { formatUsdFromCents } from "../lib/money";
 import { claimPriceForRank } from "../lib/ranking";
+import { SITE } from "../lib/site";
 import { isRecentBid } from "../lib/time";
 import type { BidEconomics, RankedPublicListing } from "../lib/types";
 import { ClickStat } from "./ClickStat";
@@ -10,6 +11,9 @@ import { MovementMark } from "./MovementMark";
 import { PhotoTile } from "./PhotoTile";
 
 export const TOP_TEN_CUTOFF = 10;
+export const ROW_MIN_PX = 72;
+export const PHOTO_PX = 44;
+export const OUTBID_MIN_PX = 48;
 
 type ListingRowProps = {
   listing: RankedPublicListing;
@@ -35,47 +39,49 @@ export function ListingRow({ listing, board, economics }: ListingRowProps) {
 
   return (
     <article
-      className={`grid h-14 grid-cols-[2rem_2rem_minmax(0,1fr)_auto] items-center gap-2 border-b border-line px-3 last:border-b-0 sm:grid-cols-[2.25rem_2rem_minmax(0,1fr)_minmax(0,1fr)_auto_auto_auto] ${highlight ? "rank-wash" : "bg-card"} ${flash ? "bid-flash" : ""}`}
+      className={`listing-row ${highlight ? "rank-wash" : "bg-card"} ${flash ? "bid-flash" : ""}`}
     >
       <div className="flex items-center gap-1">
         <span
-          className={`text-sm font-bold tabular ${highlight ? "text-accent" : "text-mute"}`}
+          className={`type-rank ${highlight ? "text-accent" : "text-mute"}`}
         >
           {listing.rank}
         </span>
         <MovementMark movement={listing.movement} />
       </div>
-      <PhotoTile
-        src={listing.photoUrl}
-        initials={initialsFromName(listing.displayName)}
-      />
+      <PhotoTile src={listing.photoUrl} />
       <button
         type="button"
         onClick={() => {
           void openProfile();
         }}
-        className="min-w-0 truncate text-left text-[15px] font-semibold text-ink hover:text-accent"
+        className="min-w-0 text-left"
       >
-        {listing.displayName}
-        {listing.isFoundingMember ? (
-          <span className="ml-1.5 align-middle text-[9px] font-bold tracking-wide text-accent uppercase">
-            Founding
-          </span>
-        ) : null}
+        <span className="block truncate text-[15px] font-semibold text-ink hover:text-accent">
+          {listing.displayName}
+          {listing.isFoundingMember ? (
+            <span className="ml-1.5 align-middle text-[9px] font-bold tracking-wide text-accent uppercase">
+              Founding
+            </span>
+          ) : null}
+        </span>
+        <span className="type-meta mt-0.5 flex min-w-0 items-center gap-2 text-mute">
+          <span className="truncate">{listing.pitch || pitch}</span>
+          <ClickStat count={totalClicks(listing)} />
+        </span>
       </button>
-      <p className="col-span-4 hidden truncate text-xs text-mute sm:col-span-1 sm:block">
-        {listing.pitch || pitch}
-      </p>
-      <ClickStat count={totalClicks(listing)} />
-      <span className="text-sm font-bold text-accent tabular">
-        {formatUsdFromCents(listing.currentBidCents)}
-      </span>
-      <Link
-        to="/join"
-        className="justify-self-end text-[11px] font-semibold text-accent uppercase no-underline hover:text-accent-hover"
-      >
-        Outbid · {formatUsdFromCents(claim)}
-      </Link>
+      <div className="flex flex-col items-end justify-center gap-1">
+        <span className="type-rank text-accent">
+          {formatUsdFromCents(listing.currentBidCents)}
+        </span>
+        <Link
+          to="/join"
+          className="btn-outbid"
+          aria-label={`${SITE.outbid} ${formatUsdFromCents(claim)}`}
+        >
+          {SITE.outbid}
+        </Link>
+      </div>
     </article>
   );
 }

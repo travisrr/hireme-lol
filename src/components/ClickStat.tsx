@@ -5,7 +5,7 @@ type ClickStatProps = {
 export function ClickStat({ count }: ClickStatProps) {
   return (
     <span
-      className="inline-flex items-center gap-1 text-[11px] text-mute tabular"
+      className="inline-flex shrink-0 items-center gap-1 text-mute tabular"
       title={`${count} clicks`}
     >
       <svg

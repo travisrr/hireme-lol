@@ -11,6 +11,7 @@ import {
   normalizeHandle,
 } from "../lib/handles";
 import {
+  fetchPublicLinkedinPreview,
   handleFromLinkedinSlug,
   linkedinSlug,
   normalizeLinkedinProfileUrl,
@@ -62,6 +63,7 @@ export type AppDeps = {
   config: AppConfig;
   now?: () => number;
   sendEmail?: EmailSender;
+  fetchImpl?: typeof fetch;
 };
 
 type Variables = {
@@ -150,6 +152,15 @@ export function createApp(deps: AppDeps) {
     });
   });
 
+  app.post("/api/linkedin/preview", async (c) => {
+    const body = await readJson(c);
+    const preview = await fetchPublicLinkedinPreview(
+      String(body.url ?? ""),
+      deps.fetchImpl ?? fetch,
+    );
+    return c.json(preview);
+  });
+
   app.get("/api/profiles/:handle", async (c) => {
     const found = await deps.store.getProfileByHandle(
       normalizeHandle(c.req.param("handle")),
@@ -199,7 +210,7 @@ export function createApp(deps: AppDeps) {
     const email = await deps.store.consumeMagicLink(await sha256Hex(token), now);
     if (!email) return c.json({ error: "invalid_token" }, 400);
     await establishSession(c, deps, email, now);
-    return c.redirect(`${deps.config.origin}/?signedin=1`);
+    return c.redirect(`${deps.config.origin}/join?signedin=1`);
   });
 
   app.get("/api/auth/github", (c) => {
@@ -220,7 +231,7 @@ export function createApp(deps: AppDeps) {
     const email = await githubEmail(c, deps);
     if (!email) return c.json({ error: "oauth_failed", provider: "github" }, 400);
     await establishSession(c, deps, email, clock(deps));
-    return c.redirect(`${deps.config.origin}/?signedin=1`);
+    return c.redirect(`${deps.config.origin}/join?signedin=1`);
   });
 
   app.get("/api/auth/google", (c) => {
@@ -242,7 +253,7 @@ export function createApp(deps: AppDeps) {
     const email = await googleEmail(c, deps);
     if (!email) return c.json({ error: "oauth_failed", provider: "google" }, 400);
     await establishSession(c, deps, email, clock(deps));
-    return c.redirect(`${deps.config.origin}/?signedin=1`);
+    return c.redirect(`${deps.config.origin}/join?signedin=1`);
   });
 
   app.post("/api/auth/logout", async (c) => {

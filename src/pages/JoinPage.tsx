@@ -1,24 +1,40 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import {
   confirmDevBid,
   createBid,
   fetchConfig,
   fetchMe,
+  previewLinkedin,
   requestMagicLink,
   saveProfile,
 } from "../api/client";
-import { SiteFooter } from "../components/SiteFooter";
-import { SiteHeader } from "../components/SiteHeader";
+import { LinkedInMark } from "../components/LinkedInMark";
+import { PhotoTile } from "../components/PhotoTile";
+import { useKeyboardInset } from "../hooks/useKeyboardInset";
 import { handleFromName } from "../lib/handles";
+import {
+  clearJoinDraft,
+  emptyJoinDraft,
+  readJoinDraft,
+  writeJoinDraft,
+  type JoinDraft,
+} from "../lib/join-draft";
 import { handleFromLinkedinSlug, linkedinSlug } from "../lib/linkedin";
 import { formatUsdFromCents } from "../lib/money";
+import { isUsableHeadshotUrl } from "../lib/photo";
 import { openPaddleCheckout } from "../lib/paddle-js";
 import { SITE } from "../lib/site";
 import { DEFAULT_ECONOMICS, type BidEconomics } from "../lib/types";
 import type { SessionRow } from "../server/store";
 
+type JoinStep = "url" | "identity" | "auth" | "bid";
+
 export function JoinPage() {
+  useKeyboardInset();
+  const [searchParams] = useSearchParams();
+  const [step, setStep] = useState<JoinStep>("url");
+  const [draft, setDraft] = useState<JoinDraft>(emptyJoinDraft);
   const [session, setSession] = useState<SessionRow | null>(null);
   const [economics, setEconomics] = useState<BidEconomics>(DEFAULT_ECONOMICS);
   const [paddle, setPaddle] = useState<{
@@ -31,6 +47,8 @@ export function JoinPage() {
   const [done, setDone] = useState<string | null>(null);
 
   useEffect(() => {
+    const stored = readJoinDraft();
+    if (stored) setDraft(stored);
     void Promise.all([fetchMe(), fetchConfig()])
       .then(([me, config]) => {
         setSession(me);
@@ -42,14 +60,88 @@ export function JoinPage() {
           clientToken: config.paddleClientToken,
           environment: config.paddleEnvironment,
         });
+        if (searchParams.get("signedin") === "1" && me.user && stored) {
+          setStep(me.profile ? "bid" : "identity");
+        }
       })
       .catch(() => {
         setSession(null);
       });
-  }, []);
+  }, [searchParams]);
 
   const entry = formatUsdFromCents(economics.minEntryCents);
   const increment = formatUsdFromCents(economics.minIncrementCents);
+
+  function persist(next: JoinDraft) {
+    setDraft(next);
+    writeJoinDraft(next);
+  }
+
+  async function handlePull(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const url = String(new FormData(event.currentTarget).get("linkedinUrl") ?? "");
+    setBusy(true);
+    setError(null);
+    try {
+      const pulled = await previewLinkedin(url);
+      persist({
+        linkedinUrl: pulled.linkedinUrl || url.trim(),
+        displayName: pulled.displayName,
+        headline: pulled.headline,
+        photoUrl: isUsableHeadshotUrl(pulled.photoUrl) ? pulled.photoUrl : "",
+      });
+      setStep("identity");
+    } catch {
+      persist({
+        ...emptyJoinDraft(),
+        linkedinUrl: url.trim(),
+      });
+      setStep("identity");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function handleIdentity(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const next: JoinDraft = {
+      linkedinUrl: draft.linkedinUrl,
+      displayName: String(form.get("displayName") ?? ""),
+      headline: String(form.get("headline") ?? ""),
+      photoUrl: draft.photoUrl,
+    };
+    persist(next);
+    if (!session?.user) {
+      setStep("auth");
+      return;
+    }
+    void saveIdentity(next);
+  }
+
+  async function saveIdentity(next: JoinDraft) {
+    const slug = linkedinSlug(next.linkedinUrl);
+    setBusy(true);
+    setError(null);
+    try {
+      await saveProfile({
+        handle: slug ? handleFromLinkedinSlug(slug) : handleFromName(next.displayName),
+        displayName: next.displayName,
+        headline: next.headline,
+        company: "",
+        pitch: next.headline,
+        photoUrl: next.photoUrl,
+        linkedinUrl: next.linkedinUrl,
+        websiteUrl: "",
+      });
+      setSession(await fetchMe());
+      setStep("bid");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "profile_failed");
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function handleMagic(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -64,35 +156,6 @@ export function JoinPage() {
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "magic_failed");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function handleIdentity(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const form = new FormData(event.currentTarget);
-    const displayName = String(form.get("displayName") ?? "");
-    const headline = String(form.get("headline") ?? "");
-    const linkedinUrl = String(form.get("linkedinUrl") ?? "");
-    const websiteUrl = String(form.get("websiteUrl") ?? "");
-    const slug = linkedinSlug(linkedinUrl);
-    setBusy(true);
-    setError(null);
-    try {
-      await saveProfile({
-        handle: slug ? handleFromLinkedinSlug(slug) : handleFromName(displayName),
-        displayName,
-        headline,
-        company: "",
-        pitch: headline,
-        photoUrl: "",
-        linkedinUrl,
-        websiteUrl,
-      });
-      setSession(await fetchMe());
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "profile_failed");
     } finally {
       setBusy(false);
     }
@@ -113,6 +176,7 @@ export function JoinPage() {
           environment: paddle.environment,
         });
         setDone("Checkout opened. Rank updates after Paddle confirms payment.");
+        clearJoinDraft();
         return;
       }
       if (result.checkoutUrl) {
@@ -122,6 +186,7 @@ export function JoinPage() {
       if (result.devConfirm) {
         await confirmDevBid(result.bidId, amountCents);
         setDone("Local test payment confirmed. You are on the board.");
+        clearJoinDraft();
         return;
       }
       setDone("Bid created. Waiting on Paddle.");
@@ -133,86 +198,212 @@ export function JoinPage() {
   }
 
   return (
-    <div className="min-h-screen bg-paper">
-      <SiteHeader query="" onQueryChange={() => undefined} showSearch={false} />
-      <main className="mx-auto max-w-xl px-4 py-8">
-        <p className="text-xs font-semibold text-accent uppercase">
-          {SITE.name}
-        </p>
-        <h1 className="mt-2 text-3xl font-extrabold">{SITE.cta}</h1>
-        <p className="mt-3 text-base text-ink">{SITE.joinLead}</p>
-        <ul className="mt-3 grid gap-1.5 text-sm text-mute">
-          <li>{SITE.joinEntry}</li>
-          <li>{SITE.joinRepeat}</li>
-          <li>{SITE.joinRule}</li>
-          <li>
-            {entry} to enter. +{increment} to overtake.
-          </li>
-        </ul>
-        {error ? <p className="mt-4 text-sm text-down">{error}</p> : null}
-        {done ? <p className="mt-4 text-sm text-ink">{done}</p> : null}
-        {!session?.user ? (
-          <form className="mt-6 grid gap-3" onSubmit={handleMagic}>
-            <Field label="Email" name="email" placeholder="you@company.com" />
-            <button type="submit" disabled={busy} className="btn-accent">
-              Email a magic link
-            </button>
-            {previewUrl ? (
-              <a href={previewUrl} className="break-all text-sm text-accent">
-                Local preview link (email not configured)
-              </a>
-            ) : null}
-          </form>
-        ) : !session.profile ? (
-          <form className="mt-6 grid gap-3" onSubmit={handleIdentity}>
-            <Field label="Name" name="displayName" placeholder="Your name" />
-            <Field
-              label="Headline"
-              name="headline"
-              placeholder="Founder, designer, operator"
-            />
-            <Field
-              label="LinkedIn URL"
+    <div className="join-sheet" data-lock="join-sheet">
+      {renderStep(step, {
+        draft,
+        persist,
+        handlePull,
+        handleIdentity,
+        handleMagic,
+        handleBid,
+        previewUrl,
+        error,
+        busy,
+        done,
+        entry,
+        increment,
+        displayName: session?.profile?.displayName ?? draft.displayName,
+      })}
+    </div>
+  );
+}
+
+type SheetProps = {
+  draft: JoinDraft;
+  persist: (next: JoinDraft) => void;
+  handlePull: (event: FormEvent<HTMLFormElement>) => void;
+  handleIdentity: (event: FormEvent<HTMLFormElement>) => void;
+  handleMagic: (event: FormEvent<HTMLFormElement>) => void;
+  handleBid: (event: FormEvent<HTMLFormElement>) => void;
+  previewUrl: string | null;
+  error: string | null;
+  busy: boolean;
+  done: string | null;
+  entry: string;
+  increment: string;
+  displayName: string;
+};
+
+function renderStep(step: JoinStep, props: SheetProps) {
+  switch (step) {
+    case "url":
+      return <UrlSheet {...props} />;
+    case "identity":
+      return <IdentitySheet {...props} />;
+    case "auth":
+      return <AuthSheet {...props} />;
+    case "bid":
+      return <BidSheet {...props} />;
+    default: {
+      const _never: never = step;
+      return _never;
+    }
+  }
+}
+
+function UrlSheet({ handlePull, busy, error }: SheetProps) {
+  return (
+    <>
+      <main className="join-sheet-main page-gutter mx-auto flex w-full max-w-xl flex-col">
+        <h1 className="type-claim text-ink">{SITE.tagline}</h1>
+        <p className="type-body mt-3 text-mute">{SITE.joinPaste}</p>
+        <p className="type-body mt-2 text-mute">{SITE.joinLoop}</p>
+        {error ? <p className="type-body mt-4 text-down">{error}</p> : null}
+        <form id="join-url" className="mt-6" onSubmit={handlePull}>
+          <label className="linkedin-field">
+            <span className="sr-only">LinkedIn URL</span>
+            <LinkedInMark />
+            <input
               name="linkedinUrl"
-              placeholder="https://www.linkedin.com/in/you"
+              inputMode="url"
+              autoComplete="url"
+              placeholder={SITE.linkedinPlaceholder}
             />
-            <Field
-              label="Website (optional)"
-              name="websiteUrl"
-              placeholder="https://"
-            />
-            <p className="text-xs text-mute">
-              Photo upload later. Placeholder avatar is fine.
-            </p>
-            <button type="submit" disabled={busy} className="btn-accent">
-              Save identity
-            </button>
-          </form>
-        ) : (
-          <form className="mt-6 grid gap-3" onSubmit={handleBid}>
-            <p className="text-sm text-ink">
-              {session.profile.displayName}
-              {session.profile.headline ? ` · ${session.profile.headline}` : ""}
-            </p>
-            <p className="text-sm text-mute">{SITE.joinRepeat}</p>
-            <Field
-              label={`Bid (USD, min ${entry})`}
-              name="bid"
-              placeholder="2"
-            />
-            <button type="submit" disabled={busy} className="btn-accent">
-              Bid
-            </button>
-          </form>
-        )}
-        <p className="mt-8">
-          <Link to="/" className="text-sm text-accent">
+          </label>
+        </form>
+      </main>
+      <div className="join-sheet-action page-gutter mx-auto w-full max-w-xl">
+        <button
+          form="join-url"
+          type="submit"
+          disabled={busy}
+          className="btn-accent w-full"
+        >
+          {SITE.pullProfile}
+        </button>
+        <p className="type-meta mt-3 text-center text-mute">{SITE.joinEdit}</p>
+      </div>
+    </>
+  );
+}
+
+function IdentitySheet({
+  draft,
+  handleIdentity,
+  busy,
+  error,
+}: SheetProps) {
+  return (
+    <>
+      <main className="join-sheet-main page-gutter mx-auto flex w-full max-w-xl flex-col">
+        <h1 className="type-claim text-ink">{SITE.tagline}</h1>
+        <p className="type-body mt-3 text-mute">{SITE.joinEdit}</p>
+        <div className="mt-5">
+          <PhotoTile src={draft.photoUrl || null} className="size-16" />
+        </div>
+        {error ? <p className="type-body mt-4 text-down">{error}</p> : null}
+        <form id="join-identity" className="mt-5 grid gap-3" onSubmit={handleIdentity}>
+          <Field
+            label="Name"
+            name="displayName"
+            defaultValue={draft.displayName}
+            placeholder="Your name"
+          />
+          <Field
+            label="Headline"
+            name="headline"
+            defaultValue={draft.headline}
+            placeholder="Founder, designer, operator"
+          />
+        </form>
+      </main>
+      <div className="join-sheet-action page-gutter mx-auto w-full max-w-xl">
+        <button
+          form="join-identity"
+          type="submit"
+          disabled={busy}
+          className="btn-accent w-full"
+        >
+          Continue
+        </button>
+      </div>
+    </>
+  );
+}
+
+function AuthSheet({ handleMagic, previewUrl, busy, error, done }: SheetProps) {
+  return (
+    <>
+      <main className="join-sheet-main page-gutter mx-auto flex w-full max-w-xl flex-col">
+        <h1 className="type-claim text-ink">{SITE.tagline}</h1>
+        <p className="type-body mt-3 text-mute">
+          Sign in so we can attach this identity to your bid.
+        </p>
+        {error ? <p className="type-body mt-4 text-down">{error}</p> : null}
+        {done ? <p className="type-body mt-4 text-ink">{done}</p> : null}
+        <form id="join-auth" className="mt-5" onSubmit={handleMagic}>
+          <Field label="Email" name="email" placeholder="you@company.com" />
+        </form>
+        {previewUrl ? (
+          <a href={previewUrl} className="type-body mt-3 break-all text-accent">
+            Local preview link (email not configured)
+          </a>
+        ) : null}
+      </main>
+      <div className="join-sheet-action page-gutter mx-auto w-full max-w-xl">
+        <button
+          form="join-auth"
+          type="submit"
+          disabled={busy}
+          className="btn-accent w-full"
+        >
+          Email a magic link
+        </button>
+      </div>
+    </>
+  );
+}
+
+function BidSheet({
+  handleBid,
+  displayName,
+  busy,
+  error,
+  done,
+  entry,
+  increment,
+}: SheetProps) {
+  return (
+    <>
+      <main className="join-sheet-main page-gutter mx-auto flex w-full max-w-xl flex-col">
+        <h1 className="type-claim text-ink">{SITE.tagline}</h1>
+        <p className="type-body mt-3 text-ink">{displayName}</p>
+        <p className="type-body mt-2 text-mute">
+          {entry} to enter. +{increment} to overtake.
+        </p>
+        {error ? <p className="type-body mt-4 text-down">{error}</p> : null}
+        {done ? <p className="type-body mt-4 text-ink">{done}</p> : null}
+        <form id="join-bid" className="mt-5" onSubmit={handleBid}>
+          <Field label={`Bid (USD, min ${entry})`} name="bid" placeholder="2" />
+        </form>
+        <p className="mt-6">
+          <Link to="/" className="type-body text-accent">
             ← The board
           </Link>
         </p>
       </main>
-      <SiteFooter />
-    </div>
+      <div className="join-sheet-action page-gutter mx-auto w-full max-w-xl">
+        <button
+          form="join-bid"
+          type="submit"
+          disabled={busy}
+          className="btn-accent w-full"
+        >
+          Bid
+        </button>
+        <p className="type-meta mt-3 text-center text-mute">{SITE.footer}</p>
+      </div>
+    </>
   );
 }
 
@@ -220,18 +411,21 @@ function Field({
   label,
   name,
   placeholder,
+  defaultValue,
 }: {
   label: string;
   name: string;
   placeholder: string;
+  defaultValue?: string;
 }) {
   return (
     <label className="grid gap-1">
-      <span className="text-[11px] font-semibold text-mute uppercase">{label}</span>
+      <span className="type-meta font-semibold text-mute uppercase">{label}</span>
       <input
         name={name}
+        defaultValue={defaultValue}
         placeholder={placeholder}
-        className="rounded-xl border border-line bg-card px-3 py-2 text-sm text-ink outline-none placeholder:text-mute focus:border-accent"
+        className="search-field"
       />
     </label>
   );

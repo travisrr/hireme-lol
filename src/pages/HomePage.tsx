@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { fetchBoard, fetchConfig } from "../api/client";
+import { BoardTabs } from "../components/BoardTabs";
 import { ClaimHeadline } from "../components/ClaimHeadline";
 import { ListingRow, TOP_TEN_CUTOFF } from "../components/ListingRow";
 import { ReceiptCard } from "../components/ReceiptCard";
@@ -86,10 +87,13 @@ export function HomePage() {
   return (
     <div className="min-h-screen bg-paper">
       <SiteHeader query={query} onQueryChange={setQuery} />
-      <main className="mx-auto max-w-6xl px-4 pb-8">
-        <section className="grid items-start gap-3 pt-3 lg:grid-cols-[minmax(14rem,0.85fr)_minmax(0,1.45fr)]">
+      <main className="page-gutter mx-auto max-w-6xl pb-8">
+        <section
+          data-lock="header-hero"
+          className="grid items-start gap-4 pt-4 lg:grid-cols-[minmax(14rem,0.85fr)_minmax(0,1.45fr)]"
+        >
           <ClaimHeadline board={rows} economics={economics} />
-          <div className="grid min-w-0 gap-2 sm:grid-cols-2">
+          <div className="grid min-w-0 gap-3 lg:grid-cols-2">
             <ReceiptCard
               title="Trending"
               items={trending}
@@ -106,12 +110,17 @@ export function HomePage() {
             />
           </div>
         </section>
-        <section id="board" className="mt-3 overflow-hidden rounded-[12px] border border-line bg-card">
+        <section
+          id="board"
+          data-lock="board-tabs"
+          className="mt-4 overflow-hidden rounded-[12px] border border-line bg-card"
+        >
+          <BoardTabs />
           {error ? (
-            <p className="p-3 text-sm text-down">{error}</p>
+            <p className="type-body p-3 text-down">{error}</p>
           ) : rows.length === 0 ? (
             <div className="px-3 py-6">
-              <p className="text-sm text-mute">
+              <p className="type-body text-mute">
                 The board is empty. First confirmed bid is #1.
               </p>
               <Link to="/join" className="btn-accent mt-3 inline-block no-underline">

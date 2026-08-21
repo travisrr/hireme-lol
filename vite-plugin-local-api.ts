@@ -2,6 +2,7 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import type { Plugin } from "vite";
 import { parsePaddleEnvironment } from "./src/lib/paddle";
 import { createApp, type AppConfig } from "./src/server/app";
+import { seedLockShotBoard } from "./src/server/lock-shot-seed";
 import { MemoryStore } from "./src/server/memory-store";
 
 const store = new MemoryStore();
@@ -41,6 +42,10 @@ export function localApi(): Plugin {
   return {
     name: "workwithme-local-api",
     configureServer(server) {
+      const seeded =
+        process.env.LOCK_SHOTS === "1"
+          ? seedLockShotBoard(store)
+          : Promise.resolve();
       const app = createApp({ store, config: config() });
       server.middlewares.use(async (req, res, next) => {
         if (!req.url?.startsWith("/api")) {
@@ -48,6 +53,7 @@ export function localApi(): Plugin {
           return;
         }
         try {
+          await seeded;
           await pipeToHono(app, req, res);
         } catch (error) {
           console.error(error);

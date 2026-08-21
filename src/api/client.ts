@@ -47,6 +47,18 @@ export function fetchConfig() {
   >("/api/config");
 }
 
+export function previewLinkedin(url: string) {
+  return request<{
+    displayName: string;
+    headline: string;
+    photoUrl: string;
+    linkedinUrl: string;
+  }>("/api/linkedin/preview", {
+    method: "POST",
+    body: JSON.stringify({ url }),
+  });
+}
+
 export function requestMagicLink(email: string) {
   return request<{ ok: true; previewUrl?: string }>("/api/auth/magic", {
     method: "POST",

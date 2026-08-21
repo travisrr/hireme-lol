@@ -1,3 +1,5 @@
+import { isUsableHeadshotUrl } from "./photo";
+
 export type PulledLinkedin = {
   linkedinUrl: string;
   slug: string;
@@ -83,6 +85,60 @@ function parseTitleParts(title: string): {
     headline = after.slice(0, at.index).trim();
   }
   return { displayName, headline, company };
+}
+
+export type LinkedinPreview = {
+  displayName: string;
+  headline: string;
+  photoUrl: string;
+  linkedinUrl: string;
+};
+
+export function emptyLinkedinPreview(linkedinUrl = ""): LinkedinPreview {
+  return {
+    displayName: "",
+    headline: "",
+    photoUrl: "",
+    linkedinUrl,
+  };
+}
+
+export async function fetchPublicLinkedinPreview(
+  rawUrl: string,
+  fetchImpl: typeof fetch,
+): Promise<LinkedinPreview> {
+  const normalized = normalizeLinkedinProfileUrl(rawUrl);
+  if (!normalized) return emptyLinkedinPreview();
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 8000);
+  try {
+    const response = await fetchImpl(normalized, {
+      method: "GET",
+      redirect: "follow",
+      signal: controller.signal,
+      headers: {
+        Accept: "text/html,application/xhtml+xml",
+        "User-Agent":
+          "Mozilla/5.0 (compatible; workwithme.lol; +https://workwithme.lol)",
+      },
+    });
+    if (!response.ok) return emptyLinkedinPreview(normalized);
+    const html = await response.text();
+    const parsed = parseLinkedinHtml(html, normalized);
+    return {
+      displayName: parsed.displayName,
+      headline: parsed.headline,
+      photoUrl:
+        parsed.ogImageUrl && isUsableHeadshotUrl(parsed.ogImageUrl)
+          ? parsed.ogImageUrl
+          : "",
+      linkedinUrl: parsed.linkedinUrl,
+    };
+  } catch {
+    return emptyLinkedinPreview(normalized);
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 export function parseLinkedinHtml(html: string, pageUrl: string): PulledLinkedin {

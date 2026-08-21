@@ -6,7 +6,6 @@ import { PhotoTile } from "../components/PhotoTile";
 import { SiteFooter } from "../components/SiteFooter";
 import { SiteHeader } from "../components/SiteHeader";
 import { toPublicListing } from "../lib/board-view";
-import { initialsFromName } from "../lib/clicks";
 import { formatUsdFromCents } from "../lib/money";
 import { publicPhotoSrc } from "../lib/photo";
 import { claimPriceForRank } from "../lib/ranking";
@@ -86,8 +85,7 @@ export function ProfilePage() {
             <div className="mt-4 flex items-start gap-5">
               <PhotoTile
                 src={publicPhotoSrc(profile.photoUrl)}
-                initials={initialsFromName(profile.displayName)}
-                className="size-24 text-lg"
+                className="size-24"
               />
               <div>
                 {listing ? (
