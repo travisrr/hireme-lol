@@ -1,5 +1,6 @@
 import { applyConfirmedPayment } from "../lib/apply-bid";
 import { parseEconomics } from "../lib/economics";
+import { parseIndustry, type IndustryId } from "../lib/industries";
 import { listingsThatFell } from "../lib/outbid";
 import { assertNever, movementFor, rankListings } from "../lib/ranking";
 import { DEFAULT_ECONOMICS, type BidEconomics } from "../lib/types";
@@ -46,6 +47,7 @@ type ProfileSql = {
   website_clicks: number;
   profile_clicks: number;
   is_founding_member: number;
+  category_id: string | null;
   created_at: number;
 };
 
@@ -93,6 +95,7 @@ function mapProfile(row: ProfileSql): ProfileRow {
     websiteClicks: row.website_clicks ?? 0,
     profileClicks: row.profile_clicks ?? 0,
     isFoundingMember: row.is_founding_member === 1,
+    industry: parseIndustry(row.category_id),
     createdAt: row.created_at,
   };
 }
@@ -147,8 +150,11 @@ export class D1Store implements Store {
     }
   }
 
-  async getBoard(query?: string): Promise<RankedBoardRow[]> {
-    const ranked = await this.rankedActive();
+  async getBoard(
+    query?: string,
+    industry?: IndustryId | null,
+  ): Promise<RankedBoardRow[]> {
+    const ranked = await this.rankedActive(industry);
     const q = query?.trim().toLowerCase();
     if (!q) return ranked;
     return ranked.filter((row) =>
@@ -320,8 +326,9 @@ export class D1Store implements Store {
       .prepare(
         `INSERT INTO profiles (
           id, user_id, handle, display_name, headline, company, pitch,
-          photo_r2_key, linkedin_url, website_url, is_founding_member, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)`,
+          photo_r2_key, linkedin_url, website_url, is_founding_member, category_id,
+          created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?)`,
       )
       .bind(
         profile.id,
@@ -334,6 +341,7 @@ export class D1Store implements Store {
         input.photoUrl,
         input.linkedinUrl,
         input.websiteUrl,
+        input.industry,
         now,
         now,
       )
@@ -354,7 +362,8 @@ export class D1Store implements Store {
     await this.db
       .prepare(
         `UPDATE profiles SET handle = ?, display_name = ?, headline = ?, company = ?,
-         pitch = ?, photo_r2_key = ?, linkedin_url = ?, website_url = ?, updated_at = ?
+         pitch = ?, photo_r2_key = ?, linkedin_url = ?, website_url = ?, category_id = ?,
+         updated_at = ?
          WHERE user_id = ?`,
       )
       .bind(
@@ -366,6 +375,7 @@ export class D1Store implements Store {
         input.photoUrl,
         input.linkedinUrl,
         input.websiteUrl,
+        input.industry,
         now,
         userId,
       )
@@ -380,6 +390,7 @@ export class D1Store implements Store {
       photo_r2_key: input.photoUrl,
       linkedin_url: input.linkedinUrl,
       website_url: input.websiteUrl,
+      category_id: input.industry,
     });
   }
 
@@ -884,7 +895,7 @@ export class D1Store implements Store {
         `SELECT l.id as listing_id, l.profile_id, l.current_bid_cents, l.current_bid_at,
                 l.previous_rank, p.handle, p.display_name, p.headline, p.company, p.pitch,
                 p.photo_r2_key, p.linkedin_url, p.website_url, p.linkedin_clicks, p.website_clicks,
-                p.profile_clicks, p.is_founding_member, p.created_at
+                p.profile_clicks, p.is_founding_member, p.category_id, p.created_at
          FROM listings l
          JOIN profiles p ON p.id = l.profile_id
          WHERE l.board_id = 'global' AND l.status = 'active' AND l.current_bid_id IS NOT NULL`,
@@ -907,6 +918,7 @@ export class D1Store implements Store {
         website_clicks: number;
         profile_clicks: number;
         is_founding_member: number;
+        category_id: string | null;
         created_at: number;
       }>();
     return results.map((row) => ({
@@ -928,17 +940,25 @@ export class D1Store implements Store {
       currentBidAt: row.current_bid_at,
       profileCreatedAt: row.created_at,
       previousRank: row.previous_rank,
+      industry: parseIndustry(row.category_id),
     }));
   }
 
-  private async rankedActive(): Promise<RankedBoardRow[]> {
+  private async rankedActive(
+    industry?: IndustryId | null,
+  ): Promise<RankedBoardRow[]> {
     const rows = await this.publicRows();
-    return rankListings(rows.map((row) => ({ ...row, id: row.listingId }))).map(
-      (row) => ({
-        ...row,
-        movement: movementFor(row.rank, row.previousRank),
-      }),
-    );
+    const filtered = industry
+      ? rows.filter((row) => row.industry === industry)
+      : rows;
+    return rankListings(
+      filtered.map((row) => ({ ...row, id: row.listingId })),
+    ).map((row) => ({
+      ...row,
+      movement: industry
+        ? movementFor(row.rank, row.rank)
+        : movementFor(row.rank, row.previousRank),
+    }));
   }
 
   private async rankSnapshots() {

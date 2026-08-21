@@ -244,14 +244,18 @@ body {
 }
 
 .board-tab {
+  display: inline-flex;
+  align-items: center;
   flex: 0 0 auto;
   height: var(--tab-h);
+  min-width: 44px;
   padding: 0 14px;
   border: 0;
   background: transparent;
   color: var(--color-mute);
   font-size: var(--type-tab);
   font-weight: 600;
+  text-decoration: none;
 }
 
 .board-tab[data-active="true"] {

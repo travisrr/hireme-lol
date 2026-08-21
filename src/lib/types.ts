@@ -1,3 +1,5 @@
+import type { IndustryId } from "./industries";
+
 export const GLOBAL_BOARD_ID = "global" as const;
 
 export type BoardId = typeof GLOBAL_BOARD_ID | (string & {});
@@ -38,6 +40,7 @@ export type PublicListing = ListingForRank & {
   isFoundingMember: boolean;
   previousRank: number | null;
   boardId: BoardId;
+  industry: IndustryId | null;
 };
 
 export type RankedPublicListing = Ranked<PublicListing> & {

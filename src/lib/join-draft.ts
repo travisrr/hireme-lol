@@ -1,8 +1,11 @@
+import { isIndustryId, type IndustryId } from "./industries";
+
 export type JoinDraft = {
   linkedinUrl: string;
   displayName: string;
   headline: string;
   photoUrl: string;
+  industry: IndustryId | "";
 };
 
 const KEY = "wmw_join_draft";
@@ -13,6 +16,7 @@ export function emptyJoinDraft(): JoinDraft {
     displayName: "",
     headline: "",
     photoUrl: "",
+    industry: "",
   };
 }
 
@@ -26,6 +30,9 @@ export function readJoinDraft(): JoinDraft | null {
       displayName: String(parsed.displayName ?? ""),
       headline: String(parsed.headline ?? ""),
       photoUrl: String(parsed.photoUrl ?? ""),
+      industry: isIndustryId(String(parsed.industry ?? ""))
+        ? (parsed.industry as IndustryId)
+        : "",
     };
   } catch {
     return null;

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { fetchBoard, fetchConfig } from "../api/client";
 import { BoardTabs } from "../components/BoardTabs";
 import { ClaimHeadline } from "../components/ClaimHeadline";
@@ -8,6 +8,12 @@ import { ReceiptCard } from "../components/ReceiptCard";
 import { SiteFooter } from "../components/SiteFooter";
 import { SiteHeader } from "../components/SiteHeader";
 import { toPublicListing } from "../lib/board-view";
+import {
+  emptyIndustryCopy,
+  parseBoardTab,
+  parseIndustry,
+  tabLabel,
+} from "../lib/industries";
 import { PAGE_COLUMN } from "../lib/measure";
 import { formatUsdFromCents } from "../lib/money";
 import { receiptLine } from "../lib/receipts";
@@ -16,6 +22,9 @@ import { DEFAULT_ECONOMICS, type BidEconomics } from "../lib/types";
 import type { ActivityRow, RankedBoardRow } from "../server/store";
 
 export function HomePage() {
+  const [searchParams] = useSearchParams();
+  const tab = parseBoardTab(searchParams.get("tab"));
+  const industry = parseIndustry(tab);
   const [query, setQuery] = useState("");
   const [listings, setListings] = useState<RankedBoardRow[]>([]);
   const [activity, setActivity] = useState<ActivityRow[]>([]);
@@ -25,7 +34,7 @@ export function HomePage() {
   const reload = useCallback(async (nextQuery = query) => {
     try {
       const [data, config] = await Promise.all([
-        fetchBoard(nextQuery),
+        fetchBoard(nextQuery, industry),
         fetchConfig(),
       ]);
       setListings(data.listings);
@@ -35,10 +44,10 @@ export function HomePage() {
         minIncrementCents: config.minIncrementCents,
       });
       setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "board_failed");
+    } catch {
+      setError("The board failed to load. Refresh and try again.");
     }
-  }, [query]);
+  }, [industry, query]);
 
   useEffect(() => {
     const handle = window.setTimeout(() => {
@@ -116,13 +125,15 @@ export function HomePage() {
           data-lock="board-tabs"
           className="mt-4 overflow-hidden rounded-[12px] border border-line bg-card"
         >
-          <BoardTabs />
+          <BoardTabs active={tab} />
           {error ? (
             <p className="type-body p-3 text-down">{error}</p>
           ) : rows.length === 0 ? (
             <div className="px-3 py-6">
               <p className="type-body text-mute">
-                The board is empty. First confirmed bid is #1.
+                {industry
+                  ? emptyIndustryCopy(tabLabel(tab))
+                  : "The board is empty. First confirmed bid is #1."}
               </p>
               <Link to="/join" className="btn-accent mt-3 inline-block no-underline">
                 {SITE.cta}

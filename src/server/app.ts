@@ -27,6 +27,7 @@ import {
 import { verifyStripeSignature } from "../lib/stripe-signature";
 import { isSafePhotoKey, type MediaBucket } from "../lib/media";
 import { minBidToEnter } from "../lib/ranking";
+import { BOARD_TABS, parseIndustry } from "../lib/industries";
 import { SITE } from "../lib/site";
 import { GLOBAL_BOARD_ID, PUBLIC_ORIGIN } from "../lib/types";
 import type { Store } from "./store";
@@ -132,6 +133,7 @@ export function createApp(deps: AppDeps) {
       boardId: GLOBAL_BOARD_ID,
       stripeEnabled: Boolean(deps.config.stripeSecretKey),
       stripePublishableKey: deps.config.stripePublishableKey || null,
+      industries: BOARD_TABS,
       oauth: {
         github: Boolean(deps.config.githubClientId),
         google: Boolean(deps.config.googleClientId),
@@ -141,7 +143,8 @@ export function createApp(deps: AppDeps) {
 
   app.get("/api/board", async (c) => {
     const q = c.req.query("q") ?? "";
-    const listings = await deps.store.getBoard(q);
+    const industry = parseIndustry(c.req.query("industry") ?? c.req.query("tab"));
+    const listings = await deps.store.getBoard(q, industry);
     const activity = await deps.store.getActivity(20);
     return c.json({
       boardId: GLOBAL_BOARD_ID,
@@ -212,7 +215,10 @@ export function createApp(deps: AppDeps) {
     );
     return c.json({
       ok: true,
-      previewUrl: deps.config.resendApiKey ? undefined : verifyUrl,
+      previewUrl:
+        isLocalOrigin(deps.config.origin) && !deps.config.resendApiKey
+          ? verifyUrl
+          : undefined,
     });
   });
 
@@ -308,6 +314,13 @@ export function createApp(deps: AppDeps) {
     if (!Number.isInteger(amountCents) || amountCents < minBidToEnter(economics)) {
       return c.json({ error: "below_entry" }, 400);
     }
+    const local = isLocalOrigin(deps.config.origin);
+    const stripeReady = Boolean(
+      deps.config.stripeSecretKey && deps.config.stripeWebhookSecret,
+    );
+    if (!local && !stripeReady) {
+      return c.json({ error: "payments_not_ready" }, 503);
+    }
     const now = clock(deps);
     const bid = await deps.store.createPendingBid(
       {
@@ -319,7 +332,7 @@ export function createApp(deps: AppDeps) {
     );
     let checkoutUrl: string | null = null;
     let checkoutSessionId: string | null = null;
-    if (deps.config.stripeSecretKey) {
+    if (stripeReady && deps.config.stripeSecretKey) {
       const checkout = await createStripeCheckoutSession({
         secretKey: deps.config.stripeSecretKey,
         bidId: bid.id,
@@ -334,7 +347,7 @@ export function createApp(deps: AppDeps) {
       bidId: bid.id,
       checkoutUrl,
       checkoutSessionId,
-      devConfirm: !deps.config.stripeSecretKey,
+      devConfirm: local && !stripeReady,
     });
   });
 
@@ -481,6 +494,7 @@ function profileFromBody(body: Record<string, unknown>) {
     photoUrl: String(body.photoUrl ?? "").trim() || null,
     linkedinUrl,
     websiteUrl: websiteUrl || null,
+    industry: parseIndustry(String(body.industry ?? "")),
   };
 }
 

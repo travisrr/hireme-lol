@@ -9,7 +9,7 @@
   "observability": {
     "enabled": true,
   },
-  // Production origin. hireme.lol is parked / not ours — never add it here.
+  // Both hosts are this Worker + the same D1 board. hireme.lol is not ours.
   "routes": [
     { "pattern": "workwithme.lol", "custom_domain": true },
     { "pattern": "www.workwithme.lol", "custom_domain": true },

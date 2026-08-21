@@ -177,6 +177,82 @@ describe("live API", () => {
     expect(body.stripeEnabled).toBe(false);
     expect(body.stripePublishableKey).toBeNull();
     expect(body).not.toHaveProperty("paddleEnabled");
+    expect(body.industries).toEqual(
+      expect.arrayContaining([
+        { id: "overall", label: "Overall" },
+        { id: "healthcare", label: "Healthcare" },
+      ]),
+    );
+  });
+
+  it("hides magic-link preview URLs on the production origin", async () => {
+    const app = createApp({
+      store: new MemoryStore(),
+      config: {
+        origin: "https://workwithme.lol",
+        siteName: "workwithme.lol",
+        adminEmails: [],
+        emailFrom: "board@workwithme.lol",
+      },
+    });
+    const request = await app.request("/api/auth/magic", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: "maya@example.com" }),
+    });
+    const body = await json(request);
+    expect(body.ok).toBe(true);
+    expect(body.previewUrl).toBeUndefined();
+  });
+
+  it("does not create checkout in production without Stripe secrets", async () => {
+    const store = new MemoryStore();
+    const app = createApp({
+      store,
+      config: {
+        origin: "https://workwithme.lol",
+        siteName: "workwithme.lol",
+        adminEmails: [],
+        emailFrom: "board@workwithme.lol",
+      },
+    });
+    const cookie = await magicLogin(
+      createApp({
+        store,
+        config: {
+          origin: "http://localhost:5173",
+          siteName: "workwithme.lol",
+          adminEmails: [],
+          emailFrom: "board@workwithme.lol",
+        },
+      }),
+      "maya@example.com",
+    );
+    await createProfile(app, cookie, "maya");
+    const bidRes = await app.request("/api/bids", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Cookie: cookie,
+      },
+      body: JSON.stringify({ amountCents: 200 }),
+    });
+    expect(bidRes.status).toBe(503);
+    expect(await json(bidRes)).toEqual({ error: "payments_not_ready" });
+    const board = await json(await app.request("/api/board"));
+    expect(board.listings).toEqual([]);
+  });
+
+  it("accepts a $2 first entry and keeps empty industry tabs visible", async () => {
+    const { app } = testApp();
+    const cookie = await magicLogin(app, "maya@example.com");
+    await createProfile(app, cookie, "maya");
+    const paid = await pay(app, cookie, 200, "evt_entry");
+    expect(paid.webhookBody.result).toMatchObject({ outcome: "confirmed" });
+    const overall = await json(await app.request("/api/board"));
+    expect(overall.listings as unknown[]).toHaveLength(1);
+    const healthcare = await json(await app.request("/api/board?industry=healthcare"));
+    expect(healthcare.listings).toEqual([]);
   });
 
   it("rejects a bid under the configured entry and keeps the board empty", async () => {

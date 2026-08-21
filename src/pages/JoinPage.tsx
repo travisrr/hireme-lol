@@ -3,6 +3,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import {
   confirmDevBid,
   createBid,
+  fetchBoard,
   fetchConfig,
   fetchMe,
   previewLinkedin,
@@ -13,6 +14,7 @@ import { LinkedInMark } from "../components/LinkedInMark";
 import { PhotoTile } from "../components/PhotoTile";
 import { useKeyboardInset } from "../hooks/useKeyboardInset";
 import { handleFromName } from "../lib/handles";
+import { INDUSTRIES, isIndustryId } from "../lib/industries";
 import {
   clearJoinDraft,
   emptyJoinDraft,
@@ -21,13 +23,19 @@ import {
   type JoinDraft,
 } from "../lib/join-draft";
 import { handleFromLinkedinSlug, linkedinSlug } from "../lib/linkedin";
-import { formatUsdFromCents } from "../lib/money";
+import { formatUsdFromCents, parseDollarInput } from "../lib/money";
 import { isUsableHeadshotUrl } from "../lib/photo";
+import {
+  BELOW_ENTRY,
+  LINKEDIN_PULL_EMPTY,
+  publicErrorMessage,
+} from "../lib/public-error";
+import { linkedinShareIntent, shareLine } from "../lib/share";
 import { SITE } from "../lib/site";
 import { DEFAULT_ECONOMICS, type BidEconomics } from "../lib/types";
 import type { SessionRow } from "../server/store";
 
-type JoinStep = "url" | "identity" | "auth" | "bid";
+type JoinStep = "url" | "identity" | "auth" | "bid" | "share";
 
 export function JoinPage() {
   useKeyboardInset();
@@ -40,6 +48,8 @@ export function JoinPage() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState<string | null>(null);
+  const [rank, setRank] = useState<number | null>(null);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     const stored = readJoinDraft();
@@ -54,9 +64,13 @@ export function JoinPage() {
         if (searchParams.get("signedin") === "1" && me.user && stored) {
           setStep(me.profile ? "bid" : "identity");
         }
+        if (searchParams.get("share") === "1") {
+          setStep("share");
+          setRank(Number(searchParams.get("rank") || 1) || 1);
+          clearJoinDraft();
+        }
         if (searchParams.get("paid") === "1") {
-          setStep("bid");
-          setDone("Payment received. Rank updates after Stripe confirms.");
+          setStep("share");
           clearJoinDraft();
         }
         if (searchParams.get("canceled") === "1") {
@@ -68,6 +82,26 @@ export function JoinPage() {
         setSession(null);
       });
   }, [searchParams]);
+
+  useEffect(() => {
+    if (step !== "share" || rank != null) return;
+    let cancelled = false;
+    const tick = async () => {
+      const me = await fetchMe();
+      if (!me.profile) return;
+      const board = await fetchBoard();
+      const row = board.listings.find((item) => item.handle === me.profile?.handle);
+      if (!cancelled && row) setRank(row.rank);
+    };
+    void tick();
+    const id = window.setInterval(() => {
+      void tick();
+    }, 1500);
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+    };
+  }, [rank, step]);
 
   const entry = formatUsdFromCents(economics.minEntryCents);
   const increment = formatUsdFromCents(economics.minIncrementCents);
@@ -84,18 +118,24 @@ export function JoinPage() {
     setError(null);
     try {
       const pulled = await previewLinkedin(url);
+      const photoUrl = isUsableHeadshotUrl(pulled.photoUrl) ? pulled.photoUrl : "";
       persist({
         linkedinUrl: pulled.linkedinUrl || url.trim(),
         displayName: pulled.displayName,
         headline: pulled.headline,
-        photoUrl: isUsableHeadshotUrl(pulled.photoUrl) ? pulled.photoUrl : "",
+        photoUrl,
+        industry: draft.industry,
       });
+      if (!pulled.displayName && !pulled.headline && !photoUrl) {
+        setError(LINKEDIN_PULL_EMPTY);
+      }
       setStep("identity");
     } catch {
       persist({
         ...emptyJoinDraft(),
         linkedinUrl: url.trim(),
       });
+      setError(LINKEDIN_PULL_EMPTY);
       setStep("identity");
     } finally {
       setBusy(false);
@@ -109,7 +149,13 @@ export function JoinPage() {
       linkedinUrl: draft.linkedinUrl,
       displayName: String(form.get("displayName") ?? ""),
       headline: String(form.get("headline") ?? ""),
-      photoUrl: draft.photoUrl,
+      photoUrl: isUsableHeadshotUrl(String(form.get("photoUrl") ?? draft.photoUrl))
+        ? String(form.get("photoUrl") ?? draft.photoUrl)
+        : "",
+      industry: (() => {
+        const value = String(form.get("industry") ?? "");
+        return isIndustryId(value) ? value : "";
+      })(),
     };
     persist(next);
     if (!session?.user) {
@@ -133,11 +179,12 @@ export function JoinPage() {
         photoUrl: next.photoUrl,
         linkedinUrl: next.linkedinUrl,
         websiteUrl: "",
+        industry: next.industry || null,
       });
       setSession(await fetchMe());
       setStep("bid");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "profile_failed");
+      setError(publicErrorMessage(err instanceof Error ? err.message : "profile_failed"));
     } finally {
       setBusy(false);
     }
@@ -150,12 +197,16 @@ export function JoinPage() {
     setError(null);
     try {
       const result = await requestMagicLink(email);
-      setPreviewUrl(result.previewUrl ?? null);
-      if (!result.previewUrl) {
+      const local =
+        window.location.hostname === "localhost" ||
+        window.location.hostname === "127.0.0.1";
+      const preview = local ? result.previewUrl ?? null : null;
+      setPreviewUrl(preview);
+      if (!preview) {
         setDone("Check your email for the sign-in link.");
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "magic_failed");
+      setError(publicErrorMessage(err instanceof Error ? err.message : "magic_failed"));
     } finally {
       setBusy(false);
     }
@@ -164,7 +215,11 @@ export function JoinPage() {
   async function handleBid(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const dollars = String(new FormData(event.currentTarget).get("bid") ?? "");
-    const amountCents = Math.round(Number(dollars) * 100);
+    const amountCents = parseDollarInput(dollars);
+    if (amountCents == null || amountCents < economics.minEntryCents) {
+      setError(BELOW_ENTRY);
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
@@ -173,22 +228,26 @@ export function JoinPage() {
         window.location.href = result.checkoutUrl;
         return;
       }
-      if (result.devConfirm) {
+      const local =
+        window.location.hostname === "localhost" ||
+        window.location.hostname === "127.0.0.1";
+      if (result.devConfirm && local) {
         await confirmDevBid(result.bidId, amountCents);
-        setDone("Local test payment confirmed. You are on the board.");
         clearJoinDraft();
+        setRank(null);
+        setStep("share");
         return;
       }
-      setDone("Bid created. Waiting on Stripe.");
+      setError(publicErrorMessage("payments_not_ready"));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "bid_failed");
+      setError(publicErrorMessage(err instanceof Error ? err.message : "bid_failed"));
     } finally {
       setBusy(false);
     }
   }
 
   return (
-    <div className="join-sheet" data-lock="join-sheet">
+    <div className="join-sheet" data-lock={step === "share" ? "share-sheet" : "join-sheet"}>
       {renderStep(step, {
         draft,
         persist,
@@ -203,6 +262,14 @@ export function JoinPage() {
         entry,
         increment,
         displayName: session?.profile?.displayName ?? draft.displayName,
+        rank,
+        copied,
+        copyShare: async () => {
+          const line = shareLine(rank ?? 1);
+          await navigator.clipboard.writeText(line);
+          setCopied(true);
+        },
+        linkedinHref: linkedinShareIntent(shareLine(rank ?? 1)),
       })}
     </div>
   );
@@ -222,6 +289,10 @@ type SheetProps = {
   entry: string;
   increment: string;
   displayName: string;
+  rank: number | null;
+  copied: boolean;
+  copyShare: () => void;
+  linkedinHref: string;
 };
 
 function renderStep(step: JoinStep, props: SheetProps) {
@@ -234,6 +305,8 @@ function renderStep(step: JoinStep, props: SheetProps) {
       return <AuthSheet {...props} />;
     case "bid":
       return <BidSheet {...props} />;
+    case "share":
+      return <ShareSheet {...props} />;
     default: {
       const _never: never = step;
       return _never;
@@ -305,6 +378,32 @@ function IdentitySheet({
             defaultValue={draft.headline}
             placeholder="Founder, designer, operator"
           />
+          <Field
+            label="Photo URL"
+            name="photoUrl"
+            defaultValue={draft.photoUrl}
+            placeholder="https://"
+          />
+          <label className="grid gap-1">
+            <span className="type-meta font-semibold text-mute uppercase">
+              Industry
+            </span>
+            <select
+              name="industry"
+              required
+              defaultValue={draft.industry}
+              className="search-field"
+            >
+              <option value="" disabled>
+                Pick one
+              </option>
+              {INDUSTRIES.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.label}
+                </option>
+              ))}
+            </select>
+          </label>
         </form>
       </main>
       <div className="join-sheet-action page-gutter mx-auto w-full max-w-xl">
@@ -392,6 +491,51 @@ function BidSheet({
           Bid
         </button>
         <p className="type-meta mt-3 text-center text-mute">{SITE.footer}</p>
+      </div>
+    </>
+  );
+}
+
+function ShareSheet({
+  displayName,
+  rank,
+  copied,
+  copyShare,
+  linkedinHref,
+}: SheetProps) {
+  return (
+    <>
+      <main className="join-sheet-main page-gutter mx-auto flex w-full max-w-xl flex-col">
+        <h1 className="type-claim text-ink">{SITE.tagline}</h1>
+        <p className="type-body mt-3 text-ink">{displayName}</p>
+        <p className="type-body mt-2 text-mute">
+          {rank != null
+            ? shareLine(rank)
+            : "Payment received. Rank updates after Stripe confirms."}
+        </p>
+      </main>
+      <div className="join-sheet-action page-gutter mx-auto w-full max-w-xl">
+        <button
+          type="button"
+          disabled={rank == null}
+          onClick={copyShare}
+          className="btn-accent w-full"
+        >
+          {copied ? "Copied" : "Share your bid"}
+        </button>
+        <a
+          href={linkedinHref}
+          target="_blank"
+          rel="noreferrer"
+          className="btn-accent mt-3 inline-flex w-full no-underline"
+        >
+          Share on LinkedIn
+        </a>
+        <p className="mt-4 text-center">
+          <Link to="/" className="type-body text-accent">
+            ← The board
+          </Link>
+        </p>
       </div>
     </>
   );

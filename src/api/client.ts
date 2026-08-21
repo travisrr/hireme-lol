@@ -1,4 +1,6 @@
 import type { ClickTarget } from "../lib/clicks";
+import type { BoardTab, IndustryId } from "../lib/industries";
+import { publicErrorMessage } from "../lib/public-error";
 import type { BidEconomics } from "../lib/types";
 import type { ActivityRow, RankedBoardRow, SessionRow } from "../server/store";
 
@@ -11,17 +13,28 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
       ...(init?.headers ?? {}),
     },
   });
-  const data = (await response.json()) as T & { error?: string };
+  let data: (T & { error?: string }) | null = null;
+  try {
+    data = (await response.json()) as T & { error?: string };
+  } catch {
+    data = null;
+  }
   if (!response.ok) {
-    throw new Error(data.error || `request_failed_${response.status}`);
+    throw new Error(publicErrorMessage(data?.error));
+  }
+  if (!data) {
+    throw new Error(publicErrorMessage(undefined));
   }
   return data;
 }
 
-export function fetchBoard(query = "") {
-  const qs = query.trim() ? `?q=${encodeURIComponent(query.trim())}` : "";
+export function fetchBoard(query = "", industry?: IndustryId | null) {
+  const params = new URLSearchParams();
+  if (query.trim()) params.set("q", query.trim());
+  if (industry) params.set("industry", industry);
+  const qs = params.toString();
   return request<{ listings: RankedBoardRow[]; activity: ActivityRow[] }>(
-    `/api/board${qs}`,
+    qs ? `/api/board?${qs}` : "/api/board",
   );
 }
 
@@ -41,6 +54,7 @@ export function fetchConfig() {
     BidEconomics & {
       stripeEnabled: boolean;
       stripePublishableKey: string | null;
+      industries: BoardTab[];
       oauth: { github: boolean; google: boolean };
     }
   >("/api/config");
@@ -78,6 +92,7 @@ export function saveProfile(input: {
   photoUrl: string;
   linkedinUrl: string;
   websiteUrl: string;
+  industry: IndustryId | null;
 }) {
   return request<{ profile: NonNullable<SessionRow["profile"]> }>(
     "/api/me/profile",

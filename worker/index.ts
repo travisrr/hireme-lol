@@ -71,6 +71,7 @@ async function serveAsset(request: Request, env: Bindings): Promise<Response> {
 
 export default {
   async fetch(request: Request, env: Bindings): Promise<Response> {
+    // Apex and www are the same Worker, same D1, same board. Do not host-split.
     const url = new URL(request.url);
     if (!isApiPath(url.pathname)) {
       return serveAsset(request, env);

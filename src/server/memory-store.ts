@@ -1,4 +1,5 @@
 import { applyConfirmedPayment, type BoardSnapshot } from "../lib/apply-bid";
+import type { IndustryId } from "../lib/industries";
 import { listingsThatFell } from "../lib/outbid";
 import { assertNever, movementFor, rankListings } from "../lib/ranking";
 import { DEFAULT_ECONOMICS, type BidEconomics } from "../lib/types";
@@ -70,8 +71,11 @@ export class MemoryStore implements Store {
     return value;
   }
 
-  async getBoard(query?: string): Promise<RankedBoardRow[]> {
-    const ranked = this.rankedActive();
+  async getBoard(
+    query?: string,
+    industry?: IndustryId | null,
+  ): Promise<RankedBoardRow[]> {
+    const ranked = this.rankedActive(industry);
     const q = query?.trim().toLowerCase();
     if (!q) return ranked;
     return ranked.filter((row) => {
@@ -218,6 +222,7 @@ export class MemoryStore implements Store {
       websiteClicks: 0,
       profileClicks: 0,
       isFoundingMember: false,
+      industry: input.industry,
       createdAt: now,
     };
     this.profiles.set(profile.id, profile);
@@ -634,20 +639,26 @@ export class MemoryStore implements Store {
         currentBidAt: listing.currentBidAt,
         profileCreatedAt: profile.createdAt,
         previousRank: listing.previousRank,
+        industry: profile.industry,
       });
     }
     return rows;
   }
 
-  private rankedActive(): RankedBoardRow[] {
+  private rankedActive(industry?: IndustryId | null): RankedBoardRow[] {
+    const rows = industry
+      ? this.publicRows().filter((row) => row.industry === industry)
+      : this.publicRows();
     return rankListings(
-      this.publicRows().map((row) => ({
+      rows.map((row) => ({
         ...row,
         id: row.listingId,
       })),
     ).map((row) => ({
       ...row,
-      movement: movementFor(row.rank, row.previousRank),
+      movement: industry
+        ? movementFor(row.rank, row.rank)
+        : movementFor(row.rank, row.previousRank),
     }));
   }
 

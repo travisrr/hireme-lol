@@ -1,4 +1,5 @@
 import type { ApplyPaymentResult } from "../lib/apply-bid";
+import type { IndustryId } from "../lib/industries";
 import type { BidEconomics, EventType, Movement } from "../lib/types";
 
 export type UserRow = {
@@ -22,6 +23,7 @@ export type ProfileRow = {
   websiteClicks: number;
   profileClicks: number;
   isFoundingMember: boolean;
+  industry: IndustryId | null;
   createdAt: number;
 };
 
@@ -65,6 +67,7 @@ export type PublicBoardRow = {
   currentBidAt: number;
   profileCreatedAt: number;
   previousRank: number | null;
+  industry: IndustryId | null;
 };
 
 export type RankedBoardRow = PublicBoardRow & {
@@ -97,6 +100,7 @@ export type ProfileInput = {
   photoUrl: string | null;
   linkedinUrl: string | null;
   websiteUrl: string | null;
+  industry: IndustryId | null;
 };
 
 export type CreatePendingBidInput = {
@@ -128,7 +132,7 @@ export type NotificationRow = {
 
 export interface Store {
   getEconomics(): Promise<BidEconomics>;
-  getBoard(query?: string): Promise<RankedBoardRow[]>;
+  getBoard(query?: string, industry?: IndustryId | null): Promise<RankedBoardRow[]>;
   getActivity(limit: number): Promise<ActivityRow[]>;
   getProfileByHandle(handle: string): Promise<{
     profile: ProfileRow;

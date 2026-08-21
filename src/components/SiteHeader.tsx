@@ -27,6 +27,14 @@ export function SiteHeader({
           {SITE.cta}
         </Link>
       </div>
+      <div className={`page-gutter mx-auto ${PAGE_COLUMN}`}>
+        <Link
+          to="/how-it-works"
+          className="inline-flex min-h-11 items-center type-body text-accent no-underline hover:text-accent-hover"
+        >
+          How it works
+        </Link>
+      </div>
       {showSearch ? (
         <div className={`page-gutter mx-auto ${PAGE_COLUMN} pb-2`}>
           <label>
