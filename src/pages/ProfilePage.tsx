@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { fetchBoard, fetchConfig, fetchProfile, recordClick } from "../api/client";
+import { fetchBoard, fetchConfig, fetchProfile } from "../api/client";
+import { ProfileOutboundLinks } from "../components/ClickStat";
 import { MovementMark } from "../components/MovementMark";
 import { PhotoTile } from "../components/PhotoTile";
 import { SiteFooter } from "../components/SiteFooter";
@@ -55,20 +56,6 @@ export function ProfilePage() {
 
   const listing = ranked ? toPublicListing(ranked) : null;
 
-  async function openOutbound(
-    target: "linkedin" | "site",
-    url: string,
-  ) {
-    if (listing) {
-      try {
-        await recordClick(listing.id, target);
-      } catch {
-        // Navigation still happens.
-      }
-    }
-    window.open(url, "_blank", "noopener,noreferrer");
-  }
-
   return (
     <div className="min-h-screen bg-paper">
       <SiteHeader
@@ -105,6 +92,11 @@ export function ProfilePage() {
                   {profile.headline}
                   {profile.company ? ` · ${profile.company}` : ""}
                 </p>
+                <ProfileOutboundLinks
+                  listingId={listing?.id}
+                  linkedinUrl={profile.linkedinUrl}
+                  websiteUrl={profile.websiteUrl}
+                />
               </div>
             </div>
             <p className="mt-8 text-2xl text-ink">{profile.pitch}</p>
@@ -141,30 +133,6 @@ export function ProfilePage() {
                 </button>
               </>
             ) : null}
-            <div className="mt-6 flex gap-4 text-sm">
-              {profile.linkedinUrl ? (
-                <button
-                  type="button"
-                  className="text-accent"
-                  onClick={() => {
-                    void openOutbound("linkedin", profile.linkedinUrl ?? "");
-                  }}
-                >
-                  LinkedIn
-                </button>
-              ) : null}
-              {profile.websiteUrl ? (
-                <button
-                  type="button"
-                  className="text-accent"
-                  onClick={() => {
-                    void openOutbound("site", profile.websiteUrl ?? "");
-                  }}
-                >
-                  Website
-                </button>
-              ) : null}
-            </div>
             <Link to="/join" className="btn-accent mt-8 inline-block no-underline">
               Outbid
             </Link>

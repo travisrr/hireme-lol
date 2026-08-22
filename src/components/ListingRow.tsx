@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { recordClick } from "../api/client";
 import { listingIndustry, listingPitch } from "../lib/listing-copy";
 import { formatUsdFromCents } from "../lib/money";
@@ -28,20 +28,18 @@ type ListingRowProps = {
 };
 
 export function ListingRow({ listing, board, economics }: ListingRowProps) {
-  const navigate = useNavigate();
   const claim = claimPriceForRank(board, listing.rank, economics);
   const flash = isRecentBid(listing.currentBidAt);
   const highlight = listing.rank <= TOP_TEN_CUTOFF;
   const industry = listingIndustry(listing.industry, listing.categories);
   const pitch = listingPitch(listing.pitch, listing.headline);
 
-  async function openProfile() {
+  async function recordProfile() {
     try {
       await recordClick(listing.id, "profile");
     } catch {
       // Still go through. Count is best-effort.
     }
-    navigate(`/${listing.handle}`);
   }
 
   return (
@@ -58,16 +56,16 @@ export function ListingRow({ listing, board, economics }: ListingRowProps) {
         className="listing-photo"
         radius={PHOTO_RADIUS}
       />
-      <button
-        type="button"
-        onClick={() => {
-          void openProfile();
-        }}
-        className="listing-who"
-      >
-        <span className="listing-name text-ink hover:text-accent">
+      <div className="listing-who">
+        <Link
+          to={`/${listing.handle}`}
+          onClick={() => {
+            void recordProfile();
+          }}
+          className="listing-name text-ink hover:text-accent"
+        >
           {listing.displayName}
-        </span>
+        </Link>
         {industry ? (
           <span className="listing-industry">{industry}</span>
         ) : null}
@@ -82,7 +80,7 @@ export function ListingRow({ listing, board, economics }: ListingRowProps) {
           />
           {pitch ? <span className="listing-copy">{pitch}</span> : null}
         </span>
-      </button>
+      </div>
       <div className="listing-bid">
         <span className="listing-price type-rank text-accent">
           {formatUsdFromCents(listing.currentBidCents)}

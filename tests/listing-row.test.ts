@@ -54,6 +54,35 @@ describe("board rows", () => {
     expect(css).toMatch(/--row-min:\s*56px/);
   });
 
+  it("puts LinkedIn and website icon links on rows and profiles", () => {
+    const row = readFileSync("src/components/ListingRow.tsx", "utf8");
+    expect(row).toMatch(/<div className="listing-who">/);
+    expect(row).not.toMatch(/<button[\s\S]*className="listing-who"/);
+    expect(row).toContain("ClickStat");
+    expect(row).toContain("linkedinUrl={listing.linkedinUrl}");
+    expect(row).toContain("websiteUrl={listing.websiteUrl}");
+    const clicks = readFileSync("src/components/ClickStat.tsx", "utf8");
+    expect(clicks).toContain("LinkedInIntIcon");
+    expect(clicks).toContain("SiteIntIcon");
+    expect(clicks).toContain("ProfileOutboundLinks");
+    expect(clicks).toContain('label="LinkedIn profile"');
+    expect(clicks).toContain('label="Website"');
+    expect(clicks).not.toMatch(/cursor/i);
+    const profile = readFileSync("src/pages/ProfilePage.tsx", "utf8");
+    expect(profile).toContain("ProfileOutboundLinks");
+    expect(profile).not.toContain("openOutbound");
+    expect(profile).not.toMatch(/>\s*LinkedIn\s*</);
+    expect(profile).not.toMatch(/>\s*Website\s*</);
+    const css = readFileSync("src/index.css", "utf8");
+    expect(css).toMatch(/\.profile-outbounds \{/);
+    expect(css).not.toMatch(
+      /@media \(max-width: 429px\) \{[\s\S]*?\.listing-who \.click-ints \{[\s\S]*?display: none/,
+    );
+    const join = readFileSync("src/pages/JoinPage.tsx", "utf8");
+    expect(join).toContain('name="websiteUrl"');
+    expect(join).toContain("websiteUrl: next.websiteUrl");
+  });
+
   it("locks 72px two-line mobile rows and 32 hug Outbid", () => {
     expect(ROW_MIN_MOBILE_PX).toBe(72);
     expect(PHOTO_MOBILE_PX).toBe(40);

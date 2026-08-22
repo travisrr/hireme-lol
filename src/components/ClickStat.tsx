@@ -32,7 +32,7 @@ export function ClickStat({
         target="linkedin"
         count={linkedinClicks}
         href={linkedinUrl}
-        label="LinkedIn clicks"
+        label="LinkedIn profile"
       >
         <LinkedInIntIcon />
       </ClickInt>
@@ -41,10 +41,48 @@ export function ClickStat({
         target="site"
         count={websiteClicks}
         href={websiteUrl}
-        label="Site clicks"
+        label="Website"
       >
         <SiteIntIcon />
       </ClickInt>
+    </span>
+  );
+}
+
+type ProfileOutboundLinksProps = {
+  listingId?: string | null;
+  linkedinUrl: string | null;
+  websiteUrl: string | null;
+};
+
+export function ProfileOutboundLinks({
+  listingId = null,
+  linkedinUrl,
+  websiteUrl,
+}: ProfileOutboundLinksProps) {
+  if (!linkedinUrl && !websiteUrl) return null;
+  return (
+    <span className="profile-outbounds">
+      {linkedinUrl ? (
+        <ClickInt
+          listingId={listingId}
+          target="linkedin"
+          href={linkedinUrl}
+          label="LinkedIn profile"
+        >
+          <LinkedInIntIcon className="size-5 shrink-0" />
+        </ClickInt>
+      ) : null}
+      {websiteUrl ? (
+        <ClickInt
+          listingId={listingId}
+          target="site"
+          href={websiteUrl}
+          label="Website"
+        >
+          <SiteIntIcon className="size-5 shrink-0 fill-none stroke-current" />
+        </ClickInt>
+      ) : null}
     </span>
   );
 }
@@ -57,9 +95,9 @@ function ClickInt({
   label,
   children,
 }: {
-  listingId: string;
+  listingId?: string | null;
   target: ClickTarget;
-  count: number;
+  count?: number;
   href: string | null;
   label: string;
   children: ReactNode;
@@ -67,11 +105,12 @@ function ClickInt({
   const inner = (
     <>
       {children}
-      <span className="tabular">{count}</span>
+      {count != null ? <span className="tabular">{count}</span> : null}
     </>
   );
 
   async function onActivate() {
+    if (!listingId) return;
     try {
       await recordClick(listingId, target);
     } catch {
@@ -93,6 +132,7 @@ function ClickInt({
       target="_blank"
       rel="noreferrer"
       title={label}
+      aria-label={label}
       className="click-int"
       onClick={(event) => {
         event.stopPropagation();
@@ -120,9 +160,13 @@ function ViewsIntIcon() {
   );
 }
 
-function LinkedInIntIcon() {
+export function LinkedInIntIcon({
+  className = "size-3.5 shrink-0",
+}: {
+  className?: string;
+}) {
   return (
-    <svg viewBox="0 0 16 16" className="size-3.5 shrink-0" aria-hidden="true">
+    <svg viewBox="0 0 16 16" className={className} aria-hidden="true">
       <rect width="16" height="16" rx="2" fill="currentColor" />
       <path
         fill="var(--color-card)"
@@ -132,13 +176,13 @@ function LinkedInIntIcon() {
   );
 }
 
-function SiteIntIcon() {
+export function SiteIntIcon({
+  className = "size-3.5 shrink-0 fill-none stroke-current",
+}: {
+  className?: string;
+}) {
   return (
-    <svg
-      viewBox="0 0 16 16"
-      className="size-3.5 shrink-0 fill-none stroke-current"
-      aria-hidden="true"
-    >
+    <svg viewBox="0 0 16 16" className={className} aria-hidden="true">
       <circle cx="8" cy="8" r="5.25" strokeWidth="1.4" />
       <path d="M2.75 8h10.5" strokeWidth="1.4" />
       <path

@@ -979,6 +979,21 @@ body {
   color: var(--color-ink);
 }
 
+.profile-outbounds {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.profile-outbounds .click-int {
+  color: var(--color-accent);
+}
+
+.profile-outbounds .click-int:hover {
+  color: var(--color-accent-hover);
+}
+
 .listing-who {
   display: flex;
   min-width: 0;
@@ -996,6 +1011,7 @@ body {
   font-weight: 600;
   line-height: 1.2;
   white-space: nowrap;
+  text-decoration: none;
 }
 
 .listing-industry {
@@ -1114,12 +1130,6 @@ body {
     align-items: flex-end;
     justify-content: center;
     gap: 4px;
-  }
-}
-
-@media (max-width: 429px) {
-  .listing-who .click-ints {
-    display: none;
   }
 }
 

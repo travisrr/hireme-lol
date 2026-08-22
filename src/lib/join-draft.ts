@@ -5,6 +5,7 @@ export type JoinDraft = {
   displayName: string;
   headline: string;
   photoUrl: string;
+  websiteUrl: string;
   categories: IndustryId[];
 };
 
@@ -16,6 +17,7 @@ export function emptyJoinDraft(): JoinDraft {
     displayName: "",
     headline: "",
     photoUrl: "",
+    websiteUrl: "",
     categories: [],
   };
 }
@@ -30,6 +32,7 @@ export function readJoinDraft(): JoinDraft | null {
       displayName: String(parsed.displayName ?? ""),
       headline: String(parsed.headline ?? ""),
       photoUrl: String(parsed.photoUrl ?? ""),
+      websiteUrl: String(parsed.websiteUrl ?? ""),
       categories: parseCategories(parsed.categories),
     };
   } catch {
