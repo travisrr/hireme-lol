@@ -48,7 +48,11 @@ describe("board rows", () => {
     const row = readFileSync("src/components/ListingRow.tsx", "utf8");
     expect(row).toContain("listing-name");
     expect(row).toContain("listing-founding");
+    expect(row).toContain("listing-bid");
     expect(row).not.toContain("MovementMark");
+    const css = readFileSync("src/index.css", "utf8");
+    expect(css).toMatch(/@media \(max-width: 767px\) \{[\s\S]*?\.listing-who \{[\s\S]*?flex-direction: column;/);
+    expect(css).toMatch(/@media \(max-width: 767px\) \{[\s\S]*?\.listing-bid \{[\s\S]*?flex-direction: column;/);
   });
 
   it("highlights ranks 1–10 only", () => {
