@@ -11,6 +11,9 @@ import {
   PULSE_CARD_PAD,
   PULSE_CARD_PAD_X,
   PULSE_ROW_H,
+  PULSE_STAT_AMOUNT_W,
+  PULSE_STAT_RANK_W,
+  PULSE_STAT_TIME_W,
   SEARCH_GAP,
   SEARCH_H,
 } from "../src/lib/measure";
@@ -42,6 +45,7 @@ describe("hero pulse card", () => {
     expect(card).toContain(">Trending<");
     expect(card).not.toContain("Activity");
     expect(card).not.toContain("PULSE_TABS");
+    expect(card).toContain("hero-pulse-stats");
     expect(card).toContain("hero-pulse-rank");
     expect(card).toContain("hero-pulse-amount");
     expect(card).toContain("hero-pulse-time");
@@ -52,6 +56,12 @@ describe("hero pulse card", () => {
     expect(css).toMatch(/\.hero-pulse-list \{[\s\S]*?margin: 4px 0 0;/);
     expect(css).toMatch(/\.hero-pulse-row \{[\s\S]*?flex: none;[\s\S]*?height: 36px;/);
     expect(css).toMatch(/\.hero-pulse-row \{[\s\S]*?space-between;/);
+    expect(css).toMatch(
+      /\.hero-pulse-stats \{[\s\S]*?grid-template-columns: 28px 36px 64px;/,
+    );
+    expect(css).toMatch(
+      /\.hero-pulse-rank,[\s\S]*?\.hero-pulse-amount,[\s\S]*?\.hero-pulse-time \{[\s\S]*?text-align: right;/,
+    );
     expect(css).toMatch(/\.hero-pulse-foot \{[\s\S]*?margin: 4px 0 0;[\s\S]*?line-height: 1;/);
     expect(css).toMatch(/\.hero-pulse-foot a \{[\s\S]*?line-height: 1;/);
     expect(css).toMatch(/\.pulse-photo,[\s\S]*?width: 28px;[\s\S]*?border-radius: 8px;/);
@@ -230,5 +240,8 @@ describe("hero pulse card", () => {
     expect(PULSE_ROW_H).toBe(36);
     expect(PULSE_CARD_PAD).toBe(8);
     expect(PULSE_CARD_PAD_X).toBe(10);
+    expect(PULSE_STAT_RANK_W).toBe(28);
+    expect(PULSE_STAT_AMOUNT_W).toBe(36);
+    expect(PULSE_STAT_TIME_W).toBe(64);
   });
 });

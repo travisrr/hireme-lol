@@ -531,11 +531,23 @@ body {
   color: var(--color-accent);
 }
 
+.hero-pulse-stats {
+  display: grid;
+  flex: 0 0 auto;
+  grid-template-columns: 28px 36px 64px;
+  column-gap: 8px;
+  align-items: center;
+  justify-items: end;
+}
+
 .hero-pulse-rank,
 .hero-pulse-amount,
 .hero-pulse-time {
-  flex: 0 0 auto;
+  min-width: 0;
+  overflow: hidden;
   font-variant-numeric: tabular-nums;
+  text-align: right;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 

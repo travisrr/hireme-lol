@@ -20,4 +20,7 @@ export const HERO_JOIN_QR_PAD = 0;
 export const PULSE_ROW_H = 36;
 export const PULSE_CARD_PAD = 8;
 export const PULSE_CARD_PAD_X = 10;
+export const PULSE_STAT_RANK_W = 28;
+export const PULSE_STAT_AMOUNT_W = 36;
+export const PULSE_STAT_TIME_W = 64;
 export const PHOTO_RADIUS_PX = 12;
