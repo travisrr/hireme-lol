@@ -15,13 +15,17 @@ describe("join is LinkedIn sign-in", () => {
   it("locks Why take #1 beside Sign in with LinkedIn", () => {
     expect(SITE.joinWhyTitle).toBe("Why take #1");
     expect(SITE.joinWhyBullets).toEqual([
-      "People looking for someone to work with start at the top.",
-      "Your LinkedIn and site take the clicks.",
-      "Higher bid = higher rank. That’s the whole product.",
-      "Get seen first. Everyone else is below you.",
-      "$2 to enter. +$2 to overtake whoever’s there.",
-      "They can take it back. You can take it again.",
+      "You’re the first name anyone sees.",
+      "People looking to work with someone start at the top — and often stop.",
+      "Your LinkedIn and site catch every click off the board.",
+      "#1 is a public signal you outrank the field.",
+      "You lead your industry tab, not just Overall.",
+      "A #1 rank is something you can share. It travels.",
+      "Clients remember the person who wanted it most.",
+      "The current leader keeps the spot until you take it.",
     ]);
+    expect(SITE.joinWhyBullets).toHaveLength(8);
+    expect(SITE.joinWhyBullets.join(" ")).not.toMatch(/\$2|enter|overtake/);
     const page = readFileSync("src/pages/JoinPage.tsx", "utf8");
     expect(page).toContain("join-lock");
     expect(page).toContain("WhyTakeCard");
