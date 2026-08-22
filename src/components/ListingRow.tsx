@@ -11,7 +11,7 @@ import { PHOTO_RADIUS_PX, PhotoTile } from "./PhotoTile";
 export const TOP_TEN_CUTOFF = 10;
 export const ROW_MIN_PX = 56;
 export const ROW_MIN_MOBILE_PX = 72;
-export const PHOTO_PX = 44;
+export const PHOTO_PX = 40;
 export const PHOTO_MOBILE_PX = 40;
 export const PHOTO_RADIUS = PHOTO_RADIUS_PX;
 export const RANK_COL_PX = 28;
@@ -50,7 +50,11 @@ export function ListingRow({ listing, board, economics }: ListingRowProps) {
       >
         {listing.rank}
       </span>
-      <PhotoTile src={listing.photoUrl} radius={PHOTO_RADIUS} />
+      <PhotoTile
+        src={listing.photoUrl}
+        className="listing-photo"
+        radius={PHOTO_RADIUS}
+      />
       <button
         type="button"
         onClick={() => {

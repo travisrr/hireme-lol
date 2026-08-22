@@ -69,7 +69,11 @@ export function PulseCard({ trending, activity }: PulseCardProps) {
 function PulseRow({ item }: { item: ReceiptItem }) {
   return (
     <li className="hero-pulse-row">
-      <PhotoTile src={item.photoUrl ?? null} className="size-10" radius={12} />
+      <PhotoTile
+        src={item.photoUrl ?? null}
+        className="pulse-photo"
+        radius={12}
+      />
       {item.href ? (
         <Link
           to={item.href}

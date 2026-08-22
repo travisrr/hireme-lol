@@ -17,7 +17,7 @@ describe("board rows", () => {
   it("locks one-line row geometry with no NEW badge", () => {
     expect(ROW_MIN_PX).toBe(56);
     expect(RANK_COL_PX).toBe(28);
-    expect(PHOTO_PX).toBe(44);
+    expect(PHOTO_PX).toBe(40);
     expect(PHOTO_RADIUS).toBe(12);
     expect(OUTBID_MIN_PX).toBe(32);
   });
@@ -30,9 +30,20 @@ describe("board rows", () => {
 
   it("locks square 12px-radius photos and LinkedIn + site click ints", () => {
     const css = readFileSync("src/index.css", "utf8");
+    expect(css).toMatch(/--photo:\s*40px/);
+    expect(css).toMatch(/\.listing-photo,[\s\S]*?width: 40px;[\s\S]*?border-radius: 12px;/);
     expect(css).toMatch(/\.photo-tile \{[\s\S]*?border-radius: 12px;/);
     expect(css).toMatch(/\.photo-tile img \{[\s\S]*?border-radius: 0;/);
     expect(css).not.toMatch(/\.photo-tile \{[\s\S]*?border-radius:\s*50%/);
+    expect(css).not.toMatch(/\.photo-tile[^{]*\{[^}]*border-radius:\s*50%/);
+    const tile = readFileSync("src/components/PhotoTile.tsx", "utf8");
+    expect(tile).not.toContain("size-11");
+    expect(tile).not.toContain("rounded-full");
+    expect(tile).toContain('borderRadius: `${radius}px`');
+    const pulse = readFileSync("src/components/PulseCard.tsx", "utf8");
+    expect(pulse).toContain('className="pulse-photo"');
+    expect(pulse).not.toContain("size-10");
+    expect(pulse).not.toContain("size-8");
     const clicks = readFileSync("src/components/ClickStat.tsx", "utf8");
     expect(clicks).toContain("LinkedInIntIcon");
     expect(clicks).toContain("SiteIntIcon");
