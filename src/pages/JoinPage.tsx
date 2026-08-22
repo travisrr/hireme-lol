@@ -179,6 +179,10 @@ export function JoinPage() {
       categories: parseCategories(form.getAll("category")),
     };
     persist(next);
+    if (next.categories.length === 0) {
+      setError("Pick an industry so you show on that tab.");
+      return;
+    }
     const dollars = String(form.get("bid") ?? "");
     const amountCents = parseBidAmountCents(dollars, minBidCents);
     if (amountCents == null || amountCents < minBidCents) {
@@ -366,7 +370,7 @@ function IdentityBidCard({
       <form className="mt-5 grid gap-3 text-left" onSubmit={onSubmit}>
         <Field label="Name" name="displayName" defaultValue={draft.displayName} placeholder="Your name" />
         <Field
-          label="Headline"
+          label="Elevator pitch"
           name="headline"
           defaultValue={draft.headline}
           placeholder=""

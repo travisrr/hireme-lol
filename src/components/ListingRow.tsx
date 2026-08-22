@@ -1,5 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import { recordClick } from "../api/client";
+import { listingCopy } from "../lib/listing-copy";
 import { formatUsdFromCents } from "../lib/money";
 import { claimPriceForRank } from "../lib/ranking";
 import { SITE } from "../lib/site";
@@ -30,6 +31,7 @@ export function ListingRow({ listing, board, economics }: ListingRowProps) {
   const claim = claimPriceForRank(board, listing.rank, economics);
   const flash = isRecentBid(listing.currentBidAt);
   const highlight = listing.rank <= TOP_TEN_CUTOFF;
+  const copy = listingCopy(listing);
 
   async function openProfile() {
     try {
@@ -75,6 +77,7 @@ export function ListingRow({ listing, board, economics }: ListingRowProps) {
             linkedinUrl={listing.linkedinUrl}
             websiteUrl={listing.websiteUrl}
           />
+          {copy ? <span className="listing-copy">{copy}</span> : null}
         </span>
       </button>
       <div className="listing-bid">
