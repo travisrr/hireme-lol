@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import { CONTACT_EMAIL } from "../lib/legal";
 import { formatUsdFromCents } from "../lib/money";
 import { claimPriceForRank, minBidToEnter } from "../lib/ranking";
 import {
@@ -34,6 +35,16 @@ export function ClaimHeadline({ board, economics }: ClaimHeadlineProps) {
           {SITE.outbid}
         </Link>
         <JoinQr />
+        <aside data-lock="hero-sponsor" className="hero-sponsor">
+          <p className="hero-sponsor-title">{SITE.sponsorTitle}</p>
+          <p className="hero-sponsor-why">{SITE.sponsorWhy}</p>
+          <a
+            href={`mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent("Sponsor workwithme.lol")}`}
+            className="hero-sponsor-mail"
+          >
+            {SITE.sponsorCta}
+          </a>
+        </aside>
       </div>
       <p className="type-body hero-claim-help text-mute">
         {entry} to enter. +{increment} to overtake.

@@ -12,6 +12,9 @@ export const SITE = {
   share: "I'm #37 on workwithme.lol. Think I deserve to be lower?",
   claimWhy:
     "A professional leaderboard where visibility is earned. Bid on your name, climb the rankings, and get discovered by people looking for someone like you. Your profile sends every click directly to your LinkedIn or website. Get outbid? Take back your spot.",
+  sponsorTitle: "Sponsor the site",
+  sponsorWhy: "Put your brand on the board people pay to be seen on.",
+  sponsorCta: "Talk to us",
   claimPriceTipWhy: "Here’s why it isn’t.",
   joinLead: "Identify yourself and put a number on it.",
   joinSignIn:

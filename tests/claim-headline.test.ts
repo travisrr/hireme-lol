@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import { CONTACT_EMAIL } from "../src/lib/legal";
 import { formatUsdFromCents } from "../src/lib/money";
 import {
   claimPriceTipBody,
@@ -40,6 +41,35 @@ describe("hero claim price tooltip", () => {
     );
     expect(css).toMatch(
       /\.claim-price-note \{[\s\S]*?border-radius: 12px;[\s\S]*?background: var\(--color-card\);/,
+    );
+  });
+});
+
+describe("hero sponsor callout", () => {
+  it("sits to the right of the join QR and mails hello@workwithme.lol", () => {
+    expect(SITE.sponsorTitle).toBe("Sponsor the site");
+    expect(SITE.sponsorWhy).toBe(
+      "Put your brand on the board people pay to be seen on.",
+    );
+    expect(SITE.sponsorCta).toBe("Talk to us");
+    expect(CONTACT_EMAIL).toBe("hello@workwithme.lol");
+    const headline = readFileSync("src/components/ClaimHeadline.tsx", "utf8");
+    expect(headline).toContain("<JoinQr />");
+    expect(headline.indexOf("<JoinQr />")).toBeLessThan(
+      headline.indexOf("hero-sponsor"),
+    );
+    expect(headline).toContain("CONTACT_EMAIL");
+    expect(headline).toContain("mailto:${CONTACT_EMAIL}");
+    expect(headline).toContain("{SITE.sponsorTitle}");
+    expect(headline).toContain("{SITE.sponsorWhy}");
+    expect(headline).toContain("{SITE.sponsorCta}");
+    expect(headline).not.toMatch(/hireme\.lol/);
+    const css = readFileSync("src/index.css", "utf8");
+    expect(css).toMatch(
+      /\.hero-sponsor \{[\s\S]*?border-radius: 12px;[\s\S]*?background: var\(--color-card\);[\s\S]*?opacity: 1;/,
+    );
+    expect(css).toMatch(
+      /\.hero-claim-cta \{[\s\S]*?display: flex;[\s\S]*?align-items: center;[\s\S]*?flex-wrap: wrap;[\s\S]*?gap: 12px;/,
     );
   });
 });
