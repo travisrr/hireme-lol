@@ -30,7 +30,6 @@ export function ListingRow({ listing, board, economics }: ListingRowProps) {
   const claim = claimPriceForRank(board, listing.rank, economics);
   const flash = isRecentBid(listing.currentBidAt);
   const highlight = listing.rank <= TOP_TEN_CUTOFF;
-  const pitch = listing.headline || listing.pitch || listing.company || "";
 
   async function openProfile() {
     try {
@@ -68,8 +67,6 @@ export function ListingRow({ listing, board, economics }: ListingRowProps) {
         <span className="listing-meta">
           {listing.isFoundingMember ? (
             <span className="listing-founding">FOUNDING</span>
-          ) : pitch ? (
-            <span className="listing-headline">{pitch}</span>
           ) : null}
           <ClickStat
             listingId={listing.id}

@@ -61,6 +61,8 @@ describe("board rows", () => {
     expect(row).toContain("listing-founding");
     expect(row).toContain("listing-bid");
     expect(row).not.toContain("MovementMark");
+    expect(row).not.toContain("listing-headline");
+    expect(row).not.toContain("jobHeadline");
     const css = readFileSync("src/index.css", "utf8");
     expect(css).toMatch(/@media \(max-width: 767px\) \{[\s\S]*?\.listing-who \{[\s\S]*?flex-direction: column;/);
     expect(css).toMatch(/@media \(max-width: 767px\) \{[\s\S]*?\.listing-bid \{[\s\S]*?flex-direction: column;/);
