@@ -35,9 +35,14 @@ describe("join is LinkedIn sign-in", () => {
     expect(css).toMatch(
       /@media \(min-width: 1024px\) \{[\s\S]*?\.join-lock \{[\s\S]*?1fr 1fr/,
     );
-    expect(page).toContain("join-why-title type-claim");
-    expect(css).toMatch(/\.join-why-list \{[\s\S]*?gap: 8px;/);
-    expect(css).toMatch(/\.join-why-list li::before \{[\s\S]*?width: 7px;[\s\S]*?#0a66c2/);
+    expect(page).toContain("join-why-title");
+    expect(page).not.toContain("join-why-title type-claim");
+    expect(css).toMatch(/\.join-why-title \{[\s\S]*?font-size: 26px;[\s\S]*?font-weight: 800;/);
+    expect(css).toMatch(/\.join-why-list \{[\s\S]*?gap: 12px;/);
+    expect(css).toMatch(
+      /\.join-why-list li \{[\s\S]*?padding-left: 26px;[\s\S]*?font-size: 20px;[\s\S]*?font-weight: 700;[\s\S]*?line-height: 1\.35;/,
+    );
+    expect(css).toMatch(/\.join-why-list li::before \{[\s\S]*?width: 10px;[\s\S]*?height: 10px;[\s\S]*?#0a66c2/);
   });
 
   it("fills name, photo, and headline after login", () => {

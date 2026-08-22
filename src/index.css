@@ -857,12 +857,16 @@ body {
 
 .join-why-title {
   margin: 0;
+  color: var(--color-ink);
+  font-size: 26px;
+  font-weight: 800;
+  line-height: 1.2;
 }
 
 .join-why-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 12px;
   margin: 12px 0 0;
   padding-left: 0;
   list-style: none;
@@ -870,19 +874,20 @@ body {
 
 .join-why-list li {
   position: relative;
-  padding-left: 18px;
+  padding-left: 26px;
   color: var(--color-ink);
-  font-size: 15px;
-  line-height: 1.45;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.35;
 }
 
 .join-why-list li::before {
   content: "";
   position: absolute;
-  top: 0.55em;
+  top: calc((1.35em - 10px) / 2);
   left: 0;
-  width: 7px;
-  height: 7px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
   background: #0a66c2;
 }
