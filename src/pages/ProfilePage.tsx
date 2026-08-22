@@ -6,6 +6,7 @@ import { MovementMark } from "../components/MovementMark";
 import { PhotoTile } from "../components/PhotoTile";
 import { SiteFooter } from "../components/SiteFooter";
 import { SiteHeader } from "../components/SiteHeader";
+import { aboutHeading } from "../lib/bio";
 import { toPublicListing } from "../lib/board-view";
 import { formatUsdFromCents } from "../lib/money";
 import { publicPhotoSrc } from "../lib/photo";
@@ -130,9 +131,17 @@ export function ProfilePage() {
               </div>
             </div>
             <p className="mt-8 text-2xl text-ink">{profile.pitch}</p>
-            {profile.bio ? (
-              <div className="profile-bio mt-6">{profile.bio}</div>
-            ) : null}
+            <section
+              className="profile-about"
+              aria-labelledby="profile-about-title"
+            >
+              <h2 id="profile-about-title" className="profile-about-title">
+                {aboutHeading(profile.displayName)}
+              </h2>
+              {profile.bio ? (
+                <div className="profile-bio">{profile.bio}</div>
+              ) : null}
+            </section>
             {listing ? (
               <>
                 <p className="mt-6 text-3xl font-extrabold text-accent tabular">

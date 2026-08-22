@@ -1618,6 +1618,30 @@ body {
   color: var(--color-accent);
 }
 
+.profile-about {
+  position: relative;
+  margin-top: 28px;
+  min-height: 120px;
+  padding: 24px 16px 16px;
+  border: 1px solid var(--color-line);
+  border-radius: 12px;
+  background: var(--color-card);
+}
+
+.profile-about-title {
+  position: absolute;
+  top: 0;
+  left: 12px;
+  transform: translateY(-50%);
+  margin: 0;
+  padding: 0 8px;
+  background: var(--color-paper);
+  color: var(--color-mute);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
 .profile-bio {
   white-space: pre-wrap;
   overflow-wrap: anywhere;

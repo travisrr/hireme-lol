@@ -16,3 +16,8 @@ export function normalizeCompany(raw: string): string | null {
   const value = raw.replace(/\s+/g, " ").trim().slice(0, COMPANY_MAX_CHARS);
   return value || null;
 }
+
+export function aboutHeading(displayName: string): string {
+  const name = displayName.replace(/\s+/g, " ").trim();
+  return name ? `About ${name}` : "About";
+}
