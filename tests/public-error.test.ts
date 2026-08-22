@@ -23,6 +23,9 @@ describe("public errors", () => {
     expect(publicErrorMessage("invalid_profile")).toBe(
       "Check your name and title.",
     );
+    expect(publicErrorMessage("invalid_website")).toBe(
+      "Enter a website like yourcompany.com.",
+    );
   });
 
   it("locks the LinkedIn fallback line", () => {

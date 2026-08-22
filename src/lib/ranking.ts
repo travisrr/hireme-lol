@@ -43,7 +43,19 @@ export function claimPriceForRank(
   return minBidToOvertake(ranked[rank - 1].currentBidCents, economics);
 }
 
+export function shareCreditOf(listing: ListingForRank): number {
+  return listing.shareCreditCents ?? 0;
+}
+
+/** Bid plus capped share juice. Juice cannot exceed increment − 1¢. */
+export function effectiveBidCents(listing: ListingForRank): number {
+  return listing.currentBidCents + shareCreditOf(listing);
+}
+
 export function compareListings(a: ListingForRank, b: ListingForRank): number {
+  const aScore = effectiveBidCents(a);
+  const bScore = effectiveBidCents(b);
+  if (aScore !== bScore) return bScore - aScore;
   if (a.currentBidCents !== b.currentBidCents) {
     return b.currentBidCents - a.currentBidCents;
   }

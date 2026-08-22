@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 import { fetchBoard, fetchConfig, fetchProfile } from "../api/client";
 import { ProfileOutboundLinks } from "../components/ClickStat";
 import { MovementMark } from "../components/MovementMark";
@@ -10,14 +10,17 @@ import { toPublicListing } from "../lib/board-view";
 import { formatUsdFromCents } from "../lib/money";
 import { publicPhotoSrc } from "../lib/photo";
 import { claimPriceForRank } from "../lib/ranking";
+import { SETTINGS_NAV, SETTINGS_PATH } from "../lib/settings";
 import { shareLine } from "../lib/share";
 import { DEFAULT_ECONOMICS, type BidEconomics } from "../lib/types";
 import type { RankedBoardRow } from "../server/store";
 
 export function ProfilePage() {
   const { handle = "" } = useParams();
+  const [searchParams] = useSearchParams();
   const [missing, setMissing] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [isOwner, setIsOwner] = useState(false);
   const [ranked, setRanked] = useState<RankedBoardRow | null>(null);
   const [board, setBoard] = useState<RankedBoardRow[]>([]);
   const [economics, setEconomics] = useState<BidEconomics>(DEFAULT_ECONOMICS);
@@ -26,6 +29,7 @@ export function ProfilePage() {
     headline: string;
     company: string | null;
     pitch: string;
+    bio: string;
     photoUrl: string | null;
     linkedinUrl: string | null;
     websiteUrl: string | null;
@@ -34,11 +38,30 @@ export function ProfilePage() {
 
   useEffect(() => {
     let cancelled = false;
-    void Promise.all([fetchProfile(handle), fetchBoard(), fetchConfig()])
+    void Promise.all([
+      fetchProfile(handle, searchParams.get("from")),
+      fetchBoard(),
+      fetchConfig(),
+    ])
       .then(([found, live, config]) => {
         if (cancelled) return;
-        setProfile(found.profile);
+        if (!found.profile) {
+          setMissing(true);
+          return;
+        }
+        setProfile({
+          displayName: found.profile.displayName,
+          headline: found.profile.headline,
+          company: found.profile.company,
+          pitch: found.profile.pitch,
+          bio: found.profile.bio ?? "",
+          photoUrl: found.profile.photoUrl,
+          linkedinUrl: found.profile.linkedinUrl,
+          websiteUrl: found.profile.websiteUrl,
+          handle: found.profile.handle,
+        });
         setRanked(found.ranked);
+        setIsOwner(found.isOwner);
         setBoard(live.listings);
         setEconomics({
           minEntryCents: config.minEntryCents,
@@ -52,7 +75,7 @@ export function ProfilePage() {
     return () => {
       cancelled = true;
     };
-  }, [handle]);
+  }, [handle, searchParams]);
 
   const listing = ranked ? toPublicListing(ranked) : null;
 
@@ -69,6 +92,13 @@ export function ProfilePage() {
             <p className="text-xs font-semibold text-mute uppercase">
               Public profile · /{profile.handle}
             </p>
+            {isOwner ? (
+              <p className="mt-2">
+                <Link to={SETTINGS_PATH} className="text-sm font-semibold text-accent">
+                  {SETTINGS_NAV}
+                </Link>
+              </p>
+            ) : null}
             <div className="mt-4 flex items-start gap-5">
               <PhotoTile
                 src={publicPhotoSrc(profile.photoUrl)}
@@ -100,6 +130,9 @@ export function ProfilePage() {
               </div>
             </div>
             <p className="mt-8 text-2xl text-ink">{profile.pitch}</p>
+            {profile.bio ? (
+              <div className="profile-bio mt-6">{profile.bio}</div>
+            ) : null}
             {listing ? (
               <>
                 <p className="mt-6 text-3xl font-extrabold text-accent tabular">
@@ -114,6 +147,7 @@ export function ProfilePage() {
                         currentBidCents: row.currentBidCents,
                         currentBidAt: row.currentBidAt,
                         profileCreatedAt: row.profileCreatedAt,
+                        shareCreditCents: row.shareCreditCents,
                       })),
                       listing.rank,
                       economics,

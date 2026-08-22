@@ -488,6 +488,11 @@ function ShareCard({
         Share on LinkedIn
       </a>
       <p className="mt-4">
+        <Link to="/settings" className="type-body text-accent">
+          Add your website and bio
+        </Link>
+      </p>
+      <p className="mt-4">
         <Link to="/" className="type-body text-accent">
           ← The board
         </Link>

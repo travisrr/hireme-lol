@@ -19,6 +19,8 @@ export type ListingForRank = {
   currentBidCents: number;
   currentBidAt: number;
   profileCreatedAt: number;
+  /** Capped unique-share credit. Never enough to beat a full paid overtake. */
+  shareCreditCents?: number;
 };
 
 export type Ranked<T extends ListingForRank> = T & { rank: number };
@@ -34,6 +36,7 @@ export type PublicListing = ListingForRank & {
   photoUrl: string | null;
   linkedinUrl: string | null;
   websiteUrl: string | null;
+  bio?: string;
   linkedinClicks: number;
   websiteClicks: number;
   profileClicks: number;

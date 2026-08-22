@@ -1,13 +1,26 @@
 import { describe, expect, it } from "vitest";
 import { parseEconomics } from "../src/lib/economics";
 import { receiptLine } from "../src/lib/receipts";
-import { shareLine } from "../src/lib/share";
+import {
+  facebookShareIntent,
+  linkedinShareIntent,
+  shareLine,
+  xShareIntent,
+} from "../src/lib/share";
 import { DEFAULT_ECONOMICS } from "../src/lib/types";
 
 describe("share", () => {
   it("locks the taunt", () => {
     expect(shareLine(37)).toBe(
       "I'm #37 on workwithme.lol. Think I deserve to be lower?",
+    );
+  });
+
+  it("builds social share intents", () => {
+    expect(linkedinShareIntent("hello")).toContain("shareActive=true");
+    expect(xShareIntent("hello")).toContain("twitter.com/intent/tweet");
+    expect(facebookShareIntent("https://workwithme.lol/maya")).toContain(
+      "facebook.com/sharer",
     );
   });
 });

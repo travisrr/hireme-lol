@@ -63,6 +63,7 @@ describe("how it works", () => {
     expect(blob).toContain("You are not deleted");
     expect(blob).toContain("Money buys placement, not quality");
     expect(blob).toContain("purchased attention");
+    expect(blob).toContain("Share juice");
     expect(blob).toContain("Sign in with LinkedIn");
     expect(blob).not.toContain("$5 to enter");
     expect(blob).not.toContain("+$1 to overtake");

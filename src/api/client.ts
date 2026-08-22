@@ -1,6 +1,7 @@
 import type { ClickTarget } from "../lib/clicks";
 import type { BoardTab, IndustryId } from "../lib/industries";
 import { publicErrorMessage } from "../lib/public-error";
+import type { ShareJuice } from "../lib/share-rank";
 import type { BidEconomics } from "../lib/types";
 import type { ActivityRow, RankedBoardRow, SessionRow } from "../server/store";
 
@@ -38,11 +39,19 @@ export function fetchBoard(query = "", industry?: IndustryId | null) {
   );
 }
 
-export function fetchProfile(handle: string) {
+export function fetchProfile(handle: string, from?: string | null) {
+  const params = new URLSearchParams();
+  if (from) params.set("from", from);
+  const qs = params.toString();
   return request<{
     profile: SessionRow["profile"];
     ranked: RankedBoardRow | null;
-  }>(`/api/profiles/${encodeURIComponent(handle)}`);
+    isOwner: boolean;
+  }>(
+    qs
+      ? `/api/profiles/${encodeURIComponent(handle)}?${qs}`
+      : `/api/profiles/${encodeURIComponent(handle)}`,
+  );
 }
 
 export function fetchMe() {
@@ -123,6 +132,26 @@ export function saveProfile(input: {
 }) {
   return request<{ profile: NonNullable<SessionRow["profile"]> }>(
     "/api/me/profile",
+    { method: "POST", body: JSON.stringify(input) },
+  );
+}
+
+export function fetchMyListing() {
+  return request<{
+    profile: NonNullable<SessionRow["profile"]>;
+    ranked: RankedBoardRow | null;
+    onBoard: boolean;
+    juice: ShareJuice;
+  }>("/api/me/listing");
+}
+
+export function saveListingPage(input: {
+  websiteUrl: string;
+  bio: string;
+  company: string;
+}) {
+  return request<{ profile: NonNullable<SessionRow["profile"]> }>(
+    "/api/me/listing",
     { method: "POST", body: JSON.stringify(input) },
   );
 }

@@ -46,6 +46,8 @@ import { BOARD_TABS, parseCategories, parseIndustry } from "../lib/industries";
 import { SITE } from "../lib/site";
 import { GLOBAL_BOARD_ID, PUBLIC_ORIGIN } from "../lib/types";
 import { normalizeWebsiteUrl } from "../lib/website";
+import { normalizeBio, normalizeCompany } from "../lib/bio";
+import { isShareCrawler, parseSharePlatform, shareJuice } from "../lib/share-rank";
 import type { Store } from "./store";
 
 export const SESSION_COOKIE = "wmw_session";
@@ -205,7 +207,14 @@ export function createApp(deps: AppDeps) {
       normalizeHandle(c.req.param("handle")),
     );
     if (!found) return c.json({ error: "not_found" }, 404);
-    return c.json(found);
+    const session = await readSession(c, deps);
+    const isOwner = session?.profile?.id === found.profile.id;
+    await maybeRecordShareVisit(c, deps, found, isOwner);
+    return c.json({
+      profile: found.profile,
+      ranked: found.ranked,
+      isOwner,
+    });
   });
 
   app.post("/api/auth/magic", async (c) => {
@@ -378,6 +387,54 @@ export function createApp(deps: AppDeps) {
       const profile = session.profile
         ? await deps.store.updateProfile(session.user.id, input, clock(deps))
         : await deps.store.createProfile(session.user.id, input, clock(deps));
+      return c.json({ profile });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "error";
+      return c.json({ error: message }, 400);
+    }
+  });
+
+  app.get("/api/me/listing", async (c) => {
+    const session = await readSession(c, deps);
+    if (!session) return c.json({ error: "unauthorized" }, 401);
+    if (!session.profile) return c.json({ error: "profile_required" }, 401);
+    const found = await deps.store.getProfileByHandle(session.profile.handle);
+    const economics = await deps.store.getEconomics();
+    const juice = found?.listing
+      ? await deps.store.getShareJuice(
+          found.listing.id,
+          clock(deps),
+          economics.minIncrementCents,
+        )
+      : shareJuice(0, economics.minIncrementCents);
+    return c.json({
+      profile: found?.profile ?? session.profile,
+      ranked: found?.ranked ?? null,
+      onBoard: Boolean(found?.ranked),
+      juice,
+    });
+  });
+
+  app.post("/api/me/listing", async (c) => {
+    const session = await readSession(c, deps);
+    if (!session) return c.json({ error: "unauthorized" }, 401);
+    if (!session.profile) return c.json({ error: "profile_required" }, 401);
+    const body = await readJson(c);
+    const websiteRaw = String(body.websiteUrl ?? "").trim();
+    const websiteUrl = websiteRaw ? normalizeWebsiteUrl(websiteRaw) : null;
+    if (websiteRaw && !websiteUrl) {
+      return c.json({ error: "invalid_website" }, 400);
+    }
+    try {
+      const profile = await deps.store.updateListingPage(
+        session.user.id,
+        {
+          websiteUrl,
+          bio: normalizeBio(String(body.bio ?? "")),
+          company: normalizeCompany(String(body.company ?? "")),
+        },
+        clock(deps),
+      );
       return c.json({ profile });
     } catch (error) {
       const message = error instanceof Error ? error.message : "error";
@@ -616,6 +673,7 @@ function profileFromBody(body: Record<string, unknown>) {
     photoUrl: String(body.photoUrl ?? "").trim() || null,
     linkedinUrl,
     websiteUrl,
+    bio: Object.hasOwn(body, "bio") ? normalizeBio(String(body.bio ?? "")) : undefined,
     industry: parseCategories(body.categories ?? body.industry)[0] ?? null,
     categories: parseCategories(body.categories ?? body.industry),
   };
@@ -652,6 +710,37 @@ async function readSession(
   const sid = getCookie(c, SESSION_COOKIE);
   if (!sid) return null;
   return deps.store.getSession(sid, clock(deps), deps.config.adminEmails);
+}
+
+async function maybeRecordShareVisit(
+  c: Context,
+  deps: AppDeps,
+  found: NonNullable<Awaited<ReturnType<Store["getProfileByHandle"]>>>,
+  isOwner: boolean,
+) {
+  if (isOwner) return;
+  const listing = found.listing;
+  if (!listing || listing.status !== "active") return;
+  const platform = parseSharePlatform(c.req.query("from"));
+  if (!platform) return;
+  const ua = c.req.header("user-agent") ?? "";
+  if (isShareCrawler(ua)) return;
+  const ip =
+    c.req.header("cf-connecting-ip") ??
+    c.req.header("x-forwarded-for")?.split(",")[0]?.trim() ??
+    "127.0.0.1";
+  const visitorHash = await sha256Hex(`${ip}\n${ua}`);
+  const economics = await deps.store.getEconomics();
+  await deps.store.recordShareVisit(
+    {
+      listingId: listing.id,
+      profileId: found.profile.id,
+      visitorHash,
+      platform,
+    },
+    clock(deps),
+    economics.minIncrementCents,
+  );
 }
 
 async function send(deps: AppDeps, to: string, subject: string, text: string) {

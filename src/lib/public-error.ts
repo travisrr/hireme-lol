@@ -33,6 +33,8 @@ const HUMAN_BY_CODE: Record<string, string> = {
   profile_failed: "We couldn’t save that profile. Check the fields.",
   title_required: TITLE_REQUIRED,
   invalid_profile: "Check your name and title.",
+  invalid_website: "Enter a website like yourcompany.com.",
+  invalid_bio: "Keep the bio as plain text.",
   invalid_photo: "Use a JPEG, PNG, or WebP photo.",
   media_unbound: "Photo upload isn’t ready yet. Paste a photo URL instead.",
   oauth_not_configured: "LinkedIn sign-in isn’t ready yet. Try again in a bit.",

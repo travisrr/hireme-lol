@@ -2,6 +2,7 @@ import { applyConfirmedPayment, type BoardSnapshot } from "../lib/apply-bid";
 import { parseCategories, type IndustryId } from "../lib/industries";
 import { listingsThatFell } from "../lib/outbid";
 import { assertNever, movementFor, rankListings } from "../lib/ranking";
+import { shareJuice, shareWindowStart, type ShareJuice } from "../lib/share-rank";
 import { DEFAULT_ECONOMICS, type BidEconomics } from "../lib/types";
 import type {
   ActivityRow,
@@ -14,6 +15,8 @@ import type {
   ProfileRow,
   PublicBoardRow,
   RankedBoardRow,
+  RecordShareVisitInput,
+  ListingPageInput,
   SessionRow,
   Store,
   UserRow,
@@ -29,6 +32,14 @@ type MagicLink = {
 type Session = {
   userId: string;
   expiresAt: number;
+};
+
+type ShareVisit = {
+  listingId: string;
+  profileId: string;
+  visitorHash: string;
+  platform: string;
+  createdAt: number;
 };
 
 type EventRow = {
@@ -58,6 +69,7 @@ export class MemoryStore implements Store {
   events: EventRow[] = [];
   notifications: NotificationRow[] = [];
   unsubscribes = new Map<string, string>();
+  shareVisits: ShareVisit[] = [];
   nextId = 1;
   economics: BidEconomics = { ...DEFAULT_ECONOMICS };
 
@@ -215,6 +227,7 @@ export class MemoryStore implements Store {
       headline: input.headline,
       company: input.company,
       pitch: input.pitch,
+      bio: input.bio ?? "",
       photoUrl: input.photoUrl,
       linkedinUrl: input.linkedinUrl,
       websiteUrl: input.websiteUrl,
@@ -253,12 +266,80 @@ export class MemoryStore implements Store {
     const next: ProfileRow = {
       ...current,
       ...input,
+      bio: input.bio !== undefined ? input.bio : current.bio,
       categories,
       industry: categories[0] ?? input.industry ?? null,
     };
     this.profiles.set(id, next);
     this.profilesByHandle.set(next.handle, id);
     return next;
+  }
+
+  async updateListingPage(
+    userId: string,
+    input: ListingPageInput,
+    now: number,
+  ): Promise<ProfileRow> {
+    void now;
+    const id = this.profilesByUser.get(userId);
+    if (!id) throw new Error("profile_missing");
+    const current = this.profiles.get(id);
+    if (!current) throw new Error("profile_missing");
+    const next: ProfileRow = {
+      ...current,
+      websiteUrl: input.websiteUrl,
+      bio: input.bio,
+      company: input.company,
+    };
+    this.profiles.set(id, next);
+    return next;
+  }
+
+  async getShareJuice(
+    listingId: string,
+    now: number,
+    incrementCents: number,
+  ): Promise<ShareJuice> {
+    const cutoff = shareWindowStart(now);
+    const uniqueVisits = this.shareVisits.filter(
+      (row) => row.listingId === listingId && row.createdAt >= cutoff,
+    ).length;
+    return shareJuice(uniqueVisits, incrementCents);
+  }
+
+  async recordShareVisit(
+    input: RecordShareVisitInput,
+    now: number,
+    incrementCents: number,
+  ): Promise<{ counted: boolean; juice: ShareJuice }> {
+    const cutoff = shareWindowStart(now);
+    const existing = this.shareVisits.find(
+      (row) =>
+        row.listingId === input.listingId &&
+        row.visitorHash === input.visitorHash,
+    );
+    if (existing && existing.createdAt >= cutoff) {
+      return {
+        counted: false,
+        juice: await this.getShareJuice(input.listingId, now, incrementCents),
+      };
+    }
+    if (existing) {
+      existing.createdAt = now;
+      existing.platform = input.platform;
+    } else {
+      this.shareVisits.push({
+        listingId: input.listingId,
+        profileId: input.profileId,
+        visitorHash: input.visitorHash,
+        platform: input.platform,
+        createdAt: now,
+      });
+    }
+    return {
+      counted: true,
+      juice: await this.getShareJuice(input.listingId, now, incrementCents),
+    };
   }
 
   async getProfileByLinkedinUrl(url: string): Promise<ProfileRow | null> {
@@ -645,12 +726,21 @@ export class MemoryStore implements Store {
         currentBidCents: listing.currentBidCents,
         currentBidAt: listing.currentBidAt,
         profileCreatedAt: profile.createdAt,
+        shareCreditCents: this.shareCreditFor(listing.id, Date.now()),
         previousRank: listing.previousRank,
         industry: profile.industry,
         categories: profile.categories,
       });
     }
     return rows;
+  }
+
+  private shareCreditFor(listingId: string, now: number): number {
+    const cutoff = shareWindowStart(now);
+    const visits = this.shareVisits.filter(
+      (row) => row.listingId === listingId && row.createdAt >= cutoff,
+    ).length;
+    return shareJuice(visits, this.economics.minIncrementCents).creditCents;
   }
 
   private rankedActive(industry?: IndustryId | null): RankedBoardRow[] {
