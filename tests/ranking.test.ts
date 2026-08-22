@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  clampOutbidDollars,
   formatUsdFromCents,
   parseBidAmountCents,
   parseDollarInput,
@@ -10,6 +11,7 @@ import {
   evaluateBidApply,
   minBidToEnter,
   minBidToOvertake,
+  minOutbidCents,
   movementFor,
   rankListings,
 } from "../src/lib/ranking";
@@ -45,6 +47,10 @@ describe("launch economics", () => {
     expect(minBidToEnter(launch)).toBe(200);
     expect(minBidToOvertake(200, launch)).toBe(400);
     expect(minBidToOvertake(240000, launch)).toBe(240200);
+    expect(minOutbidCents(null, launch)).toBe(200);
+    expect(minOutbidCents(undefined, launch)).toBe(200);
+    expect(minOutbidCents(800, launch)).toBe(1000);
+    expect(minOutbidCents(1000, launch)).toBe(1200);
     const custom: BidEconomics = { minEntryCents: 700, minIncrementCents: 50 };
     expect(minBidToEnter(custom)).toBe(700);
     expect(minBidToOvertake(10000, custom)).toBe(10050);
@@ -234,5 +240,13 @@ describe("money", () => {
     expect(parseBidAmountCents(200)).toBe(200);
     expect(parseBidAmountCents("200")).toBe(200);
     expect(parseBidAmountCents(8)).toBe(800);
+  });
+
+  it("snaps typed Outbid dollars up to the live #1 + $2 min", () => {
+    expect(clampOutbidDollars("6", 1000)).toBe("10");
+    expect(clampOutbidDollars("$6", 1200)).toBe("12");
+    expect(clampOutbidDollars("12", 1200)).toBe("12");
+    expect(clampOutbidDollars("20", 1200)).toBe("20");
+    expect(clampOutbidDollars("", 1200)).toBe("");
   });
 });

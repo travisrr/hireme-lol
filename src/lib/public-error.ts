@@ -1,11 +1,17 @@
+import { formatUsdFromCents } from "./money";
+import { DEFAULT_ECONOMICS } from "./types";
+
 export const LINKEDIN_PULL_EMPTY =
   "We couldn’t read that profile. Check the URL or fill the fields.";
 
 export const PAYMENTS_NOT_READY =
   "Payments aren’t ready yet. Try again in a bit.";
 
-export const BELOW_ENTRY =
-  "Enter a bid of at least $2 to get on the board.";
+export function belowMinMessage(minCents: number): string {
+  return `Enter a bid of at least ${formatUsdFromCents(minCents)} to get on the board.`;
+}
+
+export const BELOW_ENTRY = belowMinMessage(DEFAULT_ECONOMICS.minEntryCents);
 
 export const EMAIL_NOT_CONFIGURED =
   "Sign-in email isn’t ready yet. Try again in a bit.";

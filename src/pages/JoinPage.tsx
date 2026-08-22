@@ -30,9 +30,15 @@ import {
 } from "../lib/join-draft";
 import { joinStepFromServer, type JoinOauthProfile } from "../lib/join-gate";
 import { PAGE_COLUMN } from "../lib/measure";
-import { formatUsdFromCents, parseBidAmountCents } from "../lib/money";
+import {
+  centsToDollarString,
+  clampOutbidDollars,
+  formatUsdFromCents,
+  parseBidAmountCents,
+} from "../lib/money";
 import { isUsableHeadshotUrl } from "../lib/photo";
-import { BELOW_ENTRY, publicErrorMessage } from "../lib/public-error";
+import { belowMinMessage, publicErrorMessage } from "../lib/public-error";
+import { minOutbidCents } from "../lib/ranking";
 import { linkedinShareIntent, shareLine } from "../lib/share";
 import { SITE } from "../lib/site";
 import { DEFAULT_ECONOMICS, type BidEconomics } from "../lib/types";
@@ -47,6 +53,7 @@ export function JoinPage() {
   const [draft, setDraft] = useState<JoinDraft>(emptyJoinDraft);
   const [session, setSession] = useState<SessionRow | null>(null);
   const [economics, setEconomics] = useState<BidEconomics>(DEFAULT_ECONOMICS);
+  const [minBidCents, setMinBidCents] = useState(DEFAULT_ECONOMICS.minEntryCents);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [rank, setRank] = useState<number | null>(null);
@@ -55,13 +62,17 @@ export function JoinPage() {
 
   useEffect(() => {
     let cancelled = false;
-    void Promise.all([fetchMe(), fetchConfig()])
-      .then(async ([me, config]) => {
+    void Promise.all([fetchMe(), fetchConfig(), fetchBoard()])
+      .then(async ([me, config, board]) => {
         if (cancelled) return;
-        setEconomics({
+        const nextEconomics = {
           minEntryCents: config.minEntryCents,
           minIncrementCents: config.minIncrementCents,
-        });
+        };
+        setEconomics(nextEconomics);
+        setMinBidCents(
+          minOutbidCents(board.listings[0]?.currentBidCents, nextEconomics),
+        );
         const oauth = (me as SessionRow & { oauthProfile?: JoinOauthProfile })
           .oauthProfile;
         const nextStep = joinStepFromServer({
@@ -150,8 +161,6 @@ export function JoinPage() {
     };
   }, [rank, step]);
 
-  const entry = formatUsdFromCents(economics.minEntryCents);
-
   function persist(next: JoinDraft) {
     setDraft(next);
     writeJoinDraft(next);
@@ -171,9 +180,9 @@ export function JoinPage() {
     };
     persist(next);
     const dollars = String(form.get("bid") ?? "");
-    const amountCents = parseBidAmountCents(dollars, economics.minEntryCents);
-    if (amountCents == null || amountCents < economics.minEntryCents) {
-      setError(BELOW_ENTRY);
+    const amountCents = parseBidAmountCents(dollars, minBidCents);
+    if (amountCents == null || amountCents < minBidCents) {
+      setError(belowMinMessage(minBidCents));
       return;
     }
     if (!session?.user) {
@@ -250,7 +259,8 @@ export function JoinPage() {
             onPhotoFile={setPhotoFile}
             busy={busy}
             error={error}
-            entry={entry}
+            minCents={minBidCents}
+            incrementCents={economics.minIncrementCents}
           />
         ) : (
           <ShareCard
@@ -308,7 +318,8 @@ function IdentityBidCard({
   onPhotoFile,
   busy,
   error,
-  entry,
+  minCents,
+  incrementCents,
 }: {
   draft: JoinDraft;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
@@ -316,7 +327,8 @@ function IdentityBidCard({
   onPhotoFile: (file: File | null) => void;
   busy: boolean;
   error: string | null;
-  entry: string;
+  minCents: number;
+  incrementCents: number;
 }) {
   const [picked, setPicked] = useState<IndustryId[]>(draft.categories);
   const [filePreview, setFilePreview] = useState<string | null>(null);
@@ -393,7 +405,7 @@ function IdentityBidCard({
             onChange={(event) => onPhotoFile(event.target.files?.[0] ?? null)}
           />
         </label>
-        <Field label={`Bid (USD, min ${entry})`} name="bid" placeholder="2" />
+        <BidAmountField minCents={minCents} incrementCents={incrementCents} />
         <button type="submit" disabled={busy} className="btn-accent mt-2 w-full">
           {SITE.cta}
         </button>
@@ -446,6 +458,65 @@ function ShareCard({
         </Link>
       </p>
     </section>
+  );
+}
+
+function BidAmountField({
+  minCents,
+  incrementCents,
+}: {
+  minCents: number;
+  incrementCents: number;
+}) {
+  const minDollars = minCents / 100;
+  const step = incrementCents / 100;
+  const [dollars, setDollars] = useState(centsToDollarString(minCents));
+
+  useEffect(() => {
+    setDollars((current) => {
+      const parsed = parseBidAmountCents(current, minCents);
+      if (parsed == null || parsed < minCents) return centsToDollarString(minCents);
+      return current;
+    });
+  }, [minCents]);
+
+  function applyRaw(raw: string) {
+    setDollars(clampOutbidDollars(raw, minCents));
+  }
+
+  return (
+    <label className="grid gap-1">
+      <span className="type-meta font-semibold text-mute uppercase">
+        Bid (USD, min {formatUsdFromCents(minCents)})
+      </span>
+      <input
+        name="bid"
+        type="number"
+        inputMode="decimal"
+        min={minDollars}
+        step={step}
+        value={dollars}
+        required
+        className="search-field"
+        onChange={(event) => applyRaw(event.target.value)}
+        onBlur={() => {
+          const parsed = parseBidAmountCents(dollars, minCents);
+          setDollars(
+            centsToDollarString(
+              parsed == null || parsed < minCents ? minCents : parsed,
+            ),
+          );
+        }}
+        onKeyDown={(event) => {
+          if (event.key !== "ArrowDown") return;
+          const parsed = parseBidAmountCents(dollars, minCents);
+          if (parsed == null || parsed <= minCents) {
+            event.preventDefault();
+            setDollars(centsToDollarString(minCents));
+          }
+        }}
+      />
+    </label>
   );
 }
 

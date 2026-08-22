@@ -116,6 +116,33 @@ async function pay(
   return { bid, webhook, webhookBody: await json(webhook) };
 }
 
+async function seedOnBoard(
+  store: MemoryStore,
+  app: ReturnType<typeof createApp>,
+  cookie: string,
+  amountCents: number,
+  eventId: string,
+) {
+  const me = await json(await app.request("/api/me", { headers: { Cookie: cookie } }));
+  const profile = me.profile as { id: string };
+  const bid = await store.createPendingBid(
+    {
+      profileId: profile.id,
+      amountCents,
+      checkoutSessionId: null,
+    },
+    Date.now(),
+  );
+  await store.applyPayment({
+    eventId,
+    eventType: "checkout.session.completed",
+    action: "complete",
+    bidId: bid.id,
+    amountCents,
+    paidAt: Date.now(),
+  });
+}
+
 describe("live API", () => {
   it("starts with an empty live board", async () => {
     const { app } = testApp();
@@ -215,9 +242,25 @@ describe("live API", () => {
     const cookie = await magicLogin(app, "maya@example.com");
     await createProfile(app, cookie, "maya");
     const first = await pay(app, cookie, 1500, "evt_same", secret);
-    const second = await pay(app, cookie, 1500, "evt_same", secret);
     expect(first.webhookBody.result).toMatchObject({ outcome: "confirmed" });
-    expect(second.webhookBody.result).toMatchObject({ outcome: "idempotent" });
+    const payload = JSON.stringify({
+      id: "evt_same",
+      type: "checkout.session.completed",
+      data: {
+        object: {
+          id: "cs_evt_same",
+          amount_total: 1500,
+          payment_intent: "pi_evt_same",
+          metadata: { bid_id: first.bid.bidId },
+        },
+      },
+    });
+    const replay = await app.request("/api/stripe/webhook", {
+      method: "POST",
+      headers: await signedHeaders(payload, secret),
+      body: payload,
+    });
+    expect((await json(replay)).result).toMatchObject({ outcome: "idempotent" });
   });
 
   it("exposes live economics from config", async () => {
@@ -225,6 +268,7 @@ describe("live API", () => {
     const body = await json(await app.request("/api/config"));
     expect(body.minEntryCents).toBe(200);
     expect(body.minIncrementCents).toBe(200);
+    expect(body.minOutbidCents).toBe(200);
     expect(body.stripeEnabled).toBe(false);
     expect(body.stripePublishableKey).toBeNull();
     expect(body).not.toHaveProperty("paddleEnabled");
@@ -330,8 +374,8 @@ describe("live API", () => {
     expect(board.listings).toEqual([]);
   });
 
-  it("accepts a $2 first entry under the founding three as #4", async () => {
-    const { app } = testApp();
+  it("rejects Outbid below current #1 + $2 and accepts the min", async () => {
+    const { app, store } = testApp();
     const elon = await magicLogin(app, "elon@example.com");
     const palmer = await magicLogin(app, "palmer@example.com");
     const jensen = await magicLogin(app, "jensen@example.com");
@@ -340,40 +384,32 @@ describe("live API", () => {
     await createProfile(app, palmer, "palmer");
     await createProfile(app, jensen, "jensen");
     await createProfile(app, maya, "maya");
-    await pay(app, elon, 600, "evt_elon");
-    await pay(app, palmer, 400, "evt_palmer");
-    await pay(app, jensen, 200, "evt_jensen");
-    const typedDollars = await app.request("/api/bids", {
+    await seedOnBoard(store, app, elon, 600, "evt_elon");
+    await seedOnBoard(store, app, palmer, 400, "evt_palmer");
+    await seedOnBoard(store, app, jensen, 200, "evt_jensen");
+    const config = await json(await app.request("/api/config"));
+    expect(config.minOutbidCents).toBe(800);
+    const tooLow = await app.request("/api/bids", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Cookie: maya,
       },
-      body: JSON.stringify({ amountCents: 2 }),
+      body: JSON.stringify({ amountCents: 600 }),
     });
-    const bid = await json(typedDollars);
-    expect(typedDollars.status).toBe(200);
-    expect(bid.bidId).toEqual(expect.any(String));
-    const payload = JSON.stringify({
-      id: "evt_maya_join",
-      type: "checkout.session.completed",
-      data: {
-        object: {
-          id: "cs_maya_join",
-          amount_total: 200,
-          payment_intent: "pi_maya_join",
-          metadata: { bid_id: bid.bidId },
-        },
+    expect(tooLow.status).toBe(400);
+    expect(await json(tooLow)).toEqual({ error: "below_entry", minCents: 800 });
+    const typedSix = await app.request("/api/bids", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Cookie: maya,
       },
+      body: JSON.stringify({ amountCents: 6 }),
     });
-    const webhook = await json(
-      await app.request("/api/stripe/webhook", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: payload,
-      }),
-    );
-    expect(webhook.result).toMatchObject({ outcome: "confirmed" });
+    expect(typedSix.status).toBe(400);
+    const paid = await pay(app, maya, 800, "evt_maya_outbid");
+    expect(paid.webhookBody.result).toMatchObject({ outcome: "confirmed" });
     const board = await json(await app.request("/api/board"));
     const listings = board.listings as Array<{
       handle: string;
@@ -381,11 +417,12 @@ describe("live API", () => {
       currentBidCents: number;
     }>;
     expect(listings.map((row) => `${row.handle}:${row.rank}:${row.currentBidCents}`)).toEqual([
-      "elon:1:600",
-      "palmer:2:400",
-      "jensen:3:200",
-      "maya:4:200",
+      "maya:1:800",
+      "elon:2:600",
+      "palmer:3:400",
+      "jensen:4:200",
     ]);
+    expect((await json(await app.request("/api/config"))).minOutbidCents).toBe(1000);
   });
 
   it("accepts a $2 first entry and keeps empty industry tabs visible", async () => {
@@ -403,7 +440,7 @@ describe("live API", () => {
   });
 
   it("filters the one global board per category and ranks inside the tab", async () => {
-    const { app } = testApp();
+    const { app, store } = testApp();
     const maya = await magicLogin(app, "maya@example.com");
     const noah = await magicLogin(app, "noah@example.com");
     expect((await createProfile(app, maya, "maya", ["technology", "finance"])).status).toBe(
@@ -412,8 +449,8 @@ describe("live API", () => {
     expect((await createProfile(app, noah, "noah", ["legal"])).status).toBe(
       200,
     );
-    await pay(app, maya, 400, "evt_maya_cat");
-    await pay(app, noah, 200, "evt_noah_cat");
+    await seedOnBoard(store, app, maya, 400, "evt_maya_cat");
+    await seedOnBoard(store, app, noah, 200, "evt_noah_cat");
     const overall = await json(await app.request("/api/board"));
     expect(
       (overall.listings as Array<{ handle: string; rank: number }>).map(

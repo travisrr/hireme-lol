@@ -52,6 +52,7 @@ export function fetchMe() {
 export function fetchConfig() {
   return request<
     BidEconomics & {
+      minOutbidCents: number;
       stripeEnabled: boolean;
       stripePublishableKey: string | null;
       industries: BoardTab[];

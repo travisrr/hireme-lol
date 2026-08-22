@@ -45,3 +45,25 @@ export function parseBidAmountCents(
   if (n < 100) return n * 100;
   return n;
 }
+
+export function centsToDollarString(cents: number): string {
+  if (cents % 100 === 0) return String(cents / 100);
+  return (cents / 100).toFixed(2);
+}
+
+/**
+ * Keep the Outbid field at or above the live min while typing.
+ * Empty stays empty so the user can clear and retype.
+ */
+export function clampOutbidDollars(raw: string, minCents: number): string {
+  const cleaned = raw.replace(/[$,\s]/g, "");
+  if (cleaned === "" || cleaned === "." || cleaned === "-") return cleaned;
+  const parsed = parseBidAmountCents(cleaned, minCents);
+  if (parsed == null) {
+    return /^\d*[.]?\d{0,2}$/.test(cleaned)
+      ? cleaned
+      : centsToDollarString(minCents);
+  }
+  if (parsed < minCents) return centsToDollarString(minCents);
+  return cleaned;
+}

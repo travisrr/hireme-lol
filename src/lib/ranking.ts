@@ -12,6 +12,20 @@ export function minBidToOvertake(
 }
 
 /**
+ * Outbid floor: $2 on an empty board, otherwise current #1 + $2.
+ * The join field and POST /api/bids cannot go below this.
+ */
+export function minOutbidCents(
+  topBidCents: number | null | undefined,
+  economics: BidEconomics,
+): number {
+  if (topBidCents == null || topBidCents <= 0) {
+    return minBidToEnter(economics);
+  }
+  return minBidToOvertake(topBidCents, economics);
+}
+
+/**
  * Price shown on a row: what you must pay to take that rank.
  * Empty board / rank past the last listing → entry floor.
  */

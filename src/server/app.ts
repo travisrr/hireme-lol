@@ -39,7 +39,7 @@ import {
 } from "../lib/linkedin-oidc";
 import { parseBidAmountCents } from "../lib/money";
 import { boardActivityOrSeed } from "../lib/activity-seed";
-import { minBidToEnter } from "../lib/ranking";
+import { minOutbidCents } from "../lib/ranking";
 import { BOARD_TABS, parseCategories, parseIndustry } from "../lib/industries";
 import { SITE } from "../lib/site";
 import { GLOBAL_BOARD_ID, PUBLIC_ORIGIN } from "../lib/types";
@@ -141,9 +141,11 @@ export function createApp(deps: AppDeps) {
 
   app.get("/api/config", async (c) => {
     const economics = await deps.store.getEconomics();
+    const board = await deps.store.getBoard();
     return c.json({
       minEntryCents: economics.minEntryCents,
       minIncrementCents: economics.minIncrementCents,
+      minOutbidCents: minOutbidCents(board[0]?.currentBidCents, economics),
       publicOrigin: deps.config.origin,
       boardId: GLOBAL_BOARD_ID,
       stripeEnabled: paymentsReady(deps.config),
@@ -405,12 +407,14 @@ export function createApp(deps: AppDeps) {
     if (!session?.profile) return c.json({ error: "profile_required" }, 401);
     const body = await readJson(c);
     const economics = await deps.store.getEconomics();
+    const board = await deps.store.getBoard();
+    const minCents = minOutbidCents(board[0]?.currentBidCents, economics);
     const amountCents = parseBidAmountCents(
       body.amountCents ?? body.bid ?? body.dollars,
-      minBidToEnter(economics),
+      minCents,
     );
-    if (amountCents == null || amountCents < minBidToEnter(economics)) {
-      return c.json({ error: "below_entry" }, 400);
+    if (amountCents == null || amountCents < minCents) {
+      return c.json({ error: "below_entry", minCents }, 400);
     }
     const local = isLocalOrigin(deps.config.origin);
     const stripeReady = paymentsReady(deps.config);
