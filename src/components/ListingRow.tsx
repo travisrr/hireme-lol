@@ -1,6 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
 import { recordClick } from "../api/client";
-import { totalClicks } from "../lib/clicks";
 import { formatUsdFromCents } from "../lib/money";
 import { claimPriceForRank } from "../lib/ranking";
 import { SITE } from "../lib/site";
@@ -64,7 +63,13 @@ export function ListingRow({ listing, board, economics }: ListingRowProps) {
           </span>
         ) : null}
         <span className="type-meta min-w-0 truncate text-mute">{pitch}</span>
-        <ClickStat count={totalClicks(listing)} />
+        <ClickStat
+          listingId={listing.id}
+          linkedinClicks={listing.linkedinClicks}
+          websiteClicks={listing.websiteClicks}
+          linkedinUrl={listing.linkedinUrl}
+          websiteUrl={listing.websiteUrl}
+        />
       </button>
       <span className="type-rank text-accent">
         {formatUsdFromCents(listing.currentBidCents)}

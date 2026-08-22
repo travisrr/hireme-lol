@@ -15,3 +15,4 @@ export const HERO_CTA_DESKTOP = 40;
 export const HERO_CTA_MOBILE = 44;
 export const PULSE_ROW_H = 40;
 export const PULSE_CARD_PAD = 12;
+export const PHOTO_RADIUS_PX = 12;

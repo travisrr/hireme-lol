@@ -28,6 +28,8 @@ Do not merge or deploy PR 3 (`cursor/d1-bind-9d3c`) alone.
 - Header: Privacy and Terms as 13px mute links, left of the 36 hug GET ON THE BOARD CTA. Footer uses the same Privacy · Terms links.
 - `/privacy` and `/terms`. Contact is **hello@workwithme.lol**. Do not invent another address.
 - No NEW badge in the rank gutter.
+- Photos are squares with 12px radius on Trending and the board. Not circles.
+- Click ints are the LinkedIn icon and the site icon, not a cursor.
 - Join is Sign in with LinkedIn.
 - Stripe Checkout must keep `managed_payments[enabled]=false`.
 - Do not invent secrets, keys, or emails.

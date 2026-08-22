@@ -15,12 +15,10 @@ export function PhotoTile({
 }: PhotoTileProps) {
   return (
     <span
-      className={`inline-flex shrink-0 overflow-hidden bg-card ${src ? "" : "border border-line"} ${className}`}
+      className={`photo-tile ${src ? "" : "photo-tile-empty"} ${className}`}
       style={{ borderRadius: radius }}
     >
-      {src ? (
-        <img src={src} alt={alt} className="size-full object-cover" />
-      ) : null}
+      {src ? <img src={src} alt={alt} /> : null}
     </span>
   );
 }
