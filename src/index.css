@@ -187,7 +187,8 @@ body {
   white-space: nowrap;
 }
 
-.header-legal:hover {
+.header-legal:hover,
+.header-legal.is-current {
   color: var(--color-ink);
   text-decoration: underline;
 }
@@ -1176,4 +1177,147 @@ body {
 
 .bid-flash {
   animation: bid-flash 1.8s ease-out;
+}
+
+.how-doc {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  max-width: 640px;
+  margin-inline: auto;
+}
+
+.how-hero {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.how-title {
+  margin: 0;
+  color: var(--color-ink);
+  font-size: 28px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.how-updated {
+  margin: 0;
+  color: var(--color-mute);
+  font-size: 13px;
+  line-height: 1.2;
+}
+
+.how-lead,
+.how-body {
+  margin: 0;
+  color: var(--color-ink);
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+.how-loop {
+  margin: 0;
+  color: var(--color-accent);
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.how-steps {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.how-step {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  gap: 12px;
+  padding: 16px;
+  background: var(--color-card);
+  border: 1px solid var(--color-line);
+  border-radius: 12px;
+}
+
+.how-step-num {
+  color: var(--color-accent);
+  font-size: var(--type-rank);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+}
+
+.how-step-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.how-step-title {
+  margin: 0;
+  color: var(--color-ink);
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.how-money {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.how-money-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 16px;
+  background: var(--color-card);
+  border: 1px solid var(--color-line);
+  border-radius: 12px;
+}
+
+.how-money-value {
+  color: var(--color-accent);
+  font-size: var(--type-price);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+.how-money-label {
+  color: var(--color-mute);
+  font-size: var(--type-meta);
+  line-height: 1.35;
+}
+
+.how-block,
+.how-faq {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.how-heading,
+.how-faq-title {
+  margin: 0;
+  color: var(--color-ink);
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.how-cta {
+  margin-top: 8px;
+}
+
+@media (max-width: 429px) {
+  .how-money {
+    grid-template-columns: 1fr;
+  }
 }
