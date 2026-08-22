@@ -61,7 +61,8 @@ describe("board rows", () => {
     expect(row).toContain("listing-name");
     expect(row).toContain("listing-industry");
     expect(row).toContain("listingIndustry");
-    expect(row).toContain("listing-founding");
+    expect(row).not.toContain("listing-founding");
+    expect(row).not.toContain("FOUNDING");
     expect(row).toContain("listing-copy");
     expect(row).toContain("listingPitch");
     expect(row).toContain("listing-bid");

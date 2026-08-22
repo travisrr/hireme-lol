@@ -72,9 +72,6 @@ export function ListingRow({ listing, board, economics }: ListingRowProps) {
           <span className="listing-industry">{industry}</span>
         ) : null}
         <span className="listing-meta">
-          {listing.isFoundingMember ? (
-            <span className="listing-founding">FOUNDING</span>
-          ) : null}
           <ClickStat
             listingId={listing.id}
             profileViews={fakeProfileViews(listing)}

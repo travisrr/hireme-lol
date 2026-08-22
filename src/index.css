@@ -14,7 +14,6 @@
   --color-accent-hover: #004182;
   --color-up: #0a66c2;
   --color-down: #b42318;
-  --color-founding: #6b6560;
   --color-wash: #ebf3fa;
   --radius-card: 12px;
 }
@@ -931,15 +930,6 @@ body {
   display: contents;
 }
 
-.listing-founding {
-  flex-shrink: 0;
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--color-accent);
-}
-
 .listing-copy {
   min-width: 0;
   flex: 1 1 8rem;
@@ -1019,27 +1009,16 @@ body {
     overflow: hidden;
   }
 
-  .listing-founding,
   .listing-copy {
     min-width: 0;
+    flex: 1 1 auto;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
     font-size: 11px;
+    font-weight: 500;
     line-height: 1.2;
     color: var(--color-mute);
-  }
-
-  .listing-founding {
-    flex: 0 1 auto;
-    font-weight: 700;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-  }
-
-  .listing-copy {
-    flex: 1 1 auto;
-    font-weight: 500;
   }
 
   .listing-who .click-ints {
