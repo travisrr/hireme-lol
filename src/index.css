@@ -346,7 +346,8 @@ body {
   flex: 1 1 180px;
   align-self: flex-start;
   min-width: 0;
-  max-width: 240px;
+  width: 100%;
+  max-width: 420px;
   height: auto;
   overflow: visible;
   padding: 12px;
@@ -360,7 +361,7 @@ body {
 .hero-sponsor-why,
 .hero-sponsor-mail {
   width: 100%;
-  max-width: 22ch;
+  max-width: 100%;
   white-space: normal;
   overflow-wrap: break-word;
 }
