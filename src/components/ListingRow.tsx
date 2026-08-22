@@ -1,5 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import { recordClick } from "../api/client";
+import { jobHeadline } from "../lib/headline";
 import { formatUsdFromCents } from "../lib/money";
 import { claimPriceForRank } from "../lib/ranking";
 import { SITE } from "../lib/site";
@@ -9,8 +10,8 @@ import { ClickStat } from "./ClickStat";
 import { PHOTO_RADIUS_PX, PhotoTile } from "./PhotoTile";
 
 export const TOP_TEN_CUTOFF = 10;
-export const ROW_MIN_PX = 56;
-export const ROW_MIN_MOBILE_PX = 72;
+export const ROW_MIN_PX = 64;
+export const ROW_MIN_MOBILE_PX = 64;
 export const PHOTO_PX = 40;
 export const PHOTO_MOBILE_PX = 40;
 export const PHOTO_RADIUS = PHOTO_RADIUS_PX;
@@ -30,7 +31,7 @@ export function ListingRow({ listing, board, economics }: ListingRowProps) {
   const claim = claimPriceForRank(board, listing.rank, economics);
   const flash = isRecentBid(listing.currentBidAt);
   const highlight = listing.rank <= TOP_TEN_CUTOFF;
-  const pitch = listing.headline || listing.pitch || listing.company || "";
+  const headline = jobHeadline(listing.headline);
 
   async function openProfile() {
     try {
@@ -62,14 +63,12 @@ export function ListingRow({ listing, board, economics }: ListingRowProps) {
         }}
         className="listing-who"
       >
-        <span className="listing-name text-ink hover:text-accent">
-          {listing.displayName}
-        </span>
-        <span className="listing-meta">
+        <span className="listing-name-line">
+          <span className="listing-name text-ink hover:text-accent">
+            {listing.displayName}
+          </span>
           {listing.isFoundingMember ? (
             <span className="listing-founding">FOUNDING</span>
-          ) : pitch ? (
-            <span className="listing-headline">{pitch}</span>
           ) : null}
           <ClickStat
             listingId={listing.id}
@@ -79,6 +78,9 @@ export function ListingRow({ listing, board, economics }: ListingRowProps) {
             websiteUrl={listing.websiteUrl}
           />
         </span>
+        {headline ? (
+          <span className="listing-headline">{headline}</span>
+        ) : null}
       </button>
       <div className="listing-bid">
         <span className="listing-price type-rank text-accent">

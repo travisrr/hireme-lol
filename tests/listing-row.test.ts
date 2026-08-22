@@ -11,11 +11,12 @@ import {
   ROW_MIN_PX,
   TOP_TEN_CUTOFF,
 } from "../src/components/ListingRow";
+import { SEED_JOB_TITLES } from "../src/lib/headline";
 import { SITE } from "../src/lib/site";
 
 describe("board rows", () => {
   it("locks one-line row geometry with no NEW badge", () => {
-    expect(ROW_MIN_PX).toBe(56);
+    expect(ROW_MIN_PX).toBe(64);
     expect(RANK_COL_PX).toBe(28);
     expect(PHOTO_PX).toBe(40);
     expect(PHOTO_RADIUS).toBe(12);
@@ -51,19 +52,31 @@ describe("board rows", () => {
     expect(clicks).not.toMatch(/cursor/i);
   });
 
-  it("locks 72px two-line mobile rows and 32 hug Outbid", () => {
-    expect(ROW_MIN_MOBILE_PX).toBe(72);
+  it("locks 64px two-line rows with headline under the name", () => {
+    expect(ROW_MIN_MOBILE_PX).toBe(64);
     expect(PHOTO_MOBILE_PX).toBe(40);
     expect(RANK_COL_MOBILE_PX).toBe(24);
     expect(OUTBID_MIN_PX).toBe(32);
     const row = readFileSync("src/components/ListingRow.tsx", "utf8");
+    expect(row).toContain("listing-name-line");
     expect(row).toContain("listing-name");
     expect(row).toContain("listing-founding");
+    expect(row).toContain("listing-headline");
+    expect(row).toContain("jobHeadline");
     expect(row).toContain("listing-bid");
     expect(row).not.toContain("MovementMark");
+    expect(row).not.toContain("Founding member");
     const css = readFileSync("src/index.css", "utf8");
+    expect(css).toMatch(/\.listing-row \{[\s\S]*?height: 64px;/);
+    expect(css).toMatch(/\.listing-name \{[\s\S]*?font-size: 15px;[\s\S]*?font-weight: 800;/);
+    expect(css).toMatch(/\.listing-headline \{[\s\S]*?font-size: 13px;[\s\S]*?font-weight: 500;/);
+    expect(css).toMatch(/\.listing-founding \{[\s\S]*?font-size: 10px;/);
     expect(css).toMatch(/@media \(max-width: 767px\) \{[\s\S]*?\.listing-who \{[\s\S]*?flex-direction: column;/);
     expect(css).toMatch(/@media \(max-width: 767px\) \{[\s\S]*?\.listing-bid \{[\s\S]*?flex-direction: column;/);
+    const pulse = readFileSync("src/components/PulseCard.tsx", "utf8");
+    expect(pulse).toContain("hero-pulse-name");
+    expect(pulse).not.toContain("listing-headline");
+    expect(SEED_JOB_TITLES.elon).toContain("Tesla");
   });
 
   it("highlights ranks 1–10 only", () => {
