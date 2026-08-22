@@ -8,4 +8,5 @@ export type ReceiptItem = {
   amount?: string;
   rank?: number;
   time?: string;
+  industry?: string;
 };

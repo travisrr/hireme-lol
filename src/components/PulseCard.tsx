@@ -50,7 +50,12 @@ function PulseRow({ item }: { item: ReceiptItem }) {
         className="pulse-photo"
         radius={8}
       />
-      {name}
+      <span className="hero-pulse-who">
+        {name}
+        {parts.industry ? (
+          <span className="hero-pulse-industry">{parts.industry}</span>
+        ) : null}
+      </span>
       <span className="hero-pulse-stats">
         <span className="hero-pulse-rank">{parts.rank}</span>
         <span className="hero-pulse-amount">{parts.amount}</span>

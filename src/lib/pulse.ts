@@ -1,4 +1,6 @@
 import type { ReceiptItem } from "../components/ReceiptCard";
+import type { IndustryId } from "./industries";
+import { listingIndustry } from "./listing-copy";
 import { formatUsdFromCents } from "./money";
 import { fillPulseRows, pulseTrendingLine, seededActivity } from "./pulse-seed";
 import { formatRelativeTime } from "./time";
@@ -17,6 +19,8 @@ export type TrendingListing = {
   rank: number;
   currentBidCents: number;
   currentBidAt: number;
+  industry?: IndustryId | null;
+  categories?: readonly IndustryId[];
 };
 
 export function trendingFromListings(
@@ -26,6 +30,7 @@ export function trendingFromListings(
   return listings.slice(0, PULSE_LIST_LIMIT).map((listing) => {
     const amount = formatUsdFromCents(listing.currentBidCents);
     const time = formatRelativeTime(listing.currentBidAt, now);
+    const industry = listingIndustry(listing.industry, listing.categories);
     return {
       id: listing.id,
       href: `/${listing.handle}`,
@@ -34,6 +39,7 @@ export function trendingFromListings(
       rank: listing.rank,
       amount,
       time,
+      industry,
       at: listing.currentBidAt,
       line: pulseTrendingLine(listing.displayName, listing.rank, amount, time),
     };
@@ -94,6 +100,7 @@ export function pulseRowParts(item: ReceiptItem): {
   rank: string;
   amount: string;
   time: string;
+  industry: string;
 } {
   if (
     item.name &&
@@ -106,6 +113,7 @@ export function pulseRowParts(item: ReceiptItem): {
       rank: `#${item.rank}`,
       amount: item.amount,
       time: item.time,
+      industry: item.industry ?? "",
     };
   }
   const bits = item.line.split("·").map((part) => part.trim());
@@ -115,5 +123,6 @@ export function pulseRowParts(item: ReceiptItem): {
     rank: rank.startsWith("#") || rank.length === 0 ? rank : `#${rank}`,
     amount: bits[2] ?? "",
     time: bits[3] ?? "",
+    industry: item.industry ?? "",
   };
 }

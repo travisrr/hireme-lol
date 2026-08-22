@@ -516,14 +516,33 @@ body {
   line-height: 1;
 }
 
-.hero-pulse-name {
+.hero-pulse-who {
+  display: flex;
   min-width: 0;
   flex: 1 1 auto;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+}
+
+.hero-pulse-name {
+  min-width: 0;
   overflow: hidden;
   color: var(--color-ink);
   font-weight: 700;
   text-overflow: ellipsis;
   text-decoration: none;
+  white-space: nowrap;
+}
+
+.hero-pulse-industry {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--color-mute);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 

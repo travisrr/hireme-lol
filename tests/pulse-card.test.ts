@@ -45,6 +45,8 @@ describe("hero pulse card", () => {
     expect(card).toContain(">Trending<");
     expect(card).not.toContain("Activity");
     expect(card).not.toContain("PULSE_TABS");
+    expect(card).toContain("hero-pulse-who");
+    expect(card).toContain("hero-pulse-industry");
     expect(card).toContain("hero-pulse-stats");
     expect(card).toContain("hero-pulse-rank");
     expect(card).toContain("hero-pulse-amount");
@@ -61,6 +63,9 @@ describe("hero pulse card", () => {
     );
     expect(css).toMatch(
       /\.hero-pulse-rank,[\s\S]*?\.hero-pulse-amount,[\s\S]*?\.hero-pulse-time \{[\s\S]*?text-align: right;/,
+    );
+    expect(css).toMatch(
+      /\.hero-pulse-industry \{[\s\S]*?font-size: 11px;[\s\S]*?font-weight: 500;/,
     );
     expect(css).toMatch(/\.hero-pulse-foot \{[\s\S]*?margin: 4px 0 0;[\s\S]*?line-height: 1;/);
     expect(css).toMatch(/\.hero-pulse-foot a \{[\s\S]*?line-height: 1;/);
@@ -115,6 +120,7 @@ describe("hero pulse card", () => {
         rank: 1,
         currentBidCents: 1000,
         currentBidAt: now - 2 * hour,
+        industry: "healthcare",
       },
       {
         id: "lst_matthew",
@@ -124,6 +130,7 @@ describe("hero pulse card", () => {
         rank: 2,
         currentBidCents: 800,
         currentBidAt: now - 3 * hour,
+        industry: "finance",
       },
     ];
     const rows = trendingFromListings(live, now);
@@ -140,12 +147,14 @@ describe("hero pulse card", () => {
       rank: 1,
       amount: "$10",
       time: "2h ago",
+      industry: "Healthcare",
     });
     expect(pulseRowParts(rows[0])).toEqual({
       name: "Lindsay P. LCSW",
       rank: "#1",
       amount: "$10",
       time: "2h ago",
+      industry: "Healthcare",
     });
     const shown = itemsForTab("trending", rows, []);
     expect(shown.map((row) => row.name)).toEqual([
@@ -174,6 +183,7 @@ describe("hero pulse card", () => {
       rank: "#3",
       amount: "$6",
       time: "",
+      industry: "",
     });
     const home = readFileSync("src/pages/HomePage.tsx", "utf8");
     expect(home).toContain("trendingFromListings");
