@@ -36,7 +36,9 @@ describe("hero pulse card", () => {
     expect(card).toContain(">Trending<");
     expect(card).not.toContain("Activity");
     expect(card).not.toContain("PULSE_TABS");
-    expect(card).toContain("hero-pulse-meta");
+    expect(card).toContain("hero-pulse-rank");
+    expect(card).toContain("hero-pulse-amount");
+    expect(card).toContain("hero-pulse-time");
     expect(PULSE_LIST_LIMIT).toBe(5);
     const css = readFileSync("src/index.css", "utf8");
     expect(css).toMatch(/\.hero-pulse-title \{[\s\S]*?font-size: 13px;/);

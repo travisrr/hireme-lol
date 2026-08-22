@@ -31,7 +31,7 @@ describe("join is LinkedIn sign-in", () => {
     expect(css).toMatch(
       /@media \(min-width: 1024px\) \{[\s\S]*?\.join-lock \{[\s\S]*?1fr 1fr/,
     );
-    expect(css).toMatch(/\.join-why-title \{[\s\S]*?font-size: 15px;[\s\S]*?line-height: 1\.3;/);
+    expect(page).toContain("join-why-title type-claim");
     expect(css).toMatch(/\.join-why-list \{[\s\S]*?gap: 8px;/);
     expect(css).toMatch(/\.join-why-list li::marker \{[\s\S]*?#0a66c2/);
   });

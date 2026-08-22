@@ -50,9 +50,9 @@ function PulseRow({ item }: { item: ReceiptItem }) {
         radius={12}
       />
       {name}
-      <span className="hero-pulse-meta">{parts.rank}</span>
-      <span className="hero-pulse-meta">{parts.amount}</span>
-      <span className="hero-pulse-meta">{parts.time}</span>
+      <span className="hero-pulse-rank">{parts.rank}</span>
+      <span className="hero-pulse-amount">{parts.amount}</span>
+      <span className="hero-pulse-time">{parts.time}</span>
     </li>
   );
 }

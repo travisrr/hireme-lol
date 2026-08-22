@@ -273,7 +273,7 @@ export function JoinPage() {
 function WhyTakeCard() {
   return (
     <section className="join-card join-why">
-      <h2 className="join-why-title">{SITE.joinWhyTitle}</h2>
+      <h2 className="join-why-title type-claim text-ink">{SITE.joinWhyTitle}</h2>
       <ul className="join-why-list">
         {SITE.joinWhyBullets.map((line) => (
           <li key={line}>{line}</li>
@@ -296,7 +296,7 @@ function SignInCard({ error }: { error: string | null }) {
           {SITE.linkedinCta}
         </a>
       </p>
-      <p className="type-meta mt-6 text-mute">{SITE.joinApprove}</p>
+      <p className="join-signin-foot type-meta text-mute">{SITE.joinApprove}</p>
     </section>
   );
 }
