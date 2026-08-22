@@ -4,6 +4,7 @@ import type { ClickTarget } from "../lib/clicks";
 
 type ClickStatProps = {
   listingId: string;
+  profileViews?: number | null;
   linkedinClicks: number;
   websiteClicks: number;
   linkedinUrl: string | null;
@@ -12,6 +13,7 @@ type ClickStatProps = {
 
 export function ClickStat({
   listingId,
+  profileViews = null,
   linkedinClicks,
   websiteClicks,
   linkedinUrl,
@@ -19,6 +21,12 @@ export function ClickStat({
 }: ClickStatProps) {
   return (
     <span className="click-ints">
+      {profileViews != null ? (
+        <span className="click-int" title="Profile views">
+          <ViewsIntIcon />
+          <span className="tabular">{profileViews}</span>
+        </span>
+      ) : null}
       <ClickInt
         listingId={listingId}
         target="linkedin"
@@ -93,6 +101,22 @@ function ClickInt({
     >
       {inner}
     </a>
+  );
+}
+
+function ViewsIntIcon() {
+  return (
+    <svg
+      viewBox="0 0 16 16"
+      className="size-3.5 shrink-0 fill-none stroke-current"
+      aria-hidden="true"
+    >
+      <path
+        d="M2 8s2.5-4.25 6-4.25S14 8 14 8s-2.5 4.25-6 4.25S2 8 2 8Z"
+        strokeWidth="1.4"
+      />
+      <circle cx="8" cy="8" r="1.75" strokeWidth="1.4" />
+    </svg>
   );
 }
 

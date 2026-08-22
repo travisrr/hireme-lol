@@ -2,6 +2,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { recordClick } from "../api/client";
 import { listingCopy } from "../lib/listing-copy";
 import { formatUsdFromCents } from "../lib/money";
+import { fakeProfileViews } from "../lib/profile-views";
 import { claimPriceForRank } from "../lib/ranking";
 import { SITE } from "../lib/site";
 import { isRecentBid } from "../lib/time";
@@ -72,6 +73,7 @@ export function ListingRow({ listing, board, economics }: ListingRowProps) {
           ) : null}
           <ClickStat
             listingId={listing.id}
+            profileViews={fakeProfileViews(listing)}
             linkedinClicks={listing.linkedinClicks}
             websiteClicks={listing.websiteClicks}
             linkedinUrl={listing.linkedinUrl}

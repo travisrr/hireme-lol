@@ -45,6 +45,7 @@ describe("board rows", () => {
     expect(pulse).not.toContain("size-10");
     expect(pulse).not.toContain("size-8");
     const clicks = readFileSync("src/components/ClickStat.tsx", "utf8");
+    expect(clicks).toContain("ViewsIntIcon");
     expect(clicks).toContain("LinkedInIntIcon");
     expect(clicks).toContain("SiteIntIcon");
     expect(clicks).not.toContain("M3.5 2.5 12 8.2");
