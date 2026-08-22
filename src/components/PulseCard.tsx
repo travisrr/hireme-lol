@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { itemsForTab, pulseRowParts } from "../lib/pulse";
+import { itemsForTab, pulseEmptyCopy, pulseRowParts } from "../lib/pulse";
 import { PhotoTile } from "./PhotoTile";
 import type { ReceiptItem } from "./ReceiptCard";
 
@@ -14,11 +14,17 @@ export function PulseCard({ trending }: PulseCardProps) {
     <div className="hero-pulse-cell">
       <section data-lock="hero-pulse" className="hero-pulse">
         <p className="hero-pulse-title">Trending</p>
-        <ul className="hero-pulse-list">
-          {items.map((item) => (
-            <PulseRow key={item.id} item={item} />
-          ))}
-        </ul>
+        {items.length === 0 ? (
+          <p className="hero-pulse-empty type-body text-mute">
+            {pulseEmptyCopy("trending")}
+          </p>
+        ) : (
+          <ul className="hero-pulse-list">
+            {items.map((item) => (
+              <PulseRow key={item.id} item={item} />
+            ))}
+          </ul>
+        )}
         <div className="hero-pulse-foot">
           <a href="#board">View →</a>
         </div>

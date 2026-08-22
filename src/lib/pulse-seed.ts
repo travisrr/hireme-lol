@@ -134,11 +134,6 @@ export function seededTrending(): SeededPulseRow[] {
   ];
 }
 
-function pulsePersonKey(item: ReceiptItem): string {
-  if (item.href) return item.href;
-  return item.line.split("·")[0]?.trim().toLowerCase() || item.id;
-}
-
 export function fillPulseRows(
   items: readonly ReceiptItem[],
   seed: readonly ReceiptItem[],
@@ -148,22 +143,6 @@ export function fillPulseRows(
     if (rows.length >= PULSE_FILL) break;
     if (rows.some((row) => row.id === extra.id)) continue;
     rows.push(extra);
-  }
-  return rows;
-}
-
-export function fillUniquePeople(
-  items: readonly ReceiptItem[],
-  seed: readonly ReceiptItem[],
-): ReceiptItem[] {
-  const rows: ReceiptItem[] = [];
-  const seen = new Set<string>();
-  for (const item of [...items, ...seed]) {
-    if (rows.length >= PULSE_FILL) break;
-    const key = pulsePersonKey(item);
-    if (seen.has(key)) continue;
-    seen.add(key);
-    rows.push(item);
   }
   return rows;
 }
