@@ -26,9 +26,17 @@ export function SiteHeader({
         >
           {SITE.wordmark}
         </Link>
-        <Link to="/join" className="btn-header shrink-0 no-underline">
-          {SITE.cta}
-        </Link>
+        <div className="flex shrink-0 items-center gap-4">
+          <Link to="/privacy" className="header-legal">
+            Privacy
+          </Link>
+          <Link to="/terms" className="header-legal">
+            Terms
+          </Link>
+          <Link to="/join" className="btn-header shrink-0 no-underline">
+            {SITE.cta}
+          </Link>
+        </div>
       </div>
       {showSearch ? (
         <div className={`${frame} site-header-search`.trim()}>

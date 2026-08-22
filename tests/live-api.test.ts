@@ -231,8 +231,8 @@ describe("live API", () => {
     expect(body.industries).toEqual(
       expect.arrayContaining([
         { id: "overall", label: "Overall" },
-        { id: "founders", label: "Founders" },
-        { id: "hospitality", label: "Hospitality" },
+        { id: "technology", label: "Technology" },
+        { id: "healthcare", label: "Healthcare" },
       ]),
     );
   });
@@ -391,25 +391,25 @@ describe("live API", () => {
   it("accepts a $2 first entry and keeps empty industry tabs visible", async () => {
     const { app } = testApp();
     const cookie = await magicLogin(app, "maya@example.com");
-    await createProfile(app, cookie, "maya", ["founders", "ai"]);
+    await createProfile(app, cookie, "maya", ["technology", "finance"]);
     const paid = await pay(app, cookie, 200, "evt_entry");
     expect(paid.webhookBody.result).toMatchObject({ outcome: "confirmed" });
     const overall = await json(await app.request("/api/board"));
     expect(overall.listings as unknown[]).toHaveLength(1);
-    const hospitality = await json(
-      await app.request("/api/board?industry=hospitality"),
+    const healthcare = await json(
+      await app.request("/api/board?industry=healthcare"),
     );
-    expect(hospitality.listings).toEqual([]);
+    expect(healthcare.listings).toEqual([]);
   });
 
   it("filters the one global board per category and ranks inside the tab", async () => {
     const { app } = testApp();
     const maya = await magicLogin(app, "maya@example.com");
     const noah = await magicLogin(app, "noah@example.com");
-    expect((await createProfile(app, maya, "maya", ["founders", "ai"])).status).toBe(
+    expect((await createProfile(app, maya, "maya", ["technology", "finance"])).status).toBe(
       200,
     );
-    expect((await createProfile(app, noah, "noah", ["developers"])).status).toBe(
+    expect((await createProfile(app, noah, "noah", ["legal"])).status).toBe(
       200,
     );
     await pay(app, maya, 400, "evt_maya_cat");
@@ -420,28 +420,28 @@ describe("live API", () => {
         (row) => `${row.handle}:${row.rank}`,
       ),
     ).toEqual(["maya:1", "noah:2"]);
-    const founders = await json(await app.request("/api/board?industry=founders"));
+    const technology = await json(await app.request("/api/board?industry=technology"));
     expect(
-      (founders.listings as Array<{ handle: string; rank: number }>).map(
+      (technology.listings as Array<{ handle: string; rank: number }>).map(
         (row) => `${row.handle}:${row.rank}`,
       ),
     ).toEqual(["maya:1"]);
-    const developers = await json(
-      await app.request("/api/board?industry=developers"),
+    const legal = await json(
+      await app.request("/api/board?industry=legal"),
     );
     expect(
-      (developers.listings as Array<{ handle: string; rank: number }>).map(
+      (legal.listings as Array<{ handle: string; rank: number }>).map(
         (row) => `${row.handle}:${row.rank}`,
       ),
     ).toEqual(["noah:1"]);
-    const ai = await json(await app.request("/api/board?industry=ai"));
+    const finance = await json(await app.request("/api/board?industry=finance"));
     expect(
-      (ai.listings as Array<{ handle: string }>).map((row) => row.handle),
+      (finance.listings as Array<{ handle: string }>).map((row) => row.handle),
     ).toEqual(["maya"]);
-    const hospitality = await json(
-      await app.request("/api/board?industry=hospitality"),
+    const healthcare = await json(
+      await app.request("/api/board?industry=healthcare"),
     );
-    expect(hospitality.listings).toEqual([]);
+    expect(healthcare.listings).toEqual([]);
   });
 
   it("rejects a bid under the configured entry and keeps the board empty", async () => {

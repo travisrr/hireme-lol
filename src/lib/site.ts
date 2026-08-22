@@ -10,7 +10,8 @@ export const SITE = {
   micro: "Higher bid = higher rank. Get seen. Get outbid. That's it.",
   footer: "Money buys placement, not quality.",
   share: "I'm #37 on workwithme.lol. Think I deserve to be lower?",
-  claimWhy: "Higher bid = higher rank. Get seen. Get outbid. That’s it.",
+  claimWhy:
+    "The professional leaderboard. Bid for your name, get seen, get outbid, do it again. People looking for someone to work with start at #1. Your LinkedIn and site take the clicks. Higher bid = higher rank. That’s it.",
   joinLead: "Identify yourself and put a number on it.",
   joinSignIn:
     "Sign in with LinkedIn. We’ll use your name, photo, and headline.",

@@ -11,6 +11,7 @@ import {
 } from "../api/client";
 import { LinkedInMark } from "../components/LinkedInMark";
 import { PhotoTile } from "../components/PhotoTile";
+import { SiteFooter } from "../components/SiteFooter";
 import { useKeyboardInset } from "../hooks/useKeyboardInset";
 import { handleFromName } from "../lib/handles";
 import {
@@ -205,40 +206,43 @@ export function JoinPage() {
   }
 
   return (
-    <div
-      className="join-frame"
-      data-lock={step === "share" ? "share-sheet" : "join-sheet"}
-    >
-      <Link
-        to="/"
-        className="type-wordmark text-accent no-underline hover:text-accent-hover"
+    <div className="flex min-h-dvh flex-col bg-paper">
+      <div
+        className="join-frame flex-1"
+        data-lock={step === "share" ? "share-sheet" : "join-sheet"}
       >
-        {SITE.wordmark}
-      </Link>
-      {step === "signin" ? (
-        <SignInCard error={error} />
-      ) : step === "identity" ? (
-        <IdentityBidCard
-          draft={draft}
-          onSubmit={handleIdentityBid}
-          photoFile={photoFile}
-          onPhotoFile={setPhotoFile}
-          busy={busy}
-          error={error}
-          entry={entry}
-        />
-      ) : (
-        <ShareCard
-          displayName={session?.profile?.displayName ?? draft.displayName}
-          rank={rank}
-          copied={copied}
-          copyShare={async () => {
-            await navigator.clipboard.writeText(shareLine(rank ?? 1));
-            setCopied(true);
-          }}
-          linkedinHref={linkedinShareIntent(shareLine(rank ?? 1))}
-        />
-      )}
+        <Link
+          to="/"
+          className="type-wordmark text-accent no-underline hover:text-accent-hover"
+        >
+          {SITE.wordmark}
+        </Link>
+        {step === "signin" ? (
+          <SignInCard error={error} />
+        ) : step === "identity" ? (
+          <IdentityBidCard
+            draft={draft}
+            onSubmit={handleIdentityBid}
+            photoFile={photoFile}
+            onPhotoFile={setPhotoFile}
+            busy={busy}
+            error={error}
+            entry={entry}
+          />
+        ) : (
+          <ShareCard
+            displayName={session?.profile?.displayName ?? draft.displayName}
+            rank={rank}
+            copied={copied}
+            copyShare={async () => {
+              await navigator.clipboard.writeText(shareLine(rank ?? 1));
+              setCopied(true);
+            }}
+            linkedinHref={linkedinShareIntent(shareLine(rank ?? 1))}
+          />
+        )}
+      </div>
+      <SiteFooter />
     </div>
   );
 }

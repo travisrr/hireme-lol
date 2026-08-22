@@ -3,18 +3,13 @@ export const OVERALL_TAB = "overall" as const;
 export const MAX_CATEGORIES = 3;
 
 export const INDUSTRIES = [
-  { id: "founders", label: "Founders" },
-  { id: "developers", label: "Developers" },
-  { id: "designers", label: "Designers" },
-  { id: "sales", label: "Sales" },
-  { id: "marketing", label: "Marketing" },
-  { id: "recruiters", label: "Recruiters" },
+  { id: "technology", label: "Technology" },
   { id: "finance", label: "Finance" },
-  { id: "ai", label: "AI" },
-  { id: "hospitality", label: "Hospitality" },
-  { id: "creators", label: "Creators" },
-  { id: "operators", label: "Operators" },
-  { id: "consultants", label: "Consultants" },
+  { id: "healthcare", label: "Healthcare" },
+  { id: "real-estate", label: "Real estate" },
+  { id: "legal", label: "Legal" },
+  { id: "marketing", label: "Marketing" },
+  { id: "consulting", label: "Consulting" },
 ] as const;
 
 export type IndustryId = (typeof INDUSTRIES)[number]["id"];
