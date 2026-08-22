@@ -17,6 +17,11 @@ const JoinPage = lazy(() =>
 const LegalPage = lazy(() =>
   import("./pages/LegalPage").then((module) => ({ default: module.LegalPage })),
 );
+const SettingsPage = lazy(() =>
+  import("./pages/SettingsPage").then((module) => ({
+    default: module.SettingsPage,
+  })),
+);
 const ProfilePage = lazy(() =>
   import("./pages/ProfilePage").then((module) => ({ default: module.ProfilePage })),
 );
@@ -33,6 +38,7 @@ export default function App() {
         <Route path="/privacy" element={<LegalPage kind="privacy" />} />
         <Route path="/terms" element={<LegalPage kind="terms" />} />
         <Route path="/join" element={<JoinPage />} />
+        <Route path="/settings" element={<SettingsPage />} />
         <Route path="/admin" element={<AdminPage />} />
         <Route path="/:handle" element={<ProfilePage />} />
         <Route path="*" element={<Navigate to="/" replace />} />

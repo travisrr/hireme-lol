@@ -20,6 +20,7 @@ export function toPublicListing(row: RankedBoardRow): RankedPublicListing {
     currentBidCents: row.currentBidCents,
     currentBidAt: row.currentBidAt,
     profileCreatedAt: row.profileCreatedAt,
+    shareCreditCents: row.shareCreditCents ?? 0,
     previousRank: row.previousRank,
     boardId: "global",
     industry: row.industry,

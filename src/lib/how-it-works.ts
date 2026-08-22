@@ -36,7 +36,7 @@ export const HOW_IT_WORKS_BEATS = [
   },
   {
     title: HOW_IT_WORKS_STEPS[3],
-    body: "Post your number. People looking for someone to work with start at #1. Your LinkedIn and site take the clicks.",
+    body: "Post your number. Unique people who open your listing link this week can lift you a little — same cap for every bidder. A paid overtake still wins.",
   },
 ] as const;
 
@@ -64,6 +64,13 @@ export const HOW_IT_WORKS_SECTIONS: readonly HowItWorksBlock[] = [
     heading: "What rank means",
     paragraphs: [
       "Money buys placement, not quality. A higher rank is purchased attention. It is not a competence score.",
+    ],
+  },
+  {
+    heading: "Share juice",
+    paragraphs: [
+      "From Settings, share your listing. Each unique person who opens that link in the last 7 days is worth $0.25 toward rank, up to just under a $2 overtake. Same window and cap for every bidder. Juice fades. Your own clicks and link previews do not count.",
+      "A paid +$2 overtake still beats share juice. Sharing can pass someone on the same bid, or close a gap smaller than one overtake. It cannot buy #1 over someone who paid the step.",
     ],
   },
   {
@@ -104,6 +111,12 @@ export const HOW_IT_WORKS_FAQ: readonly HowItWorksBlock[] = [
     heading: "How do people reach me?",
     paragraphs: [
       "They click the LinkedIn icon or the site icon on your row. We do not run a job board, inbox, or recruiter CRM.",
+    ],
+  },
+  {
+    heading: "Can I climb by sharing?",
+    paragraphs: [
+      "A little. Unique opens of your share link this week can lift you up to just under a $2 overtake. Same rules for every bidder. Pay to take a full step.",
     ],
   },
 ];

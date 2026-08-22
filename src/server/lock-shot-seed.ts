@@ -58,6 +58,7 @@ export async function seedLockShotBoard(
         headline: person.headline,
         company: null,
         pitch: person.headline,
+        bio: "",
         photoUrl: person.photoUrl,
         linkedinUrl: `https://www.linkedin.com/in/${person.handle}`,
         websiteUrl: null,

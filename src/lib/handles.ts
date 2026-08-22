@@ -12,6 +12,7 @@ const RESERVED = new Set([
   "me",
   "og",
   "privacy",
+  "settings",
   "terms",
   OVERALL_TAB,
   "unsubscribe",

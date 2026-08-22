@@ -1,5 +1,6 @@
 import type { ApplyPaymentResult } from "../lib/apply-bid";
 import type { IndustryId } from "../lib/industries";
+import type { ShareJuice, SharePlatform } from "../lib/share-rank";
 import type { BidEconomics, EventType, Movement } from "../lib/types";
 
 export type UserRow = {
@@ -16,6 +17,7 @@ export type ProfileRow = {
   headline: string;
   company: string | null;
   pitch: string;
+  bio: string;
   photoUrl: string | null;
   linkedinUrl: string | null;
   websiteUrl: string | null;
@@ -67,6 +69,7 @@ export type PublicBoardRow = {
   currentBidCents: number;
   currentBidAt: number;
   profileCreatedAt: number;
+  shareCreditCents: number;
   previousRank: number | null;
   industry: IndustryId | null;
   categories: IndustryId[];
@@ -99,11 +102,25 @@ export type ProfileInput = {
   headline: string;
   company: string | null;
   pitch: string;
+  bio?: string;
   photoUrl: string | null;
   linkedinUrl: string | null;
   websiteUrl: string | null;
   industry: IndustryId | null;
   categories: IndustryId[];
+};
+
+export type ListingPageInput = {
+  websiteUrl: string | null;
+  bio: string;
+  company: string | null;
+};
+
+export type RecordShareVisitInput = {
+  listingId: string;
+  profileId: string;
+  visitorHash: string;
+  platform: SharePlatform;
 };
 
 export type CreatePendingBidInput = {
@@ -150,6 +167,21 @@ export interface Store {
   deleteSession(id: string): Promise<void>;
   createProfile(userId: string, input: ProfileInput, now: number): Promise<ProfileRow>;
   updateProfile(userId: string, input: ProfileInput, now: number): Promise<ProfileRow>;
+  updateListingPage(
+    userId: string,
+    input: ListingPageInput,
+    now: number,
+  ): Promise<ProfileRow>;
+  getShareJuice(
+    listingId: string,
+    now: number,
+    incrementCents: number,
+  ): Promise<ShareJuice>;
+  recordShareVisit(
+    input: RecordShareVisitInput,
+    now: number,
+    incrementCents: number,
+  ): Promise<{ counted: boolean; juice: ShareJuice }>;
   getProfileByLinkedinUrl(url: string): Promise<ProfileRow | null>;
   setProfilePhoto(profileId: string, photoKey: string | null): Promise<void>;
   incrementClick(

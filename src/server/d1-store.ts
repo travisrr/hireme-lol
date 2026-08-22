@@ -7,6 +7,11 @@ import {
 } from "../lib/industries";
 import { listingsThatFell } from "../lib/outbid";
 import { assertNever, movementFor, rankListings } from "../lib/ranking";
+import {
+  shareJuice,
+  shareWindowStart,
+  type ShareJuice,
+} from "../lib/share-rank";
 import { DEFAULT_ECONOMICS, type BidEconomics } from "../lib/types";
 import type {
   ActivityRow,
@@ -19,6 +24,8 @@ import type {
   ProfileRow,
   PublicBoardRow,
   RankedBoardRow,
+  RecordShareVisitInput,
+  ListingPageInput,
   SessionRow,
   Store,
   UserRow,
@@ -44,6 +51,7 @@ type ProfileSql = {
   headline: string;
   company: string | null;
   pitch: string;
+  bio: string | null;
   photo_r2_key: string | null;
   linkedin_url: string | null;
   website_url: string | null;
@@ -92,6 +100,7 @@ function mapProfile(row: ProfileSql): ProfileRow {
     headline: row.headline,
     company: row.company,
     pitch: row.pitch,
+    bio: row.bio ?? "",
     photoUrl: row.photo_r2_key,
     linkedinUrl: row.linkedin_url,
     websiteUrl: row.website_url,
@@ -321,6 +330,7 @@ export class D1Store implements Store {
       id: newId("prf"),
       userId,
       ...input,
+      bio: input.bio ?? "",
       isFoundingMember: false,
       linkedinClicks: 0,
       websiteClicks: 0,
@@ -330,10 +340,10 @@ export class D1Store implements Store {
     await this.db
       .prepare(
         `INSERT INTO profiles (
-          id, user_id, handle, display_name, headline, company, pitch,
+          id, user_id, handle, display_name, headline, company, pitch, bio,
           photo_r2_key, linkedin_url, website_url, is_founding_member, category_id,
           created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?)`,
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?)`,
       )
       .bind(
         profile.id,
@@ -343,6 +353,7 @@ export class D1Store implements Store {
         input.headline,
         input.company,
         input.pitch,
+        profile.bio,
         input.photoUrl,
         input.linkedinUrl,
         input.websiteUrl,
@@ -364,10 +375,11 @@ export class D1Store implements Store {
       .bind(userId)
       .first<ProfileSql>();
     if (!current) throw new Error("profile_missing");
+    const bio = input.bio !== undefined ? input.bio : (current.bio ?? "");
     await this.db
       .prepare(
         `UPDATE profiles SET handle = ?, display_name = ?, headline = ?, company = ?,
-         pitch = ?, photo_r2_key = ?, linkedin_url = ?, website_url = ?, category_id = ?,
+         pitch = ?, bio = ?, photo_r2_key = ?, linkedin_url = ?, website_url = ?, category_id = ?,
          updated_at = ?
          WHERE user_id = ?`,
       )
@@ -377,6 +389,7 @@ export class D1Store implements Store {
         input.headline,
         input.company,
         input.pitch,
+        bio,
         input.photoUrl,
         input.linkedinUrl,
         input.websiteUrl,
@@ -392,11 +405,101 @@ export class D1Store implements Store {
       headline: input.headline,
       company: input.company,
       pitch: input.pitch,
+      bio,
       photo_r2_key: input.photoUrl,
       linkedin_url: input.linkedinUrl,
       website_url: input.websiteUrl,
       category_id: serializeCategories(input.categories),
     });
+  }
+
+  async updateListingPage(
+    userId: string,
+    input: ListingPageInput,
+    now: number,
+  ): Promise<ProfileRow> {
+    const current = await this.db
+      .prepare(`SELECT * FROM profiles WHERE user_id = ?`)
+      .bind(userId)
+      .first<ProfileSql>();
+    if (!current) throw new Error("profile_missing");
+    await this.db
+      .prepare(
+        `UPDATE profiles SET website_url = ?, bio = ?, company = ?, updated_at = ?
+         WHERE user_id = ?`,
+      )
+      .bind(input.websiteUrl, input.bio, input.company, now, userId)
+      .run();
+    return mapProfile({
+      ...current,
+      website_url: input.websiteUrl,
+      bio: input.bio,
+      company: input.company,
+    });
+  }
+
+  async getShareJuice(
+    listingId: string,
+    now: number,
+    incrementCents: number,
+  ): Promise<ShareJuice> {
+    const row = await this.db
+      .prepare(
+        `SELECT COUNT(*) as visits FROM share_visits
+         WHERE listing_id = ? AND created_at >= ?`,
+      )
+      .bind(listingId, shareWindowStart(now))
+      .first<{ visits: number }>();
+    return shareJuice(row?.visits ?? 0, incrementCents);
+  }
+
+  async recordShareVisit(
+    input: RecordShareVisitInput,
+    now: number,
+    incrementCents: number,
+  ): Promise<{ counted: boolean; juice: ShareJuice }> {
+    const existing = await this.db
+      .prepare(
+        `SELECT created_at FROM share_visits
+         WHERE listing_id = ? AND visitor_hash = ?`,
+      )
+      .bind(input.listingId, input.visitorHash)
+      .first<{ created_at: number }>();
+    if (existing && existing.created_at >= shareWindowStart(now)) {
+      return {
+        counted: false,
+        juice: await this.getShareJuice(input.listingId, now, incrementCents),
+      };
+    }
+    if (existing) {
+      await this.db
+        .prepare(
+          `UPDATE share_visits SET created_at = ?, platform = ?
+           WHERE listing_id = ? AND visitor_hash = ?`,
+        )
+        .bind(now, input.platform, input.listingId, input.visitorHash)
+        .run();
+    } else {
+      await this.db
+        .prepare(
+          `INSERT INTO share_visits (
+            id, listing_id, profile_id, visitor_hash, platform, created_at
+          ) VALUES (?, ?, ?, ?, ?, ?)`,
+        )
+        .bind(
+          newId("shv"),
+          input.listingId,
+          input.profileId,
+          input.visitorHash,
+          input.platform,
+          now,
+        )
+        .run();
+    }
+    return {
+      counted: true,
+      juice: await this.getShareJuice(input.listingId, now, incrementCents),
+    };
   }
 
   async getProfileByLinkedinUrl(url: string): Promise<ProfileRow | null> {
@@ -926,6 +1029,11 @@ export class D1Store implements Store {
         category_id: string | null;
         created_at: number;
       }>();
+    const economics = await this.getEconomics();
+    const credits = await this.shareCreditByListing(
+      Date.now(),
+      economics.minIncrementCents,
+    );
     return results.map((row) => ({
       listingId: row.listing_id,
       profileId: row.profile_id,
@@ -944,10 +1052,31 @@ export class D1Store implements Store {
       currentBidCents: row.current_bid_cents,
       currentBidAt: row.current_bid_at,
       profileCreatedAt: row.created_at,
+      shareCreditCents: credits.get(row.listing_id) ?? 0,
       previousRank: row.previous_rank,
       industry: parseCategories(row.category_id)[0] ?? null,
       categories: parseCategories(row.category_id),
     }));
+  }
+
+  private async shareCreditByListing(
+    now: number,
+    incrementCents: number,
+  ): Promise<Map<string, number>> {
+    const { results } = await this.db
+      .prepare(
+        `SELECT listing_id, COUNT(*) as visits
+         FROM share_visits
+         WHERE created_at >= ?
+         GROUP BY listing_id`,
+      )
+      .bind(shareWindowStart(now))
+      .all<{ listing_id: string; visits: number }>();
+    const credits = new Map<string, number>();
+    for (const row of results) {
+      credits.set(row.listing_id, shareJuice(row.visits, incrementCents).creditCents);
+    }
+    return credits;
   }
 
   private async rankedActive(

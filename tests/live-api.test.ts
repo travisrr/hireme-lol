@@ -796,4 +796,120 @@ describe("live API", () => {
     expect(bidRes.status).toBe(503);
     expect(await json(bidRes)).toEqual({ error: "payments_not_ready" });
   });
+
+  it("lets a bidder update website and paste a bio", async () => {
+    const { app } = testApp();
+    const cookie = await magicLogin(app, "maya@example.com");
+    await createProfile(app, cookie, "maya");
+    const saved = await app.request("/api/me/listing", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Cookie: cookie,
+      },
+      body: JSON.stringify({
+        company: "Northwind",
+        websiteUrl: "northwind.example",
+        bio: "I build teams.\n\nPaste me from LinkedIn.",
+      }),
+    });
+    expect(saved.status).toBe(200);
+    const body = await json(saved);
+    const profile = body.profile as {
+      company: string;
+      websiteUrl: string;
+      bio: string;
+    };
+    expect(profile.company).toBe("Northwind");
+    expect(profile.websiteUrl).toBe("https://northwind.example");
+    expect(profile.bio).toBe("I build teams.\n\nPaste me from LinkedIn.");
+    const publicProfile = await json(await app.request("/api/profiles/maya"));
+    expect((publicProfile.profile as { bio: string }).bio).toContain("Paste me");
+    expect(publicProfile.isOwner).toBe(false);
+    const mine = await json(
+      await app.request("/api/profiles/maya", { headers: { Cookie: cookie } }),
+    );
+    expect(mine.isOwner).toBe(true);
+    const bad = await app.request("/api/me/listing", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Cookie: cookie,
+      },
+      body: JSON.stringify({ websiteUrl: "javascript:alert(1)", bio: "x" }),
+    });
+    expect(bad.status).toBe(400);
+    expect(await json(bad)).toEqual({ error: "invalid_website" });
+  });
+
+  it("counts unique inbound share opens and not owner or crawler hits", async () => {
+    const { app, store } = testApp();
+    const cookie = await magicLogin(app, "maya@example.com");
+    await createProfile(app, cookie, "maya");
+    await seedOnBoard(store, app, cookie, 200, "evt_share_maya");
+    const human = {
+      "user-agent":
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
+    };
+    const ownerHit = await app.request("/api/profiles/maya?from=linkedin", {
+      headers: { Cookie: cookie, ...human, "cf-connecting-ip": "1.1.1.1" },
+    });
+    expect(ownerHit.status).toBe(200);
+    const crawler = await app.request("/api/profiles/maya?from=linkedin", {
+      headers: {
+        "user-agent": "LinkedInBot/1.0",
+        "cf-connecting-ip": "8.8.8.8",
+      },
+    });
+    expect(crawler.status).toBe(200);
+    await app.request("/api/profiles/maya?from=linkedin", {
+      headers: { ...human, "cf-connecting-ip": "9.9.9.9" },
+    });
+    await app.request("/api/profiles/maya?from=linkedin", {
+      headers: { ...human, "cf-connecting-ip": "9.9.9.9" },
+    });
+    await app.request("/api/profiles/maya?from=x", {
+      headers: { ...human, "cf-connecting-ip": "4.4.4.4" },
+    });
+    const listing = await json(
+      await app.request("/api/me/listing", { headers: { Cookie: cookie } }),
+    );
+    const juice = listing.juice as { uniqueVisits: number; creditCents: number };
+    expect(juice.uniqueVisits).toBe(2);
+    expect(juice.creditCents).toBe(50);
+  });
+
+  it("lets share juice pass a same-bid listing without beating a paid overtake", async () => {
+    const { app, store } = testApp();
+    const firstCookie = await magicLogin(app, "first@example.com");
+    await createProfile(app, firstCookie, "first");
+    await seedOnBoard(store, app, firstCookie, 400, "evt_first");
+    const juiceCookie = await magicLogin(app, "juice@example.com");
+    await createProfile(app, juiceCookie, "juice");
+    await seedOnBoard(store, app, juiceCookie, 400, "evt_juice");
+    const paidCookie = await magicLogin(app, "paid@example.com");
+    await createProfile(app, paidCookie, "paid");
+    await seedOnBoard(store, app, paidCookie, 600, "evt_paid");
+    const human = {
+      "user-agent":
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
+    };
+    for (let i = 0; i < 4; i += 1) {
+      await app.request("/api/profiles/juice?from=copy", {
+        headers: { ...human, "cf-connecting-ip": `10.0.0.${i + 1}` },
+      });
+    }
+    const board = await json(await app.request("/api/board"));
+    const listings = board.listings as Array<{
+      handle: string;
+      rank: number;
+      currentBidCents: number;
+      shareCreditCents: number;
+    }>;
+    expect(
+      listings.map((row) => `${row.handle}:${row.rank}:${row.currentBidCents}`),
+    ).toEqual(["paid:1:600", "juice:2:400", "first:3:400"]);
+    expect(listings[1].shareCreditCents).toBe(100);
+    expect(listings[2].shareCreditCents).toBe(0);
+  });
 });
