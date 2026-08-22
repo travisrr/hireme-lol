@@ -15,7 +15,6 @@ export function ClickStat({
   linkedinUrl,
   websiteUrl,
 }: ClickStatProps) {
-  if (profileViews == null && !linkedinUrl && !websiteUrl) return null;
   return (
     <span className="click-ints">
       {profileViews != null ? (
@@ -24,26 +23,22 @@ export function ClickStat({
           <span className="tabular">{profileViews}</span>
         </span>
       ) : null}
-      {linkedinUrl ? (
-        <ClickInt
-          listingId={listingId}
-          target="linkedin"
-          href={linkedinUrl}
-          label="LinkedIn profile"
-        >
-          <LinkedInIntIcon />
-        </ClickInt>
-      ) : null}
-      {websiteUrl ? (
-        <ClickInt
-          listingId={listingId}
-          target="site"
-          href={websiteUrl}
-          label="Website"
-        >
-          <SiteIntIcon />
-        </ClickInt>
-      ) : null}
+      <ClickInt
+        listingId={listingId}
+        target="linkedin"
+        href={linkedinUrl}
+        label="LinkedIn profile"
+      >
+        <LinkedInIntIcon />
+      </ClickInt>
+      <ClickInt
+        listingId={listingId}
+        target="site"
+        href={websiteUrl}
+        label="Website"
+      >
+        <SiteIntIcon />
+      </ClickInt>
     </span>
   );
 }
@@ -95,7 +90,7 @@ function ClickInt({
 }: {
   listingId?: string | null;
   target: ClickTarget;
-  href: string;
+  href: string | null;
   label: string;
   children: ReactNode;
 }) {
@@ -106,6 +101,14 @@ function ClickInt({
     } catch {
       // Count is best-effort.
     }
+  }
+
+  if (!href) {
+    return (
+      <span className="click-int" title={label}>
+        {children}
+      </span>
+    );
   }
 
   return (

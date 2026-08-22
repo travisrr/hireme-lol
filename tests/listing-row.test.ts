@@ -70,6 +70,11 @@ describe("board rows", () => {
     expect(clicks).toContain('label="LinkedIn profile"');
     expect(clicks).toContain('label="Website"');
     expect(clicks).toContain("target=\"_blank\"");
+    const boardClicks = clicks.slice(0, clicks.indexOf("ProfileOutboundLinks"));
+    expect(boardClicks).toContain("<LinkedInIntIcon />");
+    expect(boardClicks).toContain("<SiteIntIcon />");
+    expect(boardClicks).not.toMatch(/\{linkedinUrl \?/);
+    expect(boardClicks).not.toMatch(/\{websiteUrl \?/);
     expect(clicks).not.toContain("linkedinClicks");
     expect(clicks).not.toContain("websiteClicks");
     expect(clicks).not.toContain("count=");
