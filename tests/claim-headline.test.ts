@@ -66,7 +66,10 @@ describe("hero sponsor callout", () => {
     expect(headline).not.toMatch(/hireme\.lol/);
     const css = readFileSync("src/index.css", "utf8");
     expect(css).toMatch(
-      /\.hero-sponsor \{[\s\S]*?border-radius: 12px;[\s\S]*?background: var\(--color-card\);[\s\S]*?opacity: 1;/,
+      /\.hero-sponsor \{[\s\S]*?flex-direction: column;[\s\S]*?max-width: 240px;[\s\S]*?height: auto;[\s\S]*?overflow: visible;[\s\S]*?border-radius: 12px;[\s\S]*?background: var\(--color-card\);[\s\S]*?opacity: 1;/,
+    );
+    expect(css).toMatch(
+      /\.hero-sponsor-title,[\s\S]*?\.hero-sponsor-why,[\s\S]*?\.hero-sponsor-mail \{[\s\S]*?max-width: 22ch;[\s\S]*?white-space: normal;[\s\S]*?overflow-wrap: break-word;/,
     );
     expect(css).toMatch(
       /\.hero-claim-cta \{[\s\S]*?display: flex;[\s\S]*?align-items: center;[\s\S]*?flex-wrap: wrap;[\s\S]*?gap: 12px;/,
