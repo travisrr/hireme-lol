@@ -5,8 +5,6 @@ import type { ClickTarget } from "../lib/clicks";
 type ClickStatProps = {
   listingId: string;
   profileViews?: number | null;
-  linkedinClicks: number;
-  websiteClicks: number;
   linkedinUrl: string | null;
   websiteUrl: string | null;
 };
@@ -14,11 +12,10 @@ type ClickStatProps = {
 export function ClickStat({
   listingId,
   profileViews = null,
-  linkedinClicks,
-  websiteClicks,
   linkedinUrl,
   websiteUrl,
 }: ClickStatProps) {
+  if (profileViews == null && !linkedinUrl && !websiteUrl) return null;
   return (
     <span className="click-ints">
       {profileViews != null ? (
@@ -27,24 +24,26 @@ export function ClickStat({
           <span className="tabular">{profileViews}</span>
         </span>
       ) : null}
-      <ClickInt
-        listingId={listingId}
-        target="linkedin"
-        count={linkedinClicks}
-        href={linkedinUrl}
-        label="LinkedIn profile"
-      >
-        <LinkedInIntIcon />
-      </ClickInt>
-      <ClickInt
-        listingId={listingId}
-        target="site"
-        count={websiteClicks}
-        href={websiteUrl}
-        label="Website"
-      >
-        <SiteIntIcon />
-      </ClickInt>
+      {linkedinUrl ? (
+        <ClickInt
+          listingId={listingId}
+          target="linkedin"
+          href={linkedinUrl}
+          label="LinkedIn profile"
+        >
+          <LinkedInIntIcon />
+        </ClickInt>
+      ) : null}
+      {websiteUrl ? (
+        <ClickInt
+          listingId={listingId}
+          target="site"
+          href={websiteUrl}
+          label="Website"
+        >
+          <SiteIntIcon />
+        </ClickInt>
+      ) : null}
     </span>
   );
 }
@@ -90,25 +89,16 @@ export function ProfileOutboundLinks({
 function ClickInt({
   listingId,
   target,
-  count,
   href,
   label,
   children,
 }: {
   listingId?: string | null;
   target: ClickTarget;
-  count?: number;
-  href: string | null;
+  href: string;
   label: string;
   children: ReactNode;
 }) {
-  const inner = (
-    <>
-      {children}
-      {count != null ? <span className="tabular">{count}</span> : null}
-    </>
-  );
-
   async function onActivate() {
     if (!listingId) return;
     try {
@@ -116,14 +106,6 @@ function ClickInt({
     } catch {
       // Count is best-effort.
     }
-  }
-
-  if (!href) {
-    return (
-      <span className="click-int" title={label}>
-        {inner}
-      </span>
-    );
   }
 
   return (
@@ -139,7 +121,7 @@ function ClickInt({
         void onActivate();
       }}
     >
-      {inner}
+      {children}
     </a>
   );
 }

@@ -61,12 +61,18 @@ describe("board rows", () => {
     expect(row).toContain("ClickStat");
     expect(row).toContain("linkedinUrl={listing.linkedinUrl}");
     expect(row).toContain("websiteUrl={listing.websiteUrl}");
+    expect(row).not.toContain("linkedinClicks");
+    expect(row).not.toContain("websiteClicks");
     const clicks = readFileSync("src/components/ClickStat.tsx", "utf8");
     expect(clicks).toContain("LinkedInIntIcon");
     expect(clicks).toContain("SiteIntIcon");
     expect(clicks).toContain("ProfileOutboundLinks");
     expect(clicks).toContain('label="LinkedIn profile"');
     expect(clicks).toContain('label="Website"');
+    expect(clicks).toContain("target=\"_blank\"");
+    expect(clicks).not.toContain("linkedinClicks");
+    expect(clicks).not.toContain("websiteClicks");
+    expect(clicks).not.toContain("count=");
     expect(clicks).not.toMatch(/cursor/i);
     const profile = readFileSync("src/pages/ProfilePage.tsx", "utf8");
     expect(profile).toContain("ProfileOutboundLinks");

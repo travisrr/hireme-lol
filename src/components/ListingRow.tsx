@@ -73,8 +73,6 @@ export function ListingRow({ listing, board, economics }: ListingRowProps) {
           <ClickStat
             listingId={listing.id}
             profileViews={fakeProfileViews(listing)}
-            linkedinClicks={listing.linkedinClicks}
-            websiteClicks={listing.websiteClicks}
             linkedinUrl={listing.linkedinUrl}
             websiteUrl={listing.websiteUrl}
           />
