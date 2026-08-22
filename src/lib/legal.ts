@@ -14,9 +14,8 @@ export type LegalDoc = {
 
 export const LEGAL_UPDATED = "Updated August 21, 2026";
 
-export const CONTACT_EMAIL = "hello@workwithme.lol";
-
-export const CONTACT_LINE = `Questions about the board: ${CONTACT_EMAIL}.`;
+export const CONTACT_LINE =
+  "Questions about the board: reach the operator of workwithme.lol.";
 
 export const PRIVACY_DOC: LegalDoc = {
   kind: "privacy",
