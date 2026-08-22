@@ -9,6 +9,7 @@ import {
   HERO_GAP_UNDER_SEARCH,
   HERO_GRID_GAP,
   PULSE_CARD_PAD,
+  PULSE_CARD_PAD_X,
   PULSE_ROW_H,
   SEARCH_GAP,
   SEARCH_H,
@@ -41,10 +42,14 @@ describe("hero pulse card", () => {
     expect(card).toContain("hero-pulse-time");
     expect(PULSE_LIST_LIMIT).toBe(5);
     const css = readFileSync("src/index.css", "utf8");
-    expect(css).toMatch(/\.hero-pulse-title \{[\s\S]*?font-size: 13px;/);
-    expect(css).toMatch(/\.hero-pulse-list \{[\s\S]*?flex-direction: column;/);
-    expect(css).toMatch(/\.hero-pulse-row \{[\s\S]*?flex: 1 1 0;[\s\S]*?space-between;/);
-    expect(css).toMatch(/\.pulse-photo,[\s\S]*?width: 32px;[\s\S]*?border-radius: 8px;/);
+    expect(css).toMatch(/\.hero-pulse \{[\s\S]*?padding: 8px 10px;/);
+    expect(css).toMatch(/\.hero-pulse-title \{[\s\S]*?font-size: 13px;[\s\S]*?font-weight: 700;/);
+    expect(css).toMatch(/\.hero-pulse-list \{[\s\S]*?margin: 4px 0 0;/);
+    expect(css).toMatch(/\.hero-pulse-row \{[\s\S]*?flex: 0 0 36px;[\s\S]*?height: 36px;[\s\S]*?space-between;/);
+    expect(css).toMatch(/\.hero-pulse-foot \{[\s\S]*?margin-top: 4px;/);
+    expect(css).toMatch(/\.pulse-photo,[\s\S]*?width: 28px;[\s\S]*?border-radius: 8px;/);
+    expect(css).toMatch(/\.hero-lock \{[\s\S]*?align-items: start;/);
+    expect(css).not.toMatch(/\.hero-pulse \{\s*position: absolute;/);
     expect(card).toContain("radius={8}");
     expect(card).not.toContain("radius={12}");
     const many = Array.from({ length: 8 }, (_, index) => item(`n${index}`));
@@ -118,7 +123,8 @@ describe("hero pulse card", () => {
     expect(HERO_CLAIM_GAP).toBe(12);
     expect(HERO_CTA_DESKTOP).toBe(40);
     expect(HERO_CTA_MOBILE).toBe(44);
-    expect(PULSE_ROW_H).toBe(40);
-    expect(PULSE_CARD_PAD).toBe(12);
+    expect(PULSE_ROW_H).toBe(36);
+    expect(PULSE_CARD_PAD).toBe(8);
+    expect(PULSE_CARD_PAD_X).toBe(10);
   });
 });

@@ -7,7 +7,7 @@ import {
 } from "./pulse-seed";
 
 export const PULSE_LIST_LIMIT = 5;
-export const PULSE_ROW_PX = 40;
+export const PULSE_ROW_PX = 36;
 export const PULSE_TABS = ["trending", "activity"] as const;
 export type PulseTab = (typeof PULSE_TABS)[number];
 
