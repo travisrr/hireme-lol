@@ -125,7 +125,7 @@ function LinkedInIntIcon() {
     <svg viewBox="0 0 16 16" className="size-3.5 shrink-0" aria-hidden="true">
       <rect width="16" height="16" rx="2" fill="currentColor" />
       <path
-        fill="#ffffff"
+        fill="var(--color-card)"
         d="M4.6 6.6h1.5v4.8H4.6V6.6Zm.75-2.4c.48 0 .86.38.86.86 0 .47-.38.85-.86.85a.86.86 0 0 1 0-1.71ZM7.15 6.6h1.42v.66h.02c.2-.38.68-.77 1.4-.77 1.5 0 1.78 1 1.78 2.28v2.63H10.3V9.05c0-.56-.01-1.29-.79-1.29-.78 0-.9.61-.9 1.24v2.4H7.15V6.6Z"
       />
     </svg>

@@ -13,6 +13,7 @@ import {
 import { LinkedInMark } from "../components/LinkedInMark";
 import { PhotoTile } from "../components/PhotoTile";
 import { SiteFooter } from "../components/SiteFooter";
+import { ThemeToggle } from "../components/ThemeToggle";
 import { useKeyboardInset } from "../hooks/useKeyboardInset";
 import { handleFromName } from "../lib/handles";
 import {
@@ -257,12 +258,15 @@ export function JoinPage() {
         className="join-frame flex-1"
         data-lock={step === "share" ? "share-sheet" : "join-sheet"}
       >
-        <Link
-          to="/"
-          className="type-wordmark text-accent no-underline hover:text-accent-hover"
-        >
-          {SITE.wordmark}
-        </Link>
+        <div className="join-top">
+          <Link
+            to="/"
+            className="type-wordmark text-accent no-underline hover:text-accent-hover"
+          >
+            {SITE.wordmark}
+          </Link>
+          <ThemeToggle />
+        </div>
         {step === "signin" ? (
           <div className={`join-lock ${PAGE_COLUMN}`}>
             <SignInCard error={error} />

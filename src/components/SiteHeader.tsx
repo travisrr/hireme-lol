@@ -1,4 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
+import { ThemeToggle } from "./ThemeToggle";
 import { HOW_IT_WORKS_NAV, HOW_IT_WORKS_PATH } from "../lib/how-it-works";
 import { PAGE_COLUMN } from "../lib/measure";
 import { SITE } from "../lib/site";
@@ -31,6 +32,7 @@ export function SiteHeader({
           <HeaderMuteLink to={HOW_IT_WORKS_PATH}>{HOW_IT_WORKS_NAV}</HeaderMuteLink>
           <HeaderMuteLink to="/privacy">Privacy</HeaderMuteLink>
           <HeaderMuteLink to="/terms">Terms</HeaderMuteLink>
+          <ThemeToggle />
           <span className="header-cta">
             <Link to="/join" className="btn-header no-underline">
               {SITE.cta}
