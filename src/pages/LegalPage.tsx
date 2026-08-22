@@ -1,6 +1,6 @@
 import { SiteFooter } from "../components/SiteFooter";
 import { SiteHeader } from "../components/SiteHeader";
-import { legalDoc, type LegalKind } from "../lib/legal";
+import { CONTACT_EMAIL, legalDoc, type LegalKind } from "../lib/legal";
 import { PAGE_COLUMN } from "../lib/measure";
 
 export function LegalPage({ kind }: { kind: LegalKind }) {
@@ -33,12 +33,7 @@ export function LegalPage({ kind }: { kind: LegalKind }) {
                   </h2>
                 ) : null}
                 {block.paragraphs.map((paragraph) => (
-                  <p
-                    key={paragraph}
-                    className="text-[15px] leading-[1.45] text-ink"
-                  >
-                    {paragraph}
-                  </p>
+                  <LegalBody key={paragraph} text={paragraph} />
                 ))}
               </section>
             ))}
@@ -47,5 +42,24 @@ export function LegalPage({ kind }: { kind: LegalKind }) {
         <SiteFooter inColumn />
       </div>
     </div>
+  );
+}
+
+function LegalBody({ text }: { text: string }) {
+  const at = text.indexOf(CONTACT_EMAIL);
+  return (
+    <p className="text-[15px] leading-[1.45] text-ink">
+      {at === -1 ? (
+        text
+      ) : (
+        <>
+          {text.slice(0, at)}
+          <a href={`mailto:${CONTACT_EMAIL}`} className="text-ink underline">
+            {CONTACT_EMAIL}
+          </a>
+          {text.slice(at + CONTACT_EMAIL.length)}
+        </>
+      )}
+    </p>
   );
 }
