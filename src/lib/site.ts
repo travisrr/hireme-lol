@@ -12,6 +12,7 @@ export const SITE = {
   share: "I'm #37 on workwithme.lol. Think I deserve to be lower?",
   claimWhy:
     "The professional leaderboard. Bid for your name, get seen, get outbid, do it again. People looking for someone to work with start at #1. Your LinkedIn and site take the clicks. Higher bid = higher rank. That’s it.",
+  claimPriceTipWhy: "Here’s why it isn’t.",
   joinLead: "Identify yourself and put a number on it.",
   joinSignIn:
     "Sign in with LinkedIn. We’ll use your name, photo, and headline.",
@@ -39,3 +40,11 @@ export const HOW_IT_WORKS_STEPS = [
   "You set a bid.",
   "You share your rank.",
 ] as const;
+
+export function claimPriceTipLead(amount: string): string {
+  return `So you think ${amount} is too high to spend?`;
+}
+
+export function claimPriceTipBody(increment: string): string {
+  return `That’s the live number to take #1 — whoever is on top plus ${increment}. A recruiter wants a cut of your next salary. LinkedIn ads spend this before lunch. People looking for someone to work with start at #1. Your LinkedIn and site take the clicks.`;
+}
