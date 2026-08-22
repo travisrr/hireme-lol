@@ -24,10 +24,15 @@ describe("board row copy", () => {
     expect(
       listingCopy({
         industry: "real-estate",
-        pitch: "President and Broker",
+        pitch:
+          "President and Broker of Skyline Financial, Inc. President and Lead Property Manager at Homes 4 all 4 Seasons",
       }),
-    ).toBe("Real estate · President and Broker");
-    expect(listingPitch("President and Broker")).toBe("President and Broker");
+    ).toBe("Real estate · President and Broker of Skyline Financial, Inc");
+    expect(
+      listingPitch(
+        "President and Broker of Skyline Financial, Inc. President and Lead Property Manager at Homes 4 all 4 Seasons",
+      ),
+    ).toBe("President and Broker of Skyline Financial, Inc");
     expect(
       listingCopy({
         industry: null,

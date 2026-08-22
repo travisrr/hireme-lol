@@ -1,4 +1,14 @@
+import {
+  inferLinkedinTitle,
+  parseLinkedinMemberProfile,
+  parseLinkedinTitleParts,
+} from "./linkedin-title";
 import { isUsableHeadshotUrl } from "./photo";
+
+export {
+  inferLinkedinTitle,
+  parseLinkedinMemberProfile,
+} from "./linkedin-title";
 
 export type PulledLinkedin = {
   linkedinUrl: string;
@@ -74,23 +84,20 @@ function decodeHtml(value: string): string {
     .replace(/&gt;/g, ">");
 }
 
-function parseTitleParts(title: string): {
-  displayName: string;
-  headline: string;
-  company: string;
-} {
-  const cleaned = title.replace(/\s*\|\s*LinkedIn\s*$/i, "").trim();
-  const [namePart, ...rest] = cleaned.split(" - ");
-  const displayName = (namePart || "").trim();
-  const after = rest.join(" - ").trim();
-  let headline = after;
-  let company = "";
-  const at = /\s+at\s+(.+)$/i.exec(after);
-  if (at) {
-    company = at[1].trim();
-    headline = after.slice(0, at.index).trim();
+export async function fetchLinkedinMemberProfile(
+  token: string,
+  fetchImpl: typeof fetch,
+): Promise<{ headline: string; vanityName: string }> {
+  try {
+    const response = await fetchImpl(
+      "https://api.linkedin.com/v2/me?projection=(id,localizedHeadline,headline,vanityName)",
+      { headers: { Authorization: `Bearer ${token}` } },
+    );
+    if (!response.ok) return { headline: "", vanityName: "" };
+    return parseLinkedinMemberProfile(await response.json());
+  } catch {
+    return { headline: "", vanityName: "" };
   }
-  return { displayName, headline, company };
 }
 
 export type LinkedinPreview = {
@@ -157,7 +164,7 @@ export function parseLinkedinHtml(html: string, pageUrl: string): PulledLinkedin
     metaContent(html, ["og:title", "twitter:title"]) ||
     /<title>([^<]+)<\/title>/i.exec(html)?.[1] ||
     "";
-  const parts = parseTitleParts(decodeHtml(title));
+  const parts = parseLinkedinTitleParts(decodeHtml(title));
   const image = metaContent(html, ["og:image", "og:image:url", "twitter:image"]);
   let ogImageUrl: string | null = null;
   if (image) {
@@ -176,7 +183,7 @@ export function parseLinkedinHtml(html: string, pageUrl: string): PulledLinkedin
     linkedinUrl: normalized,
     slug,
     displayName: parts.displayName,
-    headline: parts.headline,
+    headline: inferLinkedinTitle(parts.headline, { title, occupation: description }),
     company: parts.company,
     ogImageUrl,
   };

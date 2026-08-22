@@ -4,7 +4,9 @@ import { MemoryStore } from "../src/server/memory-store";
 import {
   FOUNDING_LINKEDIN_URLS,
   fetchPublicLinkedinPreview,
+  inferLinkedinTitle,
   parseLinkedinHtml,
+  parseLinkedinMemberProfile,
 } from "../src/lib/linkedin";
 
 describe("linkedin public preview", () => {
@@ -20,6 +22,29 @@ describe("linkedin public preview", () => {
     expect(pulled.displayName).toBe("Maya Chen");
     expect(pulled.headline).toBe("Founder");
     expect(pulled.ogImageUrl).toBe("https://media.licdn.com/dms/image/maya.jpg");
+  });
+
+  it("infers a board title from LinkedIn headline text", () => {
+    expect(inferLinkedinTitle("Founder at North")).toBe("Founder");
+    expect(
+      inferLinkedinTitle(
+        "President and Broker of Skyline Financial, Inc. President and Lead Property Manager at Homes 4 all 4 Seasons President and Broker of R&R Realty Homes, Inc.",
+      ),
+    ).toBe("President and Broker of Skyline Financial, Inc");
+    expect(inferLinkedinTitle("Healthcare Executive")).toBe("Healthcare Executive");
+    expect(inferLinkedinTitle("", { title: "Maya Chen - Founder at North | LinkedIn" })).toBe(
+      "Founder",
+    );
+    expect(inferLinkedinTitle("")).toBe("");
+    expect(
+      parseLinkedinMemberProfile({
+        localizedHeadline: "Broker at Skyline Financial",
+        vanityName: "mrhodeshouse",
+      }),
+    ).toEqual({
+      headline: "Broker",
+      vanityName: "mrhodeshouse",
+    });
   });
 
   it("returns empty fields when the public page is blocked", async () => {

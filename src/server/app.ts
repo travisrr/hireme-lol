@@ -11,11 +11,13 @@ import {
   normalizeHandle,
 } from "../lib/handles";
 import {
+  fetchLinkedinMemberProfile,
   fetchPublicLinkedinPreview,
   handleFromLinkedinSlug,
   linkedinSlug,
   normalizeLinkedinProfileUrl,
 } from "../lib/linkedin";
+import { inferLinkedinTitle } from "../lib/linkedin-title";
 import {
   classifyStripeEvent,
   createStripeCheckoutSession,
@@ -329,6 +331,7 @@ export function createApp(deps: AppDeps) {
         displayName: profile.displayName,
         photoUrl: profile.photoUrl,
         headline: profile.headline,
+        linkedinUrl: profile.linkedinUrl ?? "",
       }),
       cookieOpts(origin),
     );
@@ -794,11 +797,13 @@ function readLinkedinDraft(c: Parameters<typeof getCookie>[0]) {
       displayName?: string;
       photoUrl?: string;
       headline?: string;
+      linkedinUrl?: string;
     };
     return {
       displayName: String(parsed.displayName ?? ""),
       photoUrl: String(parsed.photoUrl ?? ""),
       headline: String(parsed.headline ?? ""),
+      linkedinUrl: String(parsed.linkedinUrl ?? ""),
     };
   } catch {
     return null;
@@ -836,8 +841,25 @@ async function linkedinProfile(
   });
   const parsed = parseLinkedinUserinfo(await userRes.json());
   if (!parsed.email) return null;
+  const member = await fetchLinkedinMemberProfile(
+    tokenJson.access_token,
+    fetchFn,
+  );
+  let linkedinUrl = member.vanityName
+    ? `https://www.linkedin.com/in/${encodeURIComponent(member.vanityName)}`
+    : "";
+  let previewHeadline = "";
+  if (linkedinUrl) {
+    const preview = await fetchPublicLinkedinPreview(linkedinUrl, fetchFn);
+    previewHeadline = preview.headline;
+    if (preview.linkedinUrl) linkedinUrl = preview.linkedinUrl;
+  }
   return {
     ...parsed,
     email: normalizeEmail(parsed.email),
+    headline: inferLinkedinTitle(
+      parsed.headline || member.headline || previewHeadline,
+    ),
+    linkedinUrl,
   };
 }

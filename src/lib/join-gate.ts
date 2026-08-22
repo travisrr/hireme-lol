@@ -2,6 +2,7 @@ export type JoinOauthProfile = {
   displayName?: string | null;
   photoUrl?: string | null;
   headline?: string | null;
+  linkedinUrl?: string | null;
 } | null | undefined;
 
 export type JoinStep = "signin" | "identity" | "share";

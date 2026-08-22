@@ -23,6 +23,13 @@ describe("linkedin oidc", () => {
       headline: "",
       email: "maya@example.com",
     });
+    expect(
+      parseLinkedinUserinfo({
+        name: "Maya Chen",
+        headline: "Founder at North",
+        email: "maya@example.com",
+      }).headline,
+    ).toBe("Founder");
   });
 
   it("builds the OIDC authorize URL for openid profile email", () => {

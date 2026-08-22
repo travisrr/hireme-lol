@@ -117,6 +117,7 @@ export function JoinPage() {
                 displayName: oauth.displayName || stored?.displayName || "",
                 photoUrl: oauth.photoUrl || stored?.photoUrl || "",
                 headline: stored?.headline || oauth.headline || "",
+                linkedinUrl: stored?.linkedinUrl || oauth.linkedinUrl || "",
               };
               setDraft(next);
               writeJoinDraft(next);

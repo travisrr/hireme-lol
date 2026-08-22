@@ -1,4 +1,5 @@
 import { industryLabel, type IndustryId } from "./industries";
+import { inferLinkedinTitle } from "./linkedin-title";
 
 const PLACEHOLDER_PITCH = /^(founding member|founding bid\.?)$/i;
 
@@ -6,7 +7,7 @@ export function listingPitch(
   pitch?: string | null,
   headline?: string | null,
 ): string {
-  const text = (pitch || headline || "").trim();
+  const text = inferLinkedinTitle(pitch || headline);
   if (!text || PLACEHOLDER_PITCH.test(text)) return "";
   return text;
 }

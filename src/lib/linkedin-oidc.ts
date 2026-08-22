@@ -1,3 +1,5 @@
+import { inferLinkedinTitle } from "./linkedin-title";
+
 export type LinkedinUserinfo = {
   displayName: string;
   photoUrl: string;
@@ -37,8 +39,14 @@ export function parseLinkedinUserinfo(input: unknown): LinkedinUserinfo {
   const displayName = name || [given, family].filter(Boolean).join(" ");
   const photoUrl = typeof row.picture === "string" ? row.picture.trim() : "";
   const email = typeof row.email === "string" ? row.email.trim() : "";
-  // LinkedIn userinfo usually has no headline. Never invent one.
-  const headline = typeof row.headline === "string" ? row.headline.trim() : "";
+  // Only infer a title from LinkedIn fields. Never invent one from name or email.
+  const headline = inferLinkedinTitle(
+    typeof row.headline === "string" ? row.headline : "",
+    {
+      occupation: typeof row.occupation === "string" ? row.occupation : "",
+      title: typeof row.title === "string" ? row.title : "",
+    },
+  );
   return { displayName, photoUrl, headline, email };
 }
 
