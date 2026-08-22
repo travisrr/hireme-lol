@@ -19,14 +19,9 @@ export function PulseCard({ trending }: PulseCardProps) {
             <PulseRow key={item.id} item={item} />
           ))}
         </ul>
-        <p className="hero-pulse-foot">
-          <a
-            href="#board"
-            className="text-[11px] font-semibold text-accent no-underline hover:text-accent-hover"
-          >
-            View →
-          </a>
-        </p>
+        <div className="hero-pulse-foot">
+          <a href="#board">View →</a>
+        </div>
       </section>
     </div>
   );

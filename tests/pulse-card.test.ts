@@ -42,14 +42,24 @@ describe("hero pulse card", () => {
     expect(card).toContain("hero-pulse-time");
     expect(PULSE_LIST_LIMIT).toBe(5);
     const css = readFileSync("src/index.css", "utf8");
-    expect(css).toMatch(/\.hero-pulse \{[\s\S]*?padding: 8px 10px;/);
+    expect(css).toMatch(/\.hero-pulse \{[\s\S]*?min-height: 0;[\s\S]*?padding: 8px 10px;/);
     expect(css).toMatch(/\.hero-pulse-title \{[\s\S]*?font-size: 13px;[\s\S]*?font-weight: 700;/);
     expect(css).toMatch(/\.hero-pulse-list \{[\s\S]*?margin: 4px 0 0;/);
-    expect(css).toMatch(/\.hero-pulse-row \{[\s\S]*?flex: 0 0 36px;[\s\S]*?height: 36px;[\s\S]*?space-between;/);
-    expect(css).toMatch(/\.hero-pulse-foot \{[\s\S]*?margin-top: 4px;/);
+    expect(css).toMatch(/\.hero-pulse-row \{[\s\S]*?flex: none;[\s\S]*?height: 36px;/);
+    expect(css).toMatch(/\.hero-pulse-row \{[\s\S]*?space-between;/);
+    expect(css).toMatch(/\.hero-pulse-foot \{[\s\S]*?margin: 4px 0 0;[\s\S]*?line-height: 1;/);
+    expect(css).toMatch(/\.hero-pulse-foot a \{[\s\S]*?line-height: 1;/);
     expect(css).toMatch(/\.pulse-photo,[\s\S]*?width: 28px;[\s\S]*?border-radius: 8px;/);
+    expect(css).toMatch(
+      /\.pulse-photo,\s*\.hero-pulse-row \.photo-tile \{[\s\S]*?border-radius: 8px;[\s\S]*?\}/,
+    );
+    expect(css).not.toMatch(
+      /\.pulse-photo,\s*\.hero-pulse-row \.photo-tile \{[^}]*border-radius:\s*50%/,
+    );
     expect(css).toMatch(/\.hero-lock \{[\s\S]*?align-items: start;/);
     expect(css).not.toMatch(/\.hero-pulse \{\s*position: absolute;/);
+    expect(card).toContain("hero-pulse-foot");
+    expect(card).not.toContain("<p className=\"hero-pulse-foot\"");
     expect(card).toContain("radius={8}");
     expect(card).not.toContain("radius={12}");
     const many = Array.from({ length: 8 }, (_, index) => item(`n${index}`));
