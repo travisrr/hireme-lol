@@ -69,7 +69,6 @@ describe("board rows", () => {
     expect(css).toMatch(
       /\.listing-copy \{[\s\S]*?overflow: hidden;[\s\S]*?text-overflow: ellipsis;/,
     );
-    const css = readFileSync("src/index.css", "utf8");
     expect(css).toMatch(/@media \(max-width: 767px\) \{[\s\S]*?\.listing-who \{[\s\S]*?flex-direction: column;/);
     expect(css).toMatch(/@media \(max-width: 767px\) \{[\s\S]*?\.listing-bid \{[\s\S]*?flex-direction: column;/);
   });
