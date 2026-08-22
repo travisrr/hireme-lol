@@ -1,15 +1,44 @@
 import type { ReceiptItem } from "../components/ReceiptCard";
-import {
-  fillPulseRows,
-  fillUniquePeople,
-  seededActivity,
-  seededTrending,
-} from "./pulse-seed";
+import { formatUsdFromCents } from "./money";
+import { fillPulseRows, pulseTrendingLine, seededActivity } from "./pulse-seed";
+import { formatRelativeTime } from "./time";
 
 export const PULSE_LIST_LIMIT = 5;
 export const PULSE_ROW_PX = 36;
+export const TRENDING_REFRESH_MS = 15_000;
 export const PULSE_TABS = ["trending", "activity"] as const;
 export type PulseTab = (typeof PULSE_TABS)[number];
+
+export type TrendingListing = {
+  id: string;
+  handle: string;
+  displayName: string;
+  photoUrl: string | null;
+  rank: number;
+  currentBidCents: number;
+  currentBidAt: number;
+};
+
+export function trendingFromListings(
+  listings: readonly TrendingListing[],
+  now = Date.now(),
+): ReceiptItem[] {
+  return listings.slice(0, PULSE_LIST_LIMIT).map((listing) => {
+    const amount = formatUsdFromCents(listing.currentBidCents);
+    const time = formatRelativeTime(listing.currentBidAt, now);
+    return {
+      id: listing.id,
+      href: `/${listing.handle}`,
+      photoUrl: listing.photoUrl,
+      name: listing.displayName,
+      rank: listing.rank,
+      amount,
+      time,
+      at: listing.currentBidAt,
+      line: pulseTrendingLine(listing.displayName, listing.rank, amount, time),
+    };
+  });
+}
 
 export function itemsForTab(
   tab: PulseTab,
@@ -18,7 +47,7 @@ export function itemsForTab(
 ): ReceiptItem[] {
   switch (tab) {
     case "trending":
-      return fillUniquePeople(trending, seededTrending());
+      return trending.slice(0, PULSE_LIST_LIMIT);
     case "activity":
       return fillPulseRows(activity, seededActivity());
     default: {
@@ -69,8 +98,8 @@ export function pulseRowParts(item: ReceiptItem): {
   if (
     item.name &&
     item.rank != null &&
-    item.amount &&
-    item.time
+    item.amount != null &&
+    item.time != null
   ) {
     return {
       name: item.name,

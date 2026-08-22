@@ -15,7 +15,7 @@ import {
   tabLabel,
 } from "../lib/industries";
 import { PAGE_COLUMN } from "../lib/measure";
-import { seededTrending } from "../lib/pulse-seed";
+import { TRENDING_REFRESH_MS, trendingFromListings } from "../lib/pulse";
 import { SITE } from "../lib/site";
 import { DEFAULT_ECONOMICS, type BidEconomics } from "../lib/types";
 import type { RankedBoardRow } from "../server/store";
@@ -27,16 +27,22 @@ export function HomePage() {
   const industry = parseIndustry(tab);
   const [query, setQuery] = useState("");
   const [listings, setListings] = useState<RankedBoardRow[]>([]);
+  const [overall, setOverall] = useState<RankedBoardRow[]>([]);
   const [economics, setEconomics] = useState<BidEconomics>(DEFAULT_ECONOMICS);
   const [error, setError] = useState<string | null>(null);
 
   const reload = useCallback(async (nextQuery = query) => {
     try {
-      const [data, config] = await Promise.all([
-        fetchBoard(nextQuery, industry),
+      const boardRequest = fetchBoard(nextQuery, industry);
+      const overallRequest =
+        nextQuery.trim() || industry ? fetchBoard() : boardRequest;
+      const [data, overallBoard, config] = await Promise.all([
+        boardRequest,
+        overallRequest,
         fetchConfig(),
       ]);
       setListings(data.listings);
+      setOverall(overallBoard.listings);
       setEconomics({
         minEntryCents: config.minEntryCents,
         minIncrementCents: config.minIncrementCents,
@@ -54,11 +60,26 @@ export function HomePage() {
     return () => window.clearTimeout(handle);
   }, [query, reload]);
 
+  useEffect(() => {
+    const refresh = () => {
+      if (document.visibilityState === "hidden") return;
+      void reload(query);
+    };
+    const id = window.setInterval(refresh, TRENDING_REFRESH_MS);
+    document.addEventListener("visibilitychange", refresh);
+    window.addEventListener("focus", refresh);
+    return () => {
+      window.clearInterval(id);
+      document.removeEventListener("visibilitychange", refresh);
+      window.removeEventListener("focus", refresh);
+    };
+  }, [query, reload]);
+
   const rows = listings.map(toPublicListing);
   const topTen = rows.slice(0, TOP_TEN_CUTOFF);
   const rest = rows.slice(TOP_TEN_CUTOFF);
 
-  const trending = seededTrending();
+  const trending = trendingFromListings(overall.map(toPublicListing));
 
   return (
     <div className="min-h-screen bg-paper">

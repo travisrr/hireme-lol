@@ -49,6 +49,20 @@ describe("privacy and terms", () => {
     expect(JSON.stringify(TERMS_DOC)).not.toContain("reach the operator");
   });
 
+  it("puts hello@ in a site footer with Privacy · Terms", () => {
+    const footer = readFileSync("src/components/SiteFooter.tsx", "utf8");
+    expect(footer).toContain("CONTACT_EMAIL");
+    expect(footer).toContain("mailto:${CONTACT_EMAIL}");
+    expect(footer).toContain("{SITE.footer}");
+    expect(footer).toContain('to="/privacy"');
+    expect(footer).toContain('to="/terms"');
+    expect(footer).toContain(" · ");
+    expect(footer).not.toMatch(/hireme\.lol/);
+    expect(footer).not.toMatch(/travis@/i);
+    const css = readFileSync("src/index.css", "utf8");
+    expect(css).toMatch(/\.site-footer \{[\s\S]*?border-top:/);
+  });
+
   it("locks header Privacy Terms left of the 36 hug CTA", () => {
     expect(HEADER_H).toBe(48);
     expect(HEADER_CTA_H).toBe(36);
