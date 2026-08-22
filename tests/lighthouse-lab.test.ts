@@ -42,6 +42,30 @@ describe("Lighthouse lab lock", () => {
     expect(migration).toContain("photos/founding-jensen.webp");
   });
 
+  it("keeps 80px WebP as the file only — board 40 r12, Trending 28 r8", () => {
+    const css = readFileSync("src/index.css", "utf8");
+    const listing = css.match(
+      /\.listing-row \.photo-tile,\s*\.listing-photo \{[\s\S]*?\}/,
+    )?.[0];
+    const pulse = css.match(
+      /\.pulse-photo,\s*\.hero-pulse-row \.photo-tile \{[\s\S]*?\}/,
+    )?.[0];
+    expect(listing).toMatch(/width: 40px;/);
+    expect(listing).toMatch(/max-width: 40px;/);
+    expect(listing).toMatch(/border-radius: 12px;/);
+    expect(listing).not.toMatch(/80px/);
+    expect(pulse).toMatch(/width: 28px;/);
+    expect(pulse).toMatch(/max-width: 28px;/);
+    expect(pulse).toMatch(/border-radius: 8px;/);
+    expect(pulse).not.toMatch(/80px/);
+    const pulseCard = readFileSync("src/components/PulseCard.tsx", "utf8");
+    expect(pulseCard).toContain("className=\"pulse-photo\"");
+    expect(pulseCard).toContain("radius={8}");
+    const row = readFileSync("src/components/ListingRow.tsx", "utf8");
+    expect(row).toContain("export const PHOTO_PX = 40;");
+    expect(row).toContain("radius={PHOTO_RADIUS}");
+  });
+
   it("splits off-home routes and leaves the Insights beacon alone", () => {
     const app = readFileSync("src/App.tsx", "utf8");
     expect(app).toContain('import("./pages/JoinPage")');

@@ -891,6 +891,7 @@ body {
   border-bottom: 1px solid var(--color-line);
 }
 
+/* Display lock: 40 square r12. 80px WebP is source density only. */
 .listing-row .photo-tile,
 .listing-photo {
   width: 40px;
@@ -903,6 +904,7 @@ body {
   border-radius: 12px;
 }
 
+/* Display lock: 28 square r8. Do not size these to the 80px file. */
 .pulse-photo,
 .hero-pulse-row .photo-tile {
   width: 28px;

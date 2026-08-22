@@ -1,7 +1,11 @@
 import { randomToken } from "./crypto";
 import { isAllowedImageType } from "./photo";
 
-/** Wikimedia Commons portraits stored on R2. Not LinkedIn. Not generated. */
+/**
+ * Wikimedia Commons portraits on R2. Not LinkedIn. Not generated.
+ * 80px WebP is the FILE (2x for the 40 tile). Display does not change:
+ * board thumbs stay 40 square r12, Trending thumbs stay 28 square r8.
+ */
 export const FOUNDING_HEADSHOT_KEYS = {
   elon: "photos/founding-elon.webp",
   palmer: "photos/founding-palmer.webp",
