@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import { recordClick } from "../api/client";
-import { listingCopy } from "../lib/listing-copy";
+import { listingIndustry, listingPitch } from "../lib/listing-copy";
 import { formatUsdFromCents } from "../lib/money";
 import { fakeProfileViews } from "../lib/profile-views";
 import { claimPriceForRank } from "../lib/ranking";
@@ -32,7 +32,8 @@ export function ListingRow({ listing, board, economics }: ListingRowProps) {
   const claim = claimPriceForRank(board, listing.rank, economics);
   const flash = isRecentBid(listing.currentBidAt);
   const highlight = listing.rank <= TOP_TEN_CUTOFF;
-  const copy = listingCopy(listing);
+  const industry = listingIndustry(listing.industry, listing.categories);
+  const pitch = listingPitch(listing.pitch, listing.headline);
 
   async function openProfile() {
     try {
@@ -67,6 +68,9 @@ export function ListingRow({ listing, board, economics }: ListingRowProps) {
         <span className="listing-name text-ink hover:text-accent">
           {listing.displayName}
         </span>
+        {industry ? (
+          <span className="listing-industry">{industry}</span>
+        ) : null}
         <span className="listing-meta">
           {listing.isFoundingMember ? (
             <span className="listing-founding">FOUNDING</span>
@@ -79,7 +83,7 @@ export function ListingRow({ listing, board, economics }: ListingRowProps) {
             linkedinUrl={listing.linkedinUrl}
             websiteUrl={listing.websiteUrl}
           />
-          {copy ? <span className="listing-copy">{copy}</span> : null}
+          {pitch ? <span className="listing-copy">{pitch}</span> : null}
         </span>
       </button>
       <div className="listing-bid">

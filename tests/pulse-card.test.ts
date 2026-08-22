@@ -67,6 +67,9 @@ describe("hero pulse card", () => {
     expect(css).toMatch(
       /\.hero-pulse-industry \{[\s\S]*?font-size: 11px;[\s\S]*?font-weight: 500;/,
     );
+    expect(css).toMatch(
+      /\.hero-pulse-who \{[\s\S]*?flex-direction: row;[\s\S]*?align-items: baseline;/,
+    );
     expect(css).toMatch(/\.hero-pulse-foot \{[\s\S]*?margin: 4px 0 0;[\s\S]*?line-height: 1;/);
     expect(css).toMatch(/\.hero-pulse-foot a \{[\s\S]*?line-height: 1;/);
     expect(css).toMatch(/\.pulse-photo,[\s\S]*?width: 28px;[\s\S]*?border-radius: 8px;/);

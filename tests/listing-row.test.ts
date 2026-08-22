@@ -59,14 +59,19 @@ describe("board rows", () => {
     expect(OUTBID_MIN_PX).toBe(32);
     const row = readFileSync("src/components/ListingRow.tsx", "utf8");
     expect(row).toContain("listing-name");
+    expect(row).toContain("listing-industry");
+    expect(row).toContain("listingIndustry");
     expect(row).toContain("listing-founding");
     expect(row).toContain("listing-copy");
-    expect(row).toContain("listingCopy");
+    expect(row).toContain("listingPitch");
     expect(row).toContain("listing-bid");
     expect(row).not.toContain("MovementMark");
     expect(row).not.toContain("listing-headline");
     expect(row).not.toContain("jobHeadline");
     const css = readFileSync("src/index.css", "utf8");
+    expect(css).toMatch(
+      /\.listing-industry \{[\s\S]*?font-size: 12px;[\s\S]*?font-weight: 500;/,
+    );
     expect(css).toMatch(
       /\.listing-copy \{[\s\S]*?overflow: hidden;[\s\S]*?text-overflow: ellipsis;/,
     );

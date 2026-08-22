@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
   listingCopy,
@@ -32,5 +33,9 @@ describe("board row copy", () => {
     expect(listingPitch("", "Founding member")).toBe("");
     expect(listingIndustry("real-estate")).toBe("Real estate");
     expect(listingIndustry(null, ["healthcare"])).toBe("Healthcare");
+    const row = readFileSync("src/components/ListingRow.tsx", "utf8");
+    expect(row).toContain("listing-industry");
+    expect(row).toContain("{industry}");
+    expect(row).not.toContain("listingCopy(");
   });
 });
