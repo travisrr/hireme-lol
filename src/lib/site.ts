@@ -22,14 +22,14 @@ export const SITE = {
   linkedinCta: "Sign in with LinkedIn",
   joinWhyTitle: "Why take #1",
   joinWhyBullets: [
-    "You’re the first name anyone sees.",
-    "People looking to work with someone start at the top — and often stop.",
-    "Your LinkedIn and site catch every click off the board.",
-    "#1 is a public signal you outrank the field.",
-    "You lead your industry tab, not just Overall.",
-    "A #1 rank is something you can share. It travels.",
+    "You’re the first name they see.",
+    "People looking for someone to work with start at #1. Most never scroll.",
+    "Every click off the board hits your LinkedIn or your site.",
+    "#1 is public. Everyone can see you outrank the field.",
+    "You lead your industry, not just the whole board.",
+    "A #1 rank is a line you can post. It travels for you.",
     "Clients remember the person who wanted it most.",
-    "The current leader keeps the spot until you take it.",
+    "The current #1 keeps it until you take it.",
   ],
 } as const;
 
