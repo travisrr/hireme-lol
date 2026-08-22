@@ -9,7 +9,11 @@ import {
   LINKEDIN_SIGNIN_PATH,
 } from "../src/lib/join-qr";
 import { linkedinSignInUrl } from "../src/lib/linkedin-oidc";
-import { HERO_JOIN_QR, HERO_JOIN_QR_PAD } from "../src/lib/measure";
+import {
+  HERO_CTA_DESKTOP,
+  HERO_JOIN_QR,
+  HERO_JOIN_QR_PAD,
+} from "../src/lib/measure";
 import { SITE } from "../src/lib/site";
 
 describe("hero LinkedIn join QR", () => {
@@ -41,14 +45,18 @@ describe("hero LinkedIn join QR", () => {
     expect(qr).toContain("joinQrUrl()");
     expect(qr).toContain("LINKEDIN_SIGNIN_PATH");
     expect(qr).toContain("SITE.linkedinCta");
-    expect(HERO_JOIN_QR).toBe(80);
-    expect(HERO_JOIN_QR_PAD).toBe(8);
+    expect(HERO_JOIN_QR).toBe(HERO_CTA_DESKTOP);
+    expect(HERO_JOIN_QR).toBe(40);
+    expect(HERO_JOIN_QR_PAD).toBe(0);
     const css = readFileSync("src/index.css", "utf8");
     expect(css).toMatch(
       /\.hero-claim-cta \{[\s\S]*?display: flex;[\s\S]*?align-items: center;[\s\S]*?gap: 12px;/,
     );
     expect(css).toMatch(
-      /\.hero-join-qr \{[\s\S]*?width: 80px;[\s\S]*?height: 80px;[\s\S]*?padding: 8px;[\s\S]*?border-radius: 12px;/,
+      /\.hero-join-qr \{[\s\S]*?width: var\(--hero-cta-h\);[\s\S]*?height: var\(--hero-cta-h\);[\s\S]*?padding: 0;/,
+    );
+    expect(css).toMatch(
+      /\.hero-join-qr-svg \{[\s\S]*?shape-rendering: crispEdges;/,
     );
     expect(css).toMatch(
       /@media \(min-width: 768px\) \{[\s\S]*?\.hero-join-qr \{[\s\S]*?display: block;/,
@@ -58,7 +66,7 @@ describe("hero LinkedIn join QR", () => {
   it("renders a scannable matrix for the production LinkedIn sign-in URL", () => {
     const qr = joinQrMatrix(joinQrUrl());
     expect(JOIN_QR_ECC).toBe("M");
-    expect(JOIN_QR_BORDER).toBe(2);
+    expect(JOIN_QR_BORDER).toBe(1);
     expect(qr.size).toBeGreaterThan(20);
     expect(qr.data).toHaveLength(qr.size);
     expect(qr.data.every((row) => row.length === qr.size)).toBe(true);

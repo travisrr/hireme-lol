@@ -5,7 +5,7 @@ import { SITE } from "./site";
 export { LINKEDIN_SIGNIN_PATH, linkedinSignInUrl } from "./linkedin-oidc";
 
 export const JOIN_QR_ECC = "M" as const;
-export const JOIN_QR_BORDER = 2;
+export const JOIN_QR_BORDER = 1;
 
 export function joinQrUrl(origin: string = SITE.origin): string {
   return linkedinSignInUrl(origin);
