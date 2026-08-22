@@ -1625,3 +1625,11 @@ body {
   line-height: 1.5;
   color: var(--color-ink);
 }
+
+.profile-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  margin-top: 16px;
+}

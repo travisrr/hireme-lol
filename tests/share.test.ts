@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { parseEconomics } from "../src/lib/economics";
 import { receiptLine } from "../src/lib/receipts";
@@ -10,6 +11,15 @@ import {
 import { DEFAULT_ECONOMICS } from "../src/lib/types";
 
 describe("share", () => {
+  it("keeps Copy share line and Outbid from touching on profiles", () => {
+    const profile = readFileSync("src/pages/ProfilePage.tsx", "utf8");
+    const css = readFileSync("src/index.css", "utf8");
+    expect(profile).toContain('className={listing ? "profile-actions" : "mt-8"}');
+    expect(css).toMatch(
+      /\.profile-actions \{[\s\S]*?display: flex;[\s\S]*?gap: 16px;/,
+    );
+  });
+
   it("locks the taunt", () => {
     expect(shareLine(37)).toBe(
       "I'm #37 on workwithme.lol. Think I deserve to be lower?",

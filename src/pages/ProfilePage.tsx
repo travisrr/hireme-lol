@@ -155,9 +155,13 @@ export function ProfilePage() {
                   )}
                   .
                 </p>
+              </>
+            ) : null}
+            <div className={listing ? "profile-actions" : "mt-8"}>
+              {listing ? (
                 <button
                   type="button"
-                  className="mt-4 text-sm font-semibold text-accent"
+                  className="text-sm font-semibold text-accent"
                   onClick={() => {
                     void navigator.clipboard.writeText(shareLine(listing.rank));
                     setCopied(true);
@@ -165,11 +169,11 @@ export function ProfilePage() {
                 >
                   {copied ? "Copied" : "Copy share line"}
                 </button>
-              </>
-            ) : null}
-            <Link to="/join" className="btn-accent mt-8 inline-block no-underline">
-              Outbid
-            </Link>
+              ) : null}
+              <Link to="/join" className="btn-accent no-underline">
+                Outbid
+              </Link>
+            </div>
           </article>
         ) : (
           <div>
