@@ -597,7 +597,7 @@ body {
   max-width: 32px;
   max-height: 32px;
   flex: 0 0 32px;
-  border-radius: 12px;
+  border-radius: 8px;
 }
 
 .listing-rank {
@@ -864,17 +864,27 @@ body {
   flex-direction: column;
   gap: 8px;
   margin: 12px 0 0;
-  padding-left: 1.2em;
+  padding-left: 0;
+  list-style: none;
 }
 
 .join-why-list li {
+  position: relative;
+  padding-left: 18px;
   color: var(--color-ink);
   font-size: 15px;
   line-height: 1.45;
 }
 
-.join-why-list li::marker {
-  color: #0a66c2;
+.join-why-list li::before {
+  content: "";
+  position: absolute;
+  top: 0.55em;
+  left: 0;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #0a66c2;
 }
 
 .btn-linkedin {

@@ -34,7 +34,7 @@ describe("board rows", () => {
     expect(css).toMatch(/\.listing-photo \{[\s\S]*?width: 40px;[\s\S]*?border-radius: 12px;/);
     expect(css).toMatch(/\.photo-tile \{[\s\S]*?border-radius: 12px;/);
     expect(css).toMatch(/\.photo-tile img \{[\s\S]*?border-radius: 0;/);
-    expect(css).not.toMatch(/\.photo-tile \{[\s\S]*?border-radius:\s*50%/);
+    expect(css).not.toMatch(/\.photo-tile \{[^}]*border-radius:\s*50%/);
     expect(css).not.toMatch(/\.photo-tile[^{]*\{[^}]*border-radius:\s*50%/);
     const tile = readFileSync("src/components/PhotoTile.tsx", "utf8");
     expect(tile).not.toContain("size-11");

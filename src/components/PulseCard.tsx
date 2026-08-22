@@ -47,7 +47,7 @@ function PulseRow({ item }: { item: ReceiptItem }) {
       <PhotoTile
         src={item.photoUrl ?? null}
         className="pulse-photo"
-        radius={12}
+        radius={8}
       />
       {name}
       <span className="hero-pulse-rank">{parts.rank}</span>

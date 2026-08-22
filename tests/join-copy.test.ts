@@ -37,7 +37,7 @@ describe("join is LinkedIn sign-in", () => {
     );
     expect(page).toContain("join-why-title type-claim");
     expect(css).toMatch(/\.join-why-list \{[\s\S]*?gap: 8px;/);
-    expect(css).toMatch(/\.join-why-list li::marker \{[\s\S]*?#0a66c2/);
+    expect(css).toMatch(/\.join-why-list li::before \{[\s\S]*?width: 7px;[\s\S]*?#0a66c2/);
   });
 
   it("fills name, photo, and headline after login", () => {

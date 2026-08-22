@@ -44,7 +44,9 @@ describe("hero pulse card", () => {
     expect(css).toMatch(/\.hero-pulse-title \{[\s\S]*?font-size: 13px;/);
     expect(css).toMatch(/\.hero-pulse-list \{[\s\S]*?flex-direction: column;/);
     expect(css).toMatch(/\.hero-pulse-row \{[\s\S]*?flex: 1 1 0;[\s\S]*?space-between;/);
-    expect(css).toMatch(/\.pulse-photo,[\s\S]*?width: 32px;/);
+    expect(css).toMatch(/\.pulse-photo,[\s\S]*?width: 32px;[\s\S]*?border-radius: 8px;/);
+    expect(card).toContain("radius={8}");
+    expect(card).not.toContain("radius={12}");
     const many = Array.from({ length: 8 }, (_, index) => item(`n${index}`));
     expect(itemsForTab("trending", many, []).map((row) => row.id)).toEqual([
       "n0",
