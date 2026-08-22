@@ -22,20 +22,22 @@ export function SiteHeader({
         <Link
           to="/"
           aria-label={SITE.name}
-          className="type-wordmark shrink-0 text-accent no-underline hover:text-accent-hover"
+          className="type-wordmark site-wordmark text-accent no-underline hover:text-accent-hover"
         >
           {SITE.wordmark}
         </Link>
-        <div className="flex shrink-0 items-center gap-4">
+        <div className="site-header-actions">
           <Link to="/privacy" className="header-legal">
             Privacy
           </Link>
           <Link to="/terms" className="header-legal">
             Terms
           </Link>
-          <Link to="/join" className="btn-header shrink-0 no-underline">
-            {SITE.cta}
-          </Link>
+          <span className="header-cta">
+            <Link to="/join" className="btn-header no-underline">
+              {SITE.cta}
+            </Link>
+          </span>
         </div>
       </div>
       {showSearch ? (

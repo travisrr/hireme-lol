@@ -25,7 +25,7 @@ Do not merge or deploy PR 3 (`cursor/d1-bind-9d3c`) alone.
 
 - Public name is **workwithme.lol** only. `hireme.lol` is not ours.
 - Eight board tabs: Overall, Technology, Finance, Healthcare, Real estate, Legal, Marketing, Consulting.
-- Header: Privacy and Terms as 13px mute links, left of the 36 hug GET ON THE BOARD CTA. Footer uses the same Privacy · Terms links.
+- Header at 768+: Privacy and Terms as 13px mute links, left of the 36 hug GET ON THE BOARD CTA. Below 768: wordmark left, CTA right, Privacy/Terms footer-only. Footer uses Privacy · Terms.
 - `/privacy` and `/terms`. Contact is **hello@workwithme.lol**. Do not invent another address.
 - No NEW badge in the rank gutter.
 - Photos are squares with 12px radius on Trending and the board. Not circles.

@@ -10,9 +10,12 @@ import { PHOTO_RADIUS_PX, PhotoTile } from "./PhotoTile";
 
 export const TOP_TEN_CUTOFF = 10;
 export const ROW_MIN_PX = 56;
+export const ROW_MIN_MOBILE_PX = 72;
 export const PHOTO_PX = 44;
+export const PHOTO_MOBILE_PX = 40;
 export const PHOTO_RADIUS = PHOTO_RADIUS_PX;
 export const RANK_COL_PX = 28;
+export const RANK_COL_MOBILE_PX = 24;
 export const OUTBID_MIN_PX = 32;
 
 type ListingRowProps = {
@@ -54,15 +57,17 @@ export function ListingRow({ listing, board, economics }: ListingRowProps) {
         }}
         className="listing-who"
       >
-        <span className="truncate text-[15px] font-semibold text-ink hover:text-accent">
+        <span className="listing-name truncate text-[15px] font-semibold text-ink hover:text-accent">
           {listing.displayName}
         </span>
         {listing.isFoundingMember ? (
-          <span className="shrink-0 text-[9px] font-bold tracking-wide text-accent uppercase">
+          <span className="listing-founding shrink-0 text-[9px] font-bold tracking-wide text-accent uppercase">
             FOUNDING
           </span>
         ) : null}
-        <span className="type-meta min-w-0 truncate text-mute">{pitch}</span>
+        <span className="listing-headline type-meta min-w-0 truncate text-mute">
+          {pitch}
+        </span>
         <ClickStat
           listingId={listing.id}
           linkedinClicks={listing.linkedinClicks}

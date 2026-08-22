@@ -2,9 +2,12 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
   OUTBID_MIN_PX,
+  PHOTO_MOBILE_PX,
   PHOTO_PX,
   PHOTO_RADIUS,
+  RANK_COL_MOBILE_PX,
   RANK_COL_PX,
+  ROW_MIN_MOBILE_PX,
   ROW_MIN_PX,
   TOP_TEN_CUTOFF,
 } from "../src/components/ListingRow";
@@ -35,6 +38,17 @@ describe("board rows", () => {
     expect(clicks).toContain("SiteIntIcon");
     expect(clicks).not.toContain("M3.5 2.5 12 8.2");
     expect(clicks).not.toMatch(/cursor/i);
+  });
+
+  it("locks 72px two-line mobile rows and 32 hug Outbid", () => {
+    expect(ROW_MIN_MOBILE_PX).toBe(72);
+    expect(PHOTO_MOBILE_PX).toBe(40);
+    expect(RANK_COL_MOBILE_PX).toBe(24);
+    expect(OUTBID_MIN_PX).toBe(32);
+    const row = readFileSync("src/components/ListingRow.tsx", "utf8");
+    expect(row).toContain("listing-name");
+    expect(row).toContain("listing-founding");
+    expect(row).not.toContain("MovementMark");
   });
 
   it("highlights ranks 1–10 only", () => {
