@@ -182,6 +182,7 @@ export function JoinPage() {
       photoUrl: isUsableHeadshotUrl(String(form.get("photoUrl") ?? draft.photoUrl))
         ? String(form.get("photoUrl") ?? draft.photoUrl)
         : draft.photoUrl,
+      websiteUrl: String(form.get("websiteUrl") ?? ""),
       categories: parseCategories(form.getAll("category")),
     };
     persist(next);
@@ -224,7 +225,7 @@ export function JoinPage() {
         pitch: next.headline,
         photoUrl,
         linkedinUrl: next.linkedinUrl,
-        websiteUrl: "",
+        websiteUrl: next.websiteUrl,
         industry: next.categories[0] ?? null,
         categories: next.categories,
       });
@@ -398,6 +399,12 @@ function IdentityBidCard({
           defaultValue={draft.headline}
           placeholder="Your title"
           required
+        />
+        <Field
+          label="Website"
+          name="websiteUrl"
+          defaultValue={draft.websiteUrl}
+          placeholder="yourcompany.com"
         />
         <fieldset className="grid gap-2">
           <legend className="type-meta font-semibold text-mute uppercase">

@@ -45,6 +45,7 @@ import { minOutbidCents } from "../lib/ranking";
 import { BOARD_TABS, parseCategories, parseIndustry } from "../lib/industries";
 import { SITE } from "../lib/site";
 import { GLOBAL_BOARD_ID, PUBLIC_ORIGIN } from "../lib/types";
+import { normalizeWebsiteUrl } from "../lib/website";
 import type { Store } from "./store";
 
 export const SESSION_COOKIE = "wmw_session";
@@ -592,7 +593,7 @@ function profileFromBody(body: Record<string, unknown>) {
   const displayName = String(body.displayName ?? "").trim();
   const headline = String(body.headline ?? "").trim();
   const pitch = String(body.pitch ?? (headline || displayName)).trim();
-  const websiteUrl = String(body.websiteUrl ?? "").trim();
+  const websiteUrl = normalizeWebsiteUrl(String(body.websiteUrl ?? ""));
   const rawLinkedin = String(body.linkedinUrl ?? "").trim();
   const linkedinUrl =
     normalizeLinkedinProfileUrl(rawLinkedin) || rawLinkedin || null;
@@ -614,7 +615,7 @@ function profileFromBody(body: Record<string, unknown>) {
     pitch,
     photoUrl: String(body.photoUrl ?? "").trim() || null,
     linkedinUrl,
-    websiteUrl: websiteUrl || null,
+    websiteUrl,
     industry: parseCategories(body.categories ?? body.industry)[0] ?? null,
     categories: parseCategories(body.categories ?? body.industry),
   };

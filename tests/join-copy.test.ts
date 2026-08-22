@@ -39,6 +39,7 @@ describe("join is LinkedIn sign-in", () => {
     expect(page).toContain('label="Title"');
     expect(page).toContain("TITLE_REQUIRED");
     expect(page).toContain('name="headline"');
+    expect(page).toContain('name="websiteUrl"');
     expect(page).toContain("Pick an industry so you show on that tab.");
     expect(css).toMatch(/\.join-why-title \{[\s\S]*?font-size: 26px;[\s\S]*?font-weight: 800;/);
     expect(css).toMatch(/\.join-why-list \{[\s\S]*?gap: 12px;/);
