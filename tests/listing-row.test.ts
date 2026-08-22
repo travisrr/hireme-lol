@@ -24,7 +24,7 @@ describe("board rows", () => {
 
   it("locks one 15px claim why paragraph", () => {
     expect(SITE.claimWhy).toBe(
-      "The professional leaderboard. Bid for your name, get seen, get outbid, do it again. People looking for someone to work with start at #1. Your LinkedIn and site take the clicks. Higher bid = higher rank. That’s it.",
+      "A professional leaderboard where visibility is earned. Bid on your name, climb the rankings, and get discovered by people looking for someone like you. Your profile sends every click directly to your LinkedIn or website. Get outbid? Take back your spot.",
     );
   });
 
