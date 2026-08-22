@@ -13,7 +13,9 @@ describe("share card", () => {
   it("locks short OG tags on every page", () => {
     const html = readFileSync("index.html", "utf8");
     expect(html).toContain('<meta property="og:title" content="workwithme.lol" />');
-    expect(html).toContain('<meta property="og:description" content="Bid for #1." />');
+    expect(html).toContain(
+      'content="Bid on yourself. Get to #1 on LinkedIn with more work by outbidding others."',
+    );
     expect(html).toContain(
       '<meta property="og:image" content="https://workwithme.lol/og.png" />',
     );
@@ -24,6 +26,7 @@ describe("share card", () => {
     expect(html).toContain('<meta name="twitter:card" content="summary_large_image" />');
     expect(html).not.toContain("the professional leaderboard");
     expect(html).not.toContain("$2 to enter");
+    expect(html).not.toContain('content="Bid for #1."');
   });
 
   it("serves a 1200×630 PNG at /og.png", () => {
