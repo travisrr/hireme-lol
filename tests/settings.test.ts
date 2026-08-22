@@ -25,6 +25,8 @@ describe("bidder settings", () => {
     expect(page).toContain("text/plain");
     expect(page).toContain("SETTINGS_JUICE_TITLE");
     expect(page).toContain("SETTINGS_BIO_HINT");
+    expect(page).toContain('name="websiteUrl"');
+    expect(page).toContain("Company website");
   });
 
   it("states the fair juice cap in copy", () => {
