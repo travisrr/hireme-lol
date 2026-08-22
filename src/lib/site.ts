@@ -20,6 +20,15 @@ export const SITE = {
     "You can edit anything before you bid. We only use what you approve.",
   joinEdit: "You can edit anything before you bid. We only use what you approve.",
   linkedinCta: "Sign in with LinkedIn",
+  joinWhyTitle: "Why take #1",
+  joinWhyBullets: [
+    "People looking for someone to work with start at the top.",
+    "Your LinkedIn and site take the clicks.",
+    "Higher bid = higher rank. That’s the whole product.",
+    "Get seen first. Everyone else is below you.",
+    "$2 to enter. +$2 to overtake whoever’s there.",
+    "They can take it back. You can take it again.",
+  ],
 } as const;
 
 export const HOW_IT_WORKS_STEPS = [

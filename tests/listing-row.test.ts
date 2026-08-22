@@ -31,7 +31,7 @@ describe("board rows", () => {
   it("locks square 12px-radius photos and LinkedIn + site click ints", () => {
     const css = readFileSync("src/index.css", "utf8");
     expect(css).toMatch(/--photo:\s*40px/);
-    expect(css).toMatch(/\.listing-photo,[\s\S]*?width: 40px;[\s\S]*?border-radius: 12px;/);
+    expect(css).toMatch(/\.listing-photo \{[\s\S]*?width: 40px;[\s\S]*?border-radius: 12px;/);
     expect(css).toMatch(/\.photo-tile \{[\s\S]*?border-radius: 12px;/);
     expect(css).toMatch(/\.photo-tile img \{[\s\S]*?border-radius: 0;/);
     expect(css).not.toMatch(/\.photo-tile \{[\s\S]*?border-radius:\s*50%/);

@@ -15,7 +15,7 @@ import {
   tabLabel,
 } from "../lib/industries";
 import { PAGE_COLUMN } from "../lib/measure";
-import { seededActivity, seededTrending } from "../lib/pulse-seed";
+import { seededTrending } from "../lib/pulse-seed";
 import { SITE } from "../lib/site";
 import { DEFAULT_ECONOMICS, type BidEconomics } from "../lib/types";
 import type { RankedBoardRow } from "../server/store";
@@ -59,7 +59,6 @@ export function HomePage() {
   const rest = rows.slice(TOP_TEN_CUTOFF);
 
   const trending = seededTrending();
-  const receipts = seededActivity();
 
   return (
     <div className="min-h-screen bg-paper">
@@ -68,7 +67,7 @@ export function HomePage() {
       <main className="pb-8">
         <section data-lock="header-hero" className="hero-lock">
           <ClaimHeadline board={rows} economics={economics} />
-          <PulseCard trending={trending} activity={receipts} />
+          <PulseCard trending={trending} />
         </section>
         <section
           id="board"

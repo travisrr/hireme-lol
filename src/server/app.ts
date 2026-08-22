@@ -337,20 +337,22 @@ export function createApp(deps: AppDeps) {
     const sid = getCookie(c, SESSION_COOKIE);
     if (sid) await deps.store.deleteSession(sid);
     deleteCookie(c, SESSION_COOKIE, { path: "/" });
+    deleteCookie(c, "wmw_li", cookieOpts(deps.config.origin));
     return c.json({ ok: true });
   });
 
   app.get("/api/me", async (c) => {
     const session = await readSession(c, deps);
-    const oauthProfile = readLinkedinDraft(c);
     if (!session) {
+      deleteCookie(c, "wmw_li", cookieOpts(deps.config.origin));
       return c.json({
         user: null,
         profile: null,
         isAdmin: false,
-        oauthProfile,
+        oauthProfile: null,
       });
     }
+    const oauthProfile = readLinkedinDraft(c);
     return c.json({ ...session, oauthProfile });
   });
 

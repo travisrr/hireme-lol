@@ -6,6 +6,7 @@ import {
   fetchBoard,
   fetchConfig,
   fetchMe,
+  logout,
   saveProfile,
   uploadPhoto,
 } from "../api/client";
@@ -27,6 +28,8 @@ import {
   writeJoinDraft,
   type JoinDraft,
 } from "../lib/join-draft";
+import { joinStepFromServer, type JoinOauthProfile } from "../lib/join-gate";
+import { PAGE_COLUMN } from "../lib/measure";
 import { formatUsdFromCents, parseBidAmountCents } from "../lib/money";
 import { isUsableHeadshotUrl } from "../lib/photo";
 import { BELOW_ENTRY, publicErrorMessage } from "../lib/public-error";
@@ -51,63 +54,80 @@ export function JoinPage() {
   const [photoFile, setPhotoFile] = useState<File | null>(null);
 
   useEffect(() => {
-    const stored = readJoinDraft();
-    if (stored) setDraft(stored);
+    let cancelled = false;
     void Promise.all([fetchMe(), fetchConfig()])
-      .then(([me, config]) => {
-        setSession(me);
+      .then(async ([me, config]) => {
+        if (cancelled) return;
         setEconomics({
           minEntryCents: config.minEntryCents,
           minIncrementCents: config.minIncrementCents,
         });
-        const oauth = (
-          me as SessionRow & {
-            oauthProfile?: {
-              displayName: string;
-              photoUrl: string;
-              headline: string;
-            } | null;
-          }
-        ).oauthProfile;
-        if (oauth) {
-          const next = {
-            ...(stored ?? emptyJoinDraft()),
-            displayName: oauth.displayName || stored?.displayName || "",
-            photoUrl: oauth.photoUrl || stored?.photoUrl || "",
-            headline: stored?.headline || oauth.headline || "",
-          };
-          setDraft(next);
-          writeJoinDraft(next);
-        }
-        if (me.user) {
-          if (searchParams.get("share") === "1" || searchParams.get("paid") === "1") {
+        const oauth = (me as SessionRow & { oauthProfile?: JoinOauthProfile })
+          .oauthProfile;
+        const nextStep = joinStepFromServer({
+          hasUser: Boolean(me.user),
+          oauthProfile: oauth,
+          share: searchParams.get("share") === "1",
+          paid: searchParams.get("paid") === "1",
+        });
+        switch (nextStep) {
+          case "share":
+            setSession(me);
             setStep("share");
             setRank(Number(searchParams.get("rank") || 0) || null);
             if (searchParams.get("share") === "1") clearJoinDraft();
             return;
+          case "signin":
+            clearJoinDraft();
+            setDraft(emptyJoinDraft());
+            setSession(null);
+            setStep("signin");
+            if (me.user) {
+              try {
+                await logout();
+              } catch {
+                // LinkedIn wall still shows.
+              }
+            }
+            if (searchParams.get("oauth") === "off") {
+              setError(publicErrorMessage("oauth_not_configured"));
+            }
+            return;
+          case "identity": {
+            setSession(me);
+            const stored = readJoinDraft();
+            if (oauth) {
+              const next = {
+                ...(stored ?? emptyJoinDraft()),
+                displayName: oauth.displayName || stored?.displayName || "",
+                photoUrl: oauth.photoUrl || stored?.photoUrl || "",
+                headline: stored?.headline || oauth.headline || "",
+              };
+              setDraft(next);
+              writeJoinDraft(next);
+            }
+            if (searchParams.get("canceled") === "1") {
+              setError("Checkout canceled. Bid again when you are ready.");
+            }
+            setStep("identity");
+            return;
           }
-          if (me.profile && !oauth) {
-            const next = {
-              ...(stored ?? emptyJoinDraft()),
-              displayName: me.profile.displayName,
-              headline: me.profile.headline,
-              photoUrl: me.profile.photoUrl ?? "",
-            };
-            setDraft(next);
+          default: {
+            const _never: never = nextStep;
+            return _never;
           }
-          if (searchParams.get("canceled") === "1") {
-            setError("Checkout canceled. Bid again when you are ready.");
-          }
-          setStep("identity");
-          return;
-        }
-        if (searchParams.get("oauth") === "off") {
-          setError(publicErrorMessage("oauth_not_configured"));
         }
       })
       .catch(() => {
+        if (cancelled) return;
+        clearJoinDraft();
+        setDraft(emptyJoinDraft());
         setSession(null);
+        setStep("signin");
       });
+    return () => {
+      cancelled = true;
+    };
   }, [searchParams]);
 
   useEffect(() => {
@@ -218,7 +238,10 @@ export function JoinPage() {
           {SITE.wordmark}
         </Link>
         {step === "signin" ? (
-          <SignInCard error={error} />
+          <div className={`join-lock ${PAGE_COLUMN}`}>
+            <SignInCard error={error} />
+            <WhyTakeCard />
+          </div>
         ) : step === "identity" ? (
           <IdentityBidCard
             draft={draft}
@@ -244,6 +267,19 @@ export function JoinPage() {
       </div>
       <SiteFooter />
     </div>
+  );
+}
+
+function WhyTakeCard() {
+  return (
+    <section className="join-card join-why">
+      <h2 className="join-why-title">{SITE.joinWhyTitle}</h2>
+      <ul className="join-why-list">
+        {SITE.joinWhyBullets.map((line) => (
+          <li key={line}>{line}</li>
+        ))}
+      </ul>
+    </section>
   );
 }
 

@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { FOUNDING_HEADSHOT_KEYS } from "../src/lib/media";
 import {
@@ -17,7 +18,6 @@ import {
   itemsForTab,
   padPulseRows,
   PULSE_LIST_LIMIT,
-  PULSE_TABS,
 } from "../src/lib/pulse";
 import {
   boardActivityOrSeed,
@@ -31,9 +31,18 @@ function item(id: string): ReceiptItem {
 }
 
 describe("hero pulse card", () => {
-  it("defaults to Trending | Activity and caps the list at 5", () => {
-    expect(PULSE_TABS).toEqual(["trending", "activity"]);
+  it("is a Trending-only card and caps the list at 5", () => {
+    const card = readFileSync("src/components/PulseCard.tsx", "utf8");
+    expect(card).toContain(">Trending<");
+    expect(card).not.toContain("Activity");
+    expect(card).not.toContain("PULSE_TABS");
+    expect(card).toContain("hero-pulse-meta");
     expect(PULSE_LIST_LIMIT).toBe(5);
+    const css = readFileSync("src/index.css", "utf8");
+    expect(css).toMatch(/\.hero-pulse-title \{[\s\S]*?font-size: 13px;/);
+    expect(css).toMatch(/\.hero-pulse-list \{[\s\S]*?flex-direction: column;/);
+    expect(css).toMatch(/\.hero-pulse-row \{[\s\S]*?flex: 1 1 0;[\s\S]*?space-between;/);
+    expect(css).toMatch(/\.pulse-photo,[\s\S]*?width: 32px;/);
     const many = Array.from({ length: 8 }, (_, index) => item(`n${index}`));
     expect(itemsForTab("trending", many, []).map((row) => row.id)).toEqual([
       "n0",

@@ -59,3 +59,32 @@ export function pulseEmptyCopy(tab: PulseTab): string {
     }
   }
 }
+
+export function pulseRowParts(item: ReceiptItem): {
+  name: string;
+  rank: string;
+  amount: string;
+  time: string;
+} {
+  if (
+    item.name &&
+    item.rank != null &&
+    item.amount &&
+    item.time
+  ) {
+    return {
+      name: item.name,
+      rank: `#${item.rank}`,
+      amount: item.amount,
+      time: item.time,
+    };
+  }
+  const bits = item.line.split("·").map((part) => part.trim());
+  const rank = bits[1] ?? "";
+  return {
+    name: bits[0] || item.line,
+    rank: rank.startsWith("#") || rank.length === 0 ? rank : `#${rank}`,
+    amount: bits[2] ?? "",
+    time: bits[3] ?? "",
+  };
+}

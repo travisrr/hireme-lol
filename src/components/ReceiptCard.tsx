@@ -4,6 +4,8 @@ export type ReceiptItem = {
   line: string;
   at: number;
   photoUrl?: string | null;
+  name?: string;
   amount?: string;
   rank?: number;
+  time?: string;
 };

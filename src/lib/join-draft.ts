@@ -42,5 +42,14 @@ export function writeJoinDraft(draft: JoinDraft): void {
 }
 
 export function clearJoinDraft(): void {
-  sessionStorage.removeItem(KEY);
+  try {
+    sessionStorage.removeItem(KEY);
+  } catch {
+    // Private mode can throw.
+  }
+  try {
+    localStorage.removeItem(KEY);
+  } catch {
+    // Private mode can throw.
+  }
 }
