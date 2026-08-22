@@ -2,12 +2,16 @@
 
 Standing rules for every agent that edits `travisrr/hireme-lol`. Live site: **workwithme.lol**. Same builder only — do not open a second cloud agent on this repo.
 
-## Ship every edit to production
+These rules override Cursor’s default “open a feature-branch pull request” workflow. Finished work ships on the production branch.
 
-After any code edit, commit and ship to production. Do not leave finished work sitting only on a feature branch. Do not push onto a side branch instead of production unless Travis explicitly says to.
+## Always
 
-Always report the commit short hash (7 characters).
-Always summarize the code edits for Travis in plain language.
+1. **Commit to production after any code edit.** Do not leave finished work sitting only on a feature branch. Do not push onto a side branch instead of production unless Travis explicitly says to.
+2. **Check whether production is `main` or `master`.** Verify GitHub’s default branch. Do not guess. Deploy the branch production actually uses. Production is whatever is serving https://workwithme.lol, not whatever branch you happen to be on.
+3. **Check for safety before every push.** Pull or rebase first. Do not force-push. Do not rewrite shared history. Be aware of concurrent code edits from other agents: open PRs, other `cursor/*` branches, and in-flight cloud agents. If another agent is mid-edit on the same files, wait or coordinate. Do not overwrite.
+4. **Push, then confirm the deploy landed.** Check the host that actually serves the live site — Cloudflare Worker, Vercel, or whatever else is serving the domain. Do not assume a push means production updated.
+5. **Return the commit short hash** (7 characters).
+6. **Summarize the code edits** for Travis in plain language.
 
 ## Confirm the production branch (main or master)
 
