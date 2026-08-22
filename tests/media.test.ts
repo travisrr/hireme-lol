@@ -10,17 +10,17 @@ import { MemoryStore } from "../src/server/memory-store";
 
 describe("media objects", () => {
   it("uses photos/ keys for the founding Wikimedia portraits", () => {
-    expect(FOUNDING_HEADSHOT_KEYS.elon).toBe("photos/founding-elon.jpg");
-    expect(FOUNDING_HEADSHOT_KEYS.palmer).toBe("photos/founding-palmer.jpg");
-    expect(FOUNDING_HEADSHOT_KEYS.jensen).toBe("photos/founding-jensen.jpg");
+    expect(FOUNDING_HEADSHOT_KEYS.elon).toBe("photos/founding-elon.webp");
+    expect(FOUNDING_HEADSHOT_KEYS.palmer).toBe("photos/founding-palmer.webp");
+    expect(FOUNDING_HEADSHOT_KEYS.jensen).toBe("photos/founding-jensen.webp");
     expect(isSafePhotoKey(FOUNDING_HEADSHOT_KEYS.elon)).toBe(true);
     expect(isSafePhotoKey("../secret")).toBe(false);
   });
 
   it("serves stored bytes from /api/media", async () => {
     const media = new MemoryMedia();
-    await media.put("photos/founding-elon.jpg", new Uint8Array([255, 216, 255]), {
-      httpMetadata: { contentType: "image/jpeg" },
+    await media.put("photos/founding-elon.webp", new Uint8Array([82, 73, 70, 70]), {
+      httpMetadata: { contentType: "image/webp" },
     });
     const app = createApp({
       store: new MemoryStore(),
@@ -32,9 +32,9 @@ describe("media objects", () => {
       },
       media,
     });
-    const ok = await app.request("/api/media/photos/founding-elon.jpg");
+    const ok = await app.request("/api/media/photos/founding-elon.webp");
     expect(ok.status).toBe(200);
-    expect(ok.headers.get("content-type")).toBe("image/jpeg");
+    expect(ok.headers.get("content-type")).toBe("image/webp");
     const missing = await app.request("/api/media/photos/nope.jpg");
     expect(missing.status).toBe(404);
   });

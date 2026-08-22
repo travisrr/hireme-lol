@@ -50,6 +50,8 @@ describe("board rows", () => {
     expect(clicks).toContain("SiteIntIcon");
     expect(clicks).not.toContain("M3.5 2.5 12 8.2");
     expect(clicks).not.toMatch(/cursor/i);
+    expect(css).toMatch(/\.click-int::after \{[\s\S]*?width: 44px;[\s\S]*?height: 44px;/);
+    expect(css).toMatch(/--row-min:\s*56px/);
   });
 
   it("locks 72px two-line mobile rows and 32 hug Outbid", () => {

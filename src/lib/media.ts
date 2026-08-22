@@ -3,9 +3,9 @@ import { isAllowedImageType } from "./photo";
 
 /** Wikimedia Commons portraits stored on R2. Not LinkedIn. Not generated. */
 export const FOUNDING_HEADSHOT_KEYS = {
-  elon: "photos/founding-elon.jpg",
-  palmer: "photos/founding-palmer.jpg",
-  jensen: "photos/founding-jensen.jpg",
+  elon: "photos/founding-elon.webp",
+  palmer: "photos/founding-palmer.webp",
+  jensen: "photos/founding-jensen.webp",
 } as const;
 
 export function isSafePhotoKey(key: string): boolean {

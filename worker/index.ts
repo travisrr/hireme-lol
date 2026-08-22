@@ -2,6 +2,8 @@ import {
   injectWebAnalyticsBeacon,
   resolveBeaconToken,
 } from "../src/lib/web-analytics";
+import { httpsRedirect, withHsts } from "../src/lib/https";
+import { ROBOTS_HEADERS, ROBOTS_TXT } from "../src/lib/robots";
 import type { MediaBucket } from "../src/lib/media";
 import { createApp, type AppConfig } from "../src/server/app";
 import { D1Store, type D1Like } from "../src/server/d1-store";
@@ -73,21 +75,32 @@ async function serveAsset(request: Request, env: Bindings): Promise<Response> {
   return new Response(html, { status: asset.status, headers });
 }
 
+async function handleRequest(request: Request, env: Bindings): Promise<Response> {
+  const redirected = httpsRedirect(request);
+  if (redirected) return redirected;
+
+  const url = new URL(request.url);
+  if (url.pathname === "/robots.txt") {
+    return new Response(ROBOTS_TXT, { headers: ROBOTS_HEADERS });
+  }
+
+  // Apex and www are the same Worker, same D1, same board. Do not host-split.
+  if (!isApiPath(url.pathname)) {
+    return serveAsset(request, env);
+  }
+  if (!env.DB) {
+    return Response.json({ error: "db_unbound" }, { status: 500 });
+  }
+  const app = createApp({
+    store: new D1Store(env.DB),
+    config: configFromEnv(env),
+    media: env.MEDIA as unknown as MediaBucket,
+  });
+  return app.fetch(request);
+}
+
 export default {
   async fetch(request: Request, env: Bindings): Promise<Response> {
-    // Apex and www are the same Worker, same D1, same board. Do not host-split.
-    const url = new URL(request.url);
-    if (!isApiPath(url.pathname)) {
-      return serveAsset(request, env);
-    }
-    if (!env.DB) {
-      return Response.json({ error: "db_unbound" }, { status: 500 });
-    }
-    const app = createApp({
-      store: new D1Store(env.DB),
-      config: configFromEnv(env),
-      media: env.MEDIA as unknown as MediaBucket,
-    });
-    return app.fetch(request);
+    return withHsts(await handleRequest(request, env), request);
   },
 };

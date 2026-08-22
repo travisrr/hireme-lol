@@ -16,13 +16,13 @@ describe("headshots", () => {
   it("maps founding R2 keys to media URLs", () => {
     expect(publicPhotoSrc(null)).toBe(null);
     expect(publicPhotoSrc(FOUNDING_HEADSHOT_KEYS.elon)).toBe(
-      "/api/media/photos/founding-elon.jpg",
+      "/api/media/photos/founding-elon.webp",
     );
     expect(publicPhotoSrc(FOUNDING_HEADSHOT_KEYS.palmer)).toBe(
-      "/api/media/photos/founding-palmer.jpg",
+      "/api/media/photos/founding-palmer.webp",
     );
     expect(publicPhotoSrc(FOUNDING_HEADSHOT_KEYS.jensen)).toBe(
-      "/api/media/photos/founding-jensen.jpg",
+      "/api/media/photos/founding-jensen.webp",
     );
   });
 });
