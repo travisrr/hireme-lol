@@ -8,6 +8,7 @@ import {
   SITE,
 } from "../lib/site";
 import type { BidEconomics, ListingForRank } from "../lib/types";
+import { JoinQr } from "./JoinQr";
 
 type ClaimHeadlineProps = {
   board: readonly ListingForRank[];
@@ -32,6 +33,7 @@ export function ClaimHeadline({ board, economics }: ClaimHeadlineProps) {
         <Link to="/join" className="btn-hero w-fit no-underline">
           {SITE.outbid}
         </Link>
+        <JoinQr />
       </div>
       <p className="type-body hero-claim-help text-mute">
         {entry} to enter. +{increment} to overtake.

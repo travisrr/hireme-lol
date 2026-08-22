@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   linkedinAuthorizeUrl,
+  linkedinSignInUrl,
   parseLinkedinUserinfo,
   requestHostOrigin,
 } from "../src/lib/linkedin-oidc";
@@ -38,6 +39,9 @@ describe("linkedin oidc", () => {
     expect(url.searchParams.get("scope")).toBe("openid profile email");
     expect(url.searchParams.get("redirect_uri")).toBe(
       "https://workwithme.lol/api/auth/linkedin/callback",
+    );
+    expect(linkedinSignInUrl("https://workwithme.lol")).toBe(
+      "https://workwithme.lol/api/auth/linkedin",
     );
   });
 

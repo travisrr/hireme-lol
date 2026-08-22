@@ -5,6 +5,12 @@ export type LinkedinUserinfo = {
   email: string;
 };
 
+export const LINKEDIN_SIGNIN_PATH = "/api/auth/linkedin" as const;
+
+export function linkedinSignInUrl(origin: string): string {
+  return `${origin.replace(/\/$/, "")}${LINKEDIN_SIGNIN_PATH}`;
+}
+
 export function linkedinAuthorizeUrl(opts: {
   clientId: string;
   redirectUri: string;
