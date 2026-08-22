@@ -34,7 +34,7 @@
   --search-h: 40px;
   --hero-cta-h: 40px;
   --pulse-row-h: 36px;
-  --row-min: 64px;
+  --row-min: 56px;
   --photo: 40px;
   --rank-col: 28px;
   --tab-h: 40px;
@@ -224,7 +224,7 @@ body {
   :root {
     --hero-cta-h: 44px;
     --tab-h: 44px;
-    --row-min: 64px;
+    --row-min: 72px;
     --photo: 40px;
     --rank-col: 24px;
   }
@@ -586,10 +586,8 @@ body {
   grid-template-columns: var(--rank-col) var(--photo) minmax(0, 1fr) auto auto;
   align-items: center;
   column-gap: 8px;
-  height: 64px;
-  min-height: 64px;
-  box-sizing: border-box;
-  padding: 0 12px;
+  min-height: var(--row-min);
+  padding: 8px 12px;
   border-bottom: 1px solid var(--color-line);
 }
 
@@ -671,18 +669,9 @@ body {
 .listing-who {
   display: flex;
   min-width: 0;
-  flex-direction: column;
-  align-items: stretch;
-  justify-content: center;
-  gap: 2px;
-  text-align: left;
-}
-
-.listing-name-line {
-  display: flex;
-  min-width: 0;
   align-items: center;
   gap: 8px;
+  text-align: left;
 }
 
 .listing-name {
@@ -690,14 +679,18 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
   font-size: 15px;
-  font-weight: 800;
+  font-weight: 600;
   line-height: 1.2;
   white-space: nowrap;
 }
 
+.listing-meta {
+  display: contents;
+}
+
 .listing-founding {
   flex-shrink: 0;
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -709,10 +702,6 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: var(--color-mute);
-  font-size: 13px;
-  font-weight: 500;
-  line-height: 1.2;
 }
 
 .listing-bid {
@@ -728,8 +717,8 @@ body {
     display: flex;
     align-items: center;
     column-gap: 8px;
-    height: 64px;
-    min-height: 64px;
+    height: 72px;
+    min-height: 72px;
     box-sizing: border-box;
   }
 
@@ -760,18 +749,40 @@ body {
   }
 
   .listing-name {
-    font-size: 15px;
-    font-weight: 800;
+    width: 100%;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1.2;
   }
 
+  .listing-meta {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 8px;
+    overflow: hidden;
+  }
+
+  .listing-founding,
   .listing-headline {
-    font-size: 13px;
-    font-weight: 500;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 11px;
+    line-height: 1.2;
+    color: var(--color-mute);
   }
 
   .listing-founding {
     flex: 0 1 auto;
-    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
   }
 
   .listing-who .click-ints {
