@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { isValidHandle } from "../src/lib/handles";
 import {
@@ -11,6 +12,7 @@ import {
   tabFromPath,
   tabHref,
 } from "../src/lib/industries";
+import { listingIndustry } from "../src/lib/listing-copy";
 
 describe("category tabs", () => {
   it("locks the eight board tabs", () => {
@@ -70,5 +72,16 @@ describe("category tabs", () => {
     expect(emptyIndustryCopy("Healthcare")).toBe(
       "No bids in Healthcare yet. Be first.",
     );
+  });
+
+  it("tags Elon, Palmer, and Jensen as Technology, not Founders", () => {
+    expect(parseCategories("founders")).toEqual([]);
+    expect(listingIndustry("technology")).toBe("Technology");
+    const sql = readFileSync("migrations/0013_founding_technology.sql", "utf8");
+    expect(sql).toContain("category_id = 'technology'");
+    expect(sql).toContain("'elon'");
+    expect(sql).toContain("'palmer'");
+    expect(sql).toContain("'jensen'");
+    expect(sql).not.toContain("founders");
   });
 });

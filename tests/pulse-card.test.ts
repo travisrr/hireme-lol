@@ -176,6 +176,27 @@ describe("hero pulse card", () => {
           rank: 3,
           currentBidCents: 600,
           currentBidAt: now - 20 * 24 * hour,
+          industry: "technology",
+        },
+        {
+          id: "lst_palmer",
+          handle: "palmer",
+          displayName: "Palmer Luckey",
+          photoUrl: null,
+          rank: 4,
+          currentBidCents: 400,
+          currentBidAt: now - 20 * 24 * hour,
+          industry: "technology",
+        },
+        {
+          id: "lst_jensen",
+          handle: "jensen",
+          displayName: "Jensen Huang",
+          photoUrl: null,
+          rank: 5,
+          currentBidCents: 200,
+          currentBidAt: now - 20 * 24 * hour,
+          industry: "technology",
         },
       ],
       now,
@@ -186,8 +207,13 @@ describe("hero pulse card", () => {
       rank: "#3",
       amount: "$6",
       time: "",
-      industry: "",
+      industry: "Technology",
     });
+    expect(stale.map((row) => `${row.name}:${row.industry}`)).toEqual([
+      "Elon Musk:Technology",
+      "Palmer Luckey:Technology",
+      "Jensen Huang:Technology",
+    ]);
     const home = readFileSync("src/pages/HomePage.tsx", "utf8");
     expect(home).toContain("trendingFromListings");
     expect(home).toContain("TRENDING_REFRESH_MS");
