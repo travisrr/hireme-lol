@@ -37,7 +37,11 @@ import {
   parseBidAmountCents,
 } from "../lib/money";
 import { isUsableHeadshotUrl } from "../lib/photo";
-import { belowMinMessage, publicErrorMessage } from "../lib/public-error";
+import {
+  belowMinMessage,
+  publicErrorMessage,
+  TITLE_REQUIRED,
+} from "../lib/public-error";
 import { minOutbidCents } from "../lib/ranking";
 import { linkedinShareIntent, shareLine } from "../lib/share";
 import { SITE } from "../lib/site";
@@ -179,6 +183,14 @@ export function JoinPage() {
       categories: parseCategories(form.getAll("category")),
     };
     persist(next);
+    if (!next.displayName.trim()) {
+      setError("Add your name.");
+      return;
+    }
+    if (!next.headline.trim()) {
+      setError(TITLE_REQUIRED);
+      return;
+    }
     if (next.categories.length === 0) {
       setError("Pick an industry so you show on that tab.");
       return;
@@ -368,12 +380,19 @@ function IdentityBidCard({
       </div>
       {error ? <p className="type-body mt-4 text-down">{error}</p> : null}
       <form className="mt-5 grid gap-3 text-left" onSubmit={onSubmit}>
-        <Field label="Name" name="displayName" defaultValue={draft.displayName} placeholder="Your name" />
         <Field
-          label="Elevator pitch"
+          label="Name"
+          name="displayName"
+          defaultValue={draft.displayName}
+          placeholder="Your name"
+          required
+        />
+        <Field
+          label="Title"
           name="headline"
           defaultValue={draft.headline}
-          placeholder=""
+          placeholder="Your title"
+          required
         />
         <fieldset className="grid gap-2">
           <legend className="type-meta font-semibold text-mute uppercase">
@@ -529,11 +548,13 @@ function Field({
   name,
   placeholder,
   defaultValue,
+  required = false,
 }: {
   label: string;
   name: string;
   placeholder: string;
   defaultValue?: string;
+  required?: boolean;
 }) {
   return (
     <label className="grid gap-1">
@@ -542,6 +563,7 @@ function Field({
         name={name}
         defaultValue={defaultValue}
         placeholder={placeholder}
+        required={required}
         className="search-field"
       />
     </label>

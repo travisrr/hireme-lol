@@ -16,6 +16,8 @@ export const BELOW_ENTRY = belowMinMessage(DEFAULT_ECONOMICS.minEntryCents);
 export const EMAIL_NOT_CONFIGURED =
   "Sign-in email isn’t ready yet. Try again in a bit.";
 
+export const TITLE_REQUIRED = "Add a title so you show on the board.";
+
 const HUMAN_BY_CODE: Record<string, string> = {
   below_entry: BELOW_ENTRY,
   webhook_secret_required: PAYMENTS_NOT_READY,
@@ -29,6 +31,8 @@ const HUMAN_BY_CODE: Record<string, string> = {
   bid_failed: PAYMENTS_NOT_READY,
   bad_signature: PAYMENTS_NOT_READY,
   profile_failed: "We couldn’t save that profile. Check the fields.",
+  title_required: TITLE_REQUIRED,
+  invalid_profile: "Check your name and title.",
   invalid_photo: "Use a JPEG, PNG, or WebP photo.",
   media_unbound: "Photo upload isn’t ready yet. Paste a photo URL instead.",
   oauth_not_configured: "LinkedIn sign-in isn’t ready yet. Try again in a bit.",

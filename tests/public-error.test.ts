@@ -17,6 +17,12 @@ describe("public errors", () => {
     expect(publicErrorMessage("email_not_configured")).toBe(EMAIL_NOT_CONFIGURED);
     expect(publicErrorMessage("email_not_configured")).not.toMatch(/resend/i);
     expect(publicErrorMessage("email_not_configured")).not.toMatch(/api key/i);
+    expect(publicErrorMessage("title_required")).toBe(
+      "Add a title so you show on the board.",
+    );
+    expect(publicErrorMessage("invalid_profile")).toBe(
+      "Check your name and title.",
+    );
   });
 
   it("locks the LinkedIn fallback line", () => {

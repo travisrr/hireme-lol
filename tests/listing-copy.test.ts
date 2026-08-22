@@ -23,6 +23,13 @@ describe("board row copy", () => {
     ).toBe("Healthcare · Healthcare Executive");
     expect(
       listingCopy({
+        industry: "real-estate",
+        pitch: "President and Broker",
+      }),
+    ).toBe("Real estate · President and Broker");
+    expect(listingPitch("President and Broker")).toBe("President and Broker");
+    expect(
+      listingCopy({
         industry: null,
         categories: [],
         pitch: "Founding bid.",

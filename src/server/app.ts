@@ -363,7 +363,13 @@ export function createApp(deps: AppDeps) {
     if (!session) return c.json({ error: "unauthorized" }, 401);
     const body = await readJson(c);
     const input = profileFromBody(body);
-    if (!input) return c.json({ error: "invalid_profile" }, 400);
+    if (!input) {
+      const headline = String(body.headline ?? "").trim();
+      return c.json(
+        { error: headline ? "invalid_profile" : "title_required" },
+        400,
+      );
+    }
     try {
       const profile = session.profile
         ? await deps.store.updateProfile(session.user.id, input, clock(deps))
@@ -594,7 +600,7 @@ function profileFromBody(body: Record<string, unknown>) {
       ? handleFromLinkedinSlug(slug)
       : handleFromName(displayName);
   }
-  if (!isValidHandle(handle) || !displayName) {
+  if (!isValidHandle(handle) || !displayName || !headline) {
     return null;
   }
   return {

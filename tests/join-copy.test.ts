@@ -36,7 +36,9 @@ describe("join is LinkedIn sign-in", () => {
     );
     expect(page).toContain("join-why-title");
     expect(page).not.toContain("join-why-title type-claim");
-    expect(page).toContain("Elevator pitch");
+    expect(page).toContain('label="Title"');
+    expect(page).toContain("TITLE_REQUIRED");
+    expect(page).toContain('name="headline"');
     expect(page).toContain("Pick an industry so you show on that tab.");
     expect(css).toMatch(/\.join-why-title \{[\s\S]*?font-size: 26px;[\s\S]*?font-weight: 800;/);
     expect(css).toMatch(/\.join-why-list \{[\s\S]*?gap: 12px;/);

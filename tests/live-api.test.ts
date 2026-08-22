@@ -170,6 +170,27 @@ describe("live API", () => {
     expect(board.listings).toEqual([]);
   });
 
+  it("rejects a profile with no title", async () => {
+    const { app } = testApp();
+    const cookie = await magicLogin(app, "maya@example.com");
+    const response = await app.request("/api/me/profile", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Cookie: cookie,
+      },
+      body: JSON.stringify({
+        handle: "maya",
+        displayName: "Maya Chen",
+        headline: "   ",
+        pitch: "",
+        categories: ["technology"],
+      }),
+    });
+    expect(response.status).toBe(400);
+    expect(await json(response)).toEqual({ error: "title_required" });
+  });
+
   it("magic-link auth, profile, and webhook-authoritative bid", async () => {
     const { app } = testApp();
     const cookie = await magicLogin(app, "maya@example.com");
