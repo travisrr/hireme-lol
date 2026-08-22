@@ -54,6 +54,7 @@ describe("privacy and terms", () => {
     expect(footer).toContain("CONTACT_EMAIL");
     expect(footer).toContain("mailto:${CONTACT_EMAIL}");
     expect(footer).toContain("{SITE.footer}");
+    expect(footer).toContain('to="/how-it-works"');
     expect(footer).toContain('to="/privacy"');
     expect(footer).toContain('to="/terms"');
     expect(footer).toContain(" · ");
@@ -63,19 +64,24 @@ describe("privacy and terms", () => {
     expect(css).toMatch(/\.site-footer \{[\s\S]*?border-top:/);
   });
 
-  it("locks header Privacy Terms left of the 36 hug CTA", () => {
+  it("locks header How it works Privacy Terms left of the 36 hug CTA", () => {
     expect(HEADER_H).toBe(48);
     expect(HEADER_CTA_H).toBe(36);
     expect(HEADER_LEGAL_GAP).toBe(16);
     const header = readFileSync("src/components/SiteHeader.tsx", "utf8");
-    expect(header).toContain('to="/privacy"');
-    expect(header).toContain('to="/terms"');
+    const howAt = header.indexOf("HOW_IT_WORKS_PATH");
+    const privacyAt = header.indexOf('to="/privacy"');
+    const termsAt = header.indexOf('to="/terms"');
+    expect(header).toContain("HOW_IT_WORKS_NAV");
+    expect(howAt).toBeGreaterThan(-1);
+    expect(privacyAt).toBeGreaterThan(howAt);
+    expect(termsAt).toBeGreaterThan(privacyAt);
     expect(header).toContain("btn-header");
-    expect(header).not.toMatch(/how-it-works/i);
     expect(header).not.toMatch(/hamburger/i);
     const css = readFileSync("src/index.css", "utf8");
     expect(css).toMatch(/\.btn-header \{[\s\S]*?height: 36px;/);
     expect(css).toMatch(/\.header-legal \{[\s\S]*?font-size: 13px;/);
+    expect(css).toMatch(/@media \(max-width: 767px\) \{[\s\S]*?\.header-legal \{[\s\S]*?display: none;/);
   });
 
   it("keeps NEW out of the board rank gutter", () => {

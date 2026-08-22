@@ -24,6 +24,13 @@ export function SiteFooter({ inColumn = false }: { inColumn?: boolean }) {
           </a>
           <p className="type-meta text-mute">
             <Link
+              to="/how-it-works"
+              className="text-mute no-underline hover:text-ink hover:underline"
+            >
+              How it works
+            </Link>
+            <span aria-hidden="true"> · </span>
+            <Link
               to="/privacy"
               className="text-mute no-underline hover:text-ink hover:underline"
             >

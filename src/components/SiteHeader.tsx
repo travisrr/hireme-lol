@@ -1,4 +1,5 @@
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
+import { HOW_IT_WORKS_NAV, HOW_IT_WORKS_PATH } from "../lib/how-it-works";
 import { PAGE_COLUMN } from "../lib/measure";
 import { SITE } from "../lib/site";
 
@@ -27,12 +28,9 @@ export function SiteHeader({
           {SITE.wordmark}
         </Link>
         <div className="site-header-actions">
-          <Link to="/privacy" className="header-legal">
-            Privacy
-          </Link>
-          <Link to="/terms" className="header-legal">
-            Terms
-          </Link>
+          <HeaderMuteLink to={HOW_IT_WORKS_PATH}>{HOW_IT_WORKS_NAV}</HeaderMuteLink>
+          <HeaderMuteLink to="/privacy">Privacy</HeaderMuteLink>
+          <HeaderMuteLink to="/terms">Terms</HeaderMuteLink>
           <span className="header-cta">
             <Link to="/join" className="btn-header no-underline">
               {SITE.cta}
@@ -54,5 +52,25 @@ export function SiteHeader({
         </div>
       ) : null}
     </header>
+  );
+}
+
+function HeaderMuteLink({
+  to,
+  children,
+}: {
+  to: string;
+  children: string;
+}) {
+  const { pathname } = useLocation();
+  const current = pathname === to;
+  return (
+    <Link
+      to={to}
+      className={current ? "header-legal is-current" : "header-legal"}
+      aria-current={current ? "page" : undefined}
+    >
+      {children}
+    </Link>
   );
 }

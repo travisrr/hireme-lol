@@ -37,8 +37,8 @@ This app is currently a Cloudflare Worker (`npm run deploy` / wrangler). It is n
 
 - Public name is **workwithme.lol** only. `hireme.lol` is not ours.
 - Eight board tabs: Overall, Technology, Finance, Healthcare, Real estate, Legal, Marketing, Consulting.
-- Header at 768+: Privacy and Terms as 13px mute links, left of the 36 hug GET ON THE BOARD CTA. Below 768: wordmark left, CTA right, Privacy/Terms footer-only. Footer uses Privacy · Terms.
-- `/privacy` and `/terms`. Contact is **hello@workwithme.lol**. Do not invent another address.
+- Header at 768+: How it works, Privacy, and Terms as 13px mute links, left of the 36 hug GET ON THE BOARD CTA. Below 768: wordmark left, CTA right, How it works/Privacy/Terms footer-only. Footer uses How it works · Privacy · Terms.
+- `/how-it-works`, `/privacy`, and `/terms`. Contact is **hello@workwithme.lol**. Do not invent another address.
 - No NEW badge in the rank gutter.
 - Photos are squares with 12px radius on Trending and the board. Not circles.
 - Click ints are the LinkedIn icon and the site icon, not a cursor.
