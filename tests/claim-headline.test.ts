@@ -63,13 +63,19 @@ describe("hero sponsor callout", () => {
     expect(headline).toContain("{SITE.sponsorTitle}");
     expect(headline).toContain("{SITE.sponsorWhy}");
     expect(headline).toContain("{SITE.sponsorCta}");
+    expect(headline).toMatch(
+      /hero-sponsor-why[\s\S]*?\{SITE\.sponsorWhy\}[\s\S]*?hero-sponsor-mail[\s\S]*?\{SITE\.sponsorCta\}/,
+    );
     expect(headline).not.toMatch(/hireme\.lol/);
     const css = readFileSync("src/index.css", "utf8");
     expect(css).toMatch(
       /\.hero-sponsor \{[\s\S]*?flex-direction: column;[\s\S]*?max-width: 420px;[\s\S]*?height: auto;[\s\S]*?overflow: visible;[\s\S]*?border-radius: 12px;[\s\S]*?background: var\(--color-card\);[\s\S]*?opacity: 1;/,
     );
     expect(css).toMatch(
-      /\.hero-sponsor-title,[\s\S]*?\.hero-sponsor-why,[\s\S]*?\.hero-sponsor-mail \{[\s\S]*?max-width: 100%;[\s\S]*?white-space: normal;[\s\S]*?overflow-wrap: break-word;/,
+      /\.hero-sponsor-title,[\s\S]*?\.hero-sponsor-why \{[\s\S]*?max-width: 100%;[\s\S]*?white-space: normal;[\s\S]*?overflow-wrap: break-word;/,
+    );
+    expect(css).toMatch(
+      /\.hero-sponsor-mail \{[\s\S]*?display: inline;[\s\S]*?margin: 0;[\s\S]*?white-space: nowrap;/,
     );
     expect(css).toMatch(
       /\.hero-claim-cta \{[\s\S]*?display: flex;[\s\S]*?align-items: center;[\s\S]*?flex-wrap: wrap;[\s\S]*?gap: 12px;/,

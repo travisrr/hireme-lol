@@ -37,13 +37,15 @@ export function ClaimHeadline({ board, economics }: ClaimHeadlineProps) {
         <JoinQr />
         <aside data-lock="hero-sponsor" className="hero-sponsor">
           <p className="hero-sponsor-title">{SITE.sponsorTitle}</p>
-          <p className="hero-sponsor-why">{SITE.sponsorWhy}</p>
-          <a
-            href={`mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent("Sponsor workwithme.lol")}`}
-            className="hero-sponsor-mail"
-          >
-            {SITE.sponsorCta}
-          </a>
+          <p className="hero-sponsor-why">
+            {SITE.sponsorWhy}{" "}
+            <a
+              href={`mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent("Sponsor workwithme.lol")}`}
+              className="hero-sponsor-mail"
+            >
+              {SITE.sponsorCta}
+            </a>
+          </p>
         </aside>
       </div>
       <p className="type-body hero-claim-help text-mute">
