@@ -19,6 +19,17 @@ describe("Cloudflare Web Analytics beacon", () => {
     ).toBe("preferred");
   });
 
+  it("swaps the mistaken site tag for the real beacon token", () => {
+    expect(
+      resolveBeaconToken({
+        CF_WEB_ANALYTICS_TOKEN: "6f8c399d1b2e4bde9410e4dad196f17a",
+      }),
+    ).toBe("7d264672fff74607bff3d555b03957cb");
+    expect(
+      resolveBeaconToken({ CF_BEACON_TOKEN: "6f8c399d1b2e4bde9410e4dad196f17a" }),
+    ).toBe("7d264672fff74607bff3d555b03957cb");
+  });
+
   it("injects the docu-coach JS snippet and skips when the token is empty", () => {
     const html = "<html><body><div id='root'></div></body></html>";
     expect(injectWebAnalyticsBeacon(html, "")).toBe(html);
